@@ -1,0 +1,18 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+name: 'Print pull request info'
+description: 'Print information about ongoing pull request. Prerequisites: a pull request exists in github event context'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Pull request info
+      run: |
+        echo "Running for PR number ${{ github.event.number }} with title [${{ github.event.pull_request.title }}] for event [${{ github.event.action }}]"
+        echo "Merging branch [${{ github.event.pull_request.head.ref }}] commit [${{ github.event.after }}]"
+        echo "Into target branch [${{ github.event.pull_request.base.ref }}]"
+        # TODO ? create separate action for displaying full event
+        echo "Full event available at [${GITHUB_EVENT_PATH}]"
+        cat $GITHUB_EVENT_PATH || echo 'Event file not found at ${GITHUB_EVENT_PATH}'
+      shell: bash

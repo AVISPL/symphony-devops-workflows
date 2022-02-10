@@ -1,0 +1,22 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+name: 'Install the jq utility (https://stedolan.github.io/jq/)'
+description: 'Install jq : jq is a lightweight and flexible command-line JSON processor'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install jq
+      run: |
+        # Install jq
+        # Check whether jq is already installed
+        which jq && ret_code=0 || ret_code=1
+        if [[ $ret_code -ne 0 ]]; then
+          echo "jq not found, install..."
+          sudo apt-get -y update
+          sudo apt-get -y install jq
+        fi
+        # Show jq installed version
+        jq --version
+      shell: bash

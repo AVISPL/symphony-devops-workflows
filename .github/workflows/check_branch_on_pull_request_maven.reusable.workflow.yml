@@ -1,0 +1,80 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Builds and runs tests on a Maven project, but does NOT deploy to Nexus
+# nor act on Git tags
+# Checkouts current repository/branch (inherited from caller workflow)
+# TODO review naming : pull_request depends on caller, nothing specific here except printing info
+name: reusable_workflow_check_branch_on_pull_request_maven
+
+on:
+  workflow_call:
+    inputs:
+      maven_goals:
+        description: 'The goals for the mvn command (optional)'
+        required: false
+        type: string
+        default: 'clean install'
+      maven_other_options:
+        description: 'Maven options added at the end of the mvn command, overrides previous options'
+        required: false
+        type: string
+        default: '-DskipTests=false -DskipITs=false'
+      runs-on_label_1:
+        description: 'The job runner first label (optional)'
+        required: false
+        type: string
+        # TODO review runner labels to be used
+        default: 'self-hosted'
+      runs-on_label_2:
+        description: 'The job runner second label (optional)'
+        required: false
+        type: string
+        default: 'linux'
+      symphony-devops-workflows_ref:
+        description: 'Reference branch (or tag) to be used. E.g. ''main'''
+        required: false
+        type: string
+        default: 'main'
+
+jobs:
+  reusable_job_check_branch_on_pull_request_maven:
+    # Use runner which has requested labels
+    # Note: GitHub does not allow to pass an object as job input (such as an array)
+    # so need this trick with multiple variables
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    steps:
+      # WARNING checkout repository first because this action resets the checkout directory
+      # (so other files written into it will be removed)
+      - name: Git checkout current repository/branch
+        uses: actions/checkout@v2
+
+      # GitHub actions cannot be executed directly from private repository
+      # (feature not available yet)
+      # So checkout the actions into local workspace directory and run them from there
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v2
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          # Select revision
+          ref: '${{ inputs.symphony-devops-workflows_ref }}'
+          # Indicate where to checkout project to
+          path: ./.github/symphony-devops-workflows
+
+      - name: Pull request info
+        uses: ./.github/symphony-devops-workflows/actions/print_pull_request_info
+
+      - name: Setup JDK
+        uses: ./.github/symphony-devops-workflows/actions/setup_jdk
+        with:
+          java-version: 16
+          distribution: adopt # Adopt OpenJDK
+
+      - name: Maven build
+        uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
+        with:
+          # Maven options
+          maven_goals: ${{ inputs.maven_goals }}
+          maven_other_options: ${{ inputs.maven_other_options }}
+          # NO Git tag actions
+          git_tag: ''
