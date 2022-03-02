@@ -10,6 +10,13 @@ Use GitHub secrets and provide them to workflows/actions via inputs
 
 This repository is dedicated to Github workflows and actions
 
+## Assumptions
+Workflows and actions in this repository assume that other actions
+can be found at runtime under base path
+`./.github/symphony-devops-workflows/`
+
+Caller workflows must checkout this repository in above path
+
 ## Workflows
 Workflows must be located in directory `.github\workflows`.
 Otherwise workflow call will fail with error 
@@ -38,5 +45,5 @@ into the `/.github/symphony-devops-workflows/` directory, `use` clause would loo
   uses: ./.github/symphony-devops-workflows/actions/setup_jdk
 ```
 
-## Calling an action with local
+## Calling an action with local path
 Path must start with `./` otherwise GitHub will complain with a syntax error
