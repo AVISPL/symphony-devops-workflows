@@ -47,7 +47,10 @@ runs:
   using: 'composite'
   steps:
     - name: Maven build
-      run: mvn -B --file pom.xml ${{ inputs.maven_goals }} ${{ inputs.maven_other_options }}
+      # Option -U (or --update-snapshots)
+      #   Forces a check for missing releases and updated snapshots on remote repositories
+      #   Required because using caching of Maven dependencies
+      run: mvn -B -U --file pom.xml ${{ inputs.maven_goals }} ${{ inputs.maven_other_options }}
       shell: bash
 
     # Remove existing tag (if tagging is requested and tag exists)

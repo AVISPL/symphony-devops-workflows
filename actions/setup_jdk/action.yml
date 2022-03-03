@@ -24,5 +24,6 @@ runs:
         distribution: ${{ inputs.distribution }}
         # Do NOT overwrite Maven settings.xml with auto-generated one
         overwrite-settings: false
-        # TODO check caching option see https://github.com/actions/setup-java#caching-packages-dependencies
-        #cache: maven
+        # TODO add cache option to caller + enable & test caching of Maven dependencies
+        #cache: 'maven'
+        cache:

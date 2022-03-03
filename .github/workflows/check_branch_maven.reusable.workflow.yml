@@ -67,7 +67,7 @@ jobs:
           java-version: 16
           distribution: adopt # Adopt OpenJDK
 
-      - name: Maven build
+      - name: Maven build and Git tag
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
         with:
           # Maven options
