@@ -83,3 +83,16 @@ jobs:
           git_tag_fail_if_exists: 'false'
           git_delete_tag_if_exists: 'true'
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Job to send email - execute event when previous job(s) in workflow have failed
+  job_send_mail:
+    # For details on if condition when previous job is skipped and there is a needs condition,
+    # see discussions here:
+    # https://github.com/actions/runner/issues/491#issuecomment-926924523
+    if: ${{ !cancelled() }}
+    # TODO job_send_mail review if need condition "if:"
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    needs: reusable_job_deploy_branch_maven
+    steps:
+      - name: Send email workflow status
+        uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
