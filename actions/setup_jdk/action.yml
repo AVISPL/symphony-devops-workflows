@@ -25,5 +25,5 @@ runs:
         # Do NOT overwrite Maven settings.xml with auto-generated one
         overwrite-settings: false
         # TODO add cache option to caller + enable & test caching of Maven dependencies
-        #cache: 'maven'
-        cache:
+        cache: 'maven'
+        #cache:
