@@ -5,7 +5,7 @@
 # nor act on Git tags
 # Checkouts current repository/branch (inherited from caller workflow)
 # TODO review naming : pull_request depends on caller, nothing specific here except printing info
-name: reusable_workflow_check_branch_on_pull_request_maven
+name: reusable_workflow_check_branch_maven
 
 on:
   workflow_call:
@@ -38,7 +38,7 @@ on:
         default: 'main'
 
 jobs:
-  reusable_job_check_branch_on_pull_request_maven:
+  reusable_job_check_branch_maven:
     # Use runner which has requested labels
     # Note: GitHub does not allow to pass an object as job input (such as an array)
     # so need this trick with multiple variables
@@ -60,9 +60,6 @@ jobs:
           ref: '${{ inputs.symphony-devops-workflows_ref }}'
           # Indicate where to checkout project to
           path: ./.github/symphony-devops-workflows
-
-      - name: Pull request info
-        uses: ./.github/symphony-devops-workflows/actions/print_pull_request_info
 
       - name: Setup JDK
         uses: ./.github/symphony-devops-workflows/actions/setup_jdk
