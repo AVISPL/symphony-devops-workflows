@@ -32,7 +32,7 @@ on:
         type: string
         default: 'linux'
       symphony-devops-workflows_ref:
-        description: 'Reference branch (or tag) to be used. E.g. ''main'''
+        description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''main'''
         required: false
         type: string
         default: 'main'
