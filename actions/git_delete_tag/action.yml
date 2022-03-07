@@ -42,7 +42,7 @@ runs:
         # Ensure git command line is available
         git --version
         # Debug : show all existing tags
-        git show-ref --tags
+        git show-ref --tags || echo 'No tags exist'
         # Check if tag requested exists
         if git rev-parse -q --verify "refs/tags/${tag_name}" >/dev/null; then
           echo "Tag ${tag_name} found"
