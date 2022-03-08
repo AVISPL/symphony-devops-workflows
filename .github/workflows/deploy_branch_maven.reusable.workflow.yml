@@ -89,7 +89,6 @@ jobs:
           git_tag_fail_if_exists: 'false'
           git_delete_tag_if_exists: 'true'
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      # check out repo from github so job can access it
       
       # ADDED by Shervin: run shell script to build and push docker image to harbor
       - name: script to build and push docker image to harbor
