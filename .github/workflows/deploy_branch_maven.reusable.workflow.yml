@@ -96,8 +96,8 @@ jobs:
         shell: bash
         #run: sh ./.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh -m ${{ inputs.symphony-microservice-name }}
         run: |
-          chmod +x ./scripts/build_and_deploy_docker_image_to_harbor.sh
-          ./scripts/build_and_deploy_docker_image_to_harbor.sh -m ${{ inputs.symphony-microservice-name }}
+          chmod +x ./symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh
+          ./symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh -m ${{ inputs.symphony-microservice-name }}
           
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
