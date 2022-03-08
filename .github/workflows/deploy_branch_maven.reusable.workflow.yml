@@ -98,8 +98,8 @@ jobs:
         run: |
           pwd
           ls -al .github/symphony-devops-workflows/scripts/
-          chmod +x ./.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh
-          ./.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh -m ${{ inputs.symphony-microservice-name }}
+          sudo chmod +x ./.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh
+          sudo ./.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh -m ${{ inputs.symphony-microservice-name }}
           
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
