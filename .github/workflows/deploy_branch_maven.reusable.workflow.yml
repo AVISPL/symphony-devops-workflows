@@ -97,7 +97,7 @@ jobs:
         #run: sh ./.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh -m ${{ inputs.symphony-microservice-name }}
         run: |
           pwd
-          ls -al .github/
+          ls -al .github/symphony-devops-workflows/scripts/
           chmod +x ./.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh
           ./.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh -m ${{ inputs.symphony-microservice-name }}
           
