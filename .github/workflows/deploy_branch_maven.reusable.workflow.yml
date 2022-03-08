@@ -94,7 +94,7 @@ jobs:
       # ADDED by Shervin: run shell script to build and push docker image to harbor
       - name: script to build and push docker image to harbor
         shell: bash
-        run: sh ./.github/build_and_deploy_docker_image_to_harbor.sh -m '${{ inputs.symphony-microservice-name }}'
+        run: sh ./.github/workflows/build_and_deploy_docker_image_to_harbor.sh -m '${{ inputs.symphony-microservice-name }}'
           
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
