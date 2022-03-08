@@ -95,7 +95,7 @@ jobs:
       - name: script to build and push docker image to harbor
         uses: actions/checkout@v2
         with:
-          run: sh ./build_and_deploy_docker_image_to_harbor.sh -m '${{ inputs.symphony-microservice-name }}'
+          run: sh ./.github/build_and_deploy_docker_image_to_harbor.sh -m '${{ inputs.symphony-microservice-name }}'
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
     # For details on if condition when previous job is skipped and there is a needs condition,
