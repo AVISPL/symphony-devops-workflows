@@ -36,6 +36,12 @@ on:
         required: false
         type: string
         default: 'main'
+      # Added by shervin
+      symphony-microservice-name:
+        description: 'symphony-microservice-name is used by shell script to build and tag docker image'
+        required: true
+        type: string
+        default: ''
 
 jobs:
   reusable_job_deploy_branch_maven:
@@ -83,7 +89,13 @@ jobs:
           git_tag_fail_if_exists: 'false'
           git_delete_tag_if_exists: 'true'
           github_token: ${{ secrets.GITHUB_TOKEN }}
-
+      # check out repo from github so job can access it
+      
+      # ADDED by Shervin: run shell script to build and push docker image to harbor
+      - name: script to build and push docker image to harbor
+        uses: actions/checkout@v2
+        with:
+          run: sh ./build_and_deploy_docker_image_to_harbor.sh -m '${{ inputs.symphony-microservice-name }}'
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
     # For details on if condition when previous job is skipped and there is a needs condition,
