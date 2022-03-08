@@ -80,8 +80,8 @@ jobs:
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
         with:
           # Maven options
-          maven_goals: ${{ inputs.maven_goals }}
-          maven_other_options: ${{ inputs.maven_other_options }}
+          #maven_goals: ${{ inputs.maven_goals }}
+          #maven_other_options: ${{ inputs.maven_other_options }}
           # Git tag options
           # TODO should tag options be parameterized with inputs as the caller job knows
           # what triggered it ?
@@ -96,7 +96,8 @@ jobs:
         shell: bash
         #run: sh ./.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh -m ${{ inputs.symphony-microservice-name }}
         run: |
-          ls -al
+          pwd
+          ls -al .github/
           chmod +x ././.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh
           ././.github/symphony-devops-workflows/scripts/build_and_deploy_docker_image_to_harbor.sh -m ${{ inputs.symphony-microservice-name }}
           
