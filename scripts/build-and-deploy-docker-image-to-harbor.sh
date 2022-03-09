@@ -32,7 +32,7 @@ else
 	if [ "$PROJECT_VERSION" = "\[ERROR\]" ]; then
 		echo "${MICROSERVICE} project version determination failed"
 		exit 1
-	if
+	fi
 	# remove "SNAPSHOT" from PROJECT_VERSION and append current yymmddHHMM to it
 	VERSION="${PROJECT_VERSION%SNAPSHOT}$(echo $(date +%y%m%d%H%M) | cut -c 1-11)"
 	
