@@ -18,9 +18,11 @@ done
 eval "exec >&  >(tee -a ${LOG_FILE})"
 FAILED_SUBJECT = "${MICROSERVICE} Docker Image Creation Failed"
 SUCCESS_SUBJECT = "${MICROSERVICE} Docker Image Creation Succeeded"
-
+	
 if [ -z "$MICROSERVICE" ]; then 
 	echo "microservice argument cannot be null...Unable to build and tag docker image!";
+elif [ "$MICROSERVICE" = "NOT_A_MICROSERVICE"]; then
+	echo "Not a microservice, skipping docker taks";
 else 
 	echo "Building and tagging Docker image for ${MICROSERVICE}";
 	echo "Determining version of ${MICROSERVICE}"
