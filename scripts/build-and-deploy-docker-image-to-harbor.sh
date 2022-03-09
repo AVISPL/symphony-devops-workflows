@@ -2,10 +2,12 @@
 # usage:
 # ./build-and-deploy-docker-image-to-harbor[-m <microservice>]
 
+LOG_FILE="/symphony/build/log_$(date +%Y%m%d_%H%M%S).txt"
+
 for ARG in "$@"
 do
 	if [ "${ARG}" = "-m" ]; then
-		# next element is branch name
+		# next element is microservice name
 		ARG_MICROSERVICE=true
 	elif [ "$ARG_MICROSERVICE" = true ]; then
 		MICROSERVICE="${ARG}"
@@ -13,31 +15,68 @@ do
 	fi
 done
 
+eval "exec >&  >(tee -a ${LOG_FILE})"
+FAILED_SUBJECT = "${MICROSERVICE} Docker Image Creation Failed"
+SUCCESS_SUBJECT = "${MICROSERVICE} Docker Image Creation Succeeded"
+
 if [ -z "$MICROSERVICE" ]; then 
-	echo "microservice argument cannot be null...Unable to build and tag docker image!"; 
+	echo "microservice argument cannot be null...Unable to build and tag docker image!";
+	exit 1
 else 
 	echo "Building and tagging Docker image for ${MICROSERVICE}";
-	
+	echo "Determining version of ${MICROSERVICE}"
 	# determine version
 	PROJECT_VERSION=$(mvn -B -q -f . -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
 	# remove "SNAPSHOT" from PROJECT_VERSION and append current yymmddHHMM to it
 	VERSION="${PROJECT_VERSION%SNAPSHOT}$(echo $(date +%y%m%d%H%M) | cut -c 1-11)"
 	
-	echo "building ${MICROSERVICE} v.${VERSION} image"
-	#sudo docker build -t ${MICROSERVICE}:${VERSION} .
-	
-	echo "tagging ${MICROSERVICE} v.${VERSION} image"
-	#sudo docker tag ${MICROSERVICE}:${VERSION} registry.vnocsymphony.com/symphony-microservices/${MICROSERVICE}:${VERSION}
-	
-	echo "pushing ${MICROSERVICE} v.${VERSION} tag to registry"
-	#sudo docker push registry.vnocsymphony.com/symphony-microservices/${MICROSERVICE}:${VERSION}
-	
-	echo "tagging ${MICROSERVICE} SNAPSHOT image"
-	#sudo docker tag registry.vnocsymphony.com/symphony-microservices/${MICROSERVICE}:${VERSION} registry.vnocsymphony.com/symphony-microservices/${MICROSERVICE}:snapshot
-	
-	echo "pushing ${MICROSERVICE} SNAPSHOT tag to registry"
-	#sudo docker push registry.vnocsymphony.com/symphony-microservices/${MICROSERVICE}:snapshot
-	
-	# Cleanup old images, if any. Following will locate and remove old ${MICROSERVICE} images, excluding one marked as snapshot, and ones marked with version this script is running under
-	#sudo docker rmi -f $(sudo docker images | grep -E "${MICROSERVICE}" | grep -v ${VERSION} | grep -v snapshot | awk '{printf"%s ",$3}')
+	if grep -q -m 1 -e "\] ERROR" -e "\[ERROR\]" ${LOG_FILE}; then
+		echo "${MICROSERVICE} version determination failed"
+		mail -s "${FAILED_SUBJECT}" Development@avispl.com < ${LOG_FILE}
+	else
+		echo "building ${MICROSERVICE} v.${VERSION} docker image"
+		sudo docker build -t ${MICROSERVICE}:${VERSION} .
+		if grep -q -m 1 -e "\] ERROR" -e "\[ERROR\]" ${LOG_FILE}; then
+			echo "building ${MICROSERVICE} v.${VERSION} docker image failed"
+			mail -s "${FAILED_SUBJECT}" Development@avispl.com < ${LOG_FILE}
+		else
+			echo "tagging ${MICROSERVICE} v.${VERSION} docker image"
+			sudo docker tag ${MICROSERVICE}:${VERSION} registry.vnocsymphony.com/symphony-microservices/${MICROSERVICE}:${VERSION}
+			if grep -q -m 1 -e "\] ERROR" -e "\[ERROR\]" ${LOG_FILE}; then
+				echo "tagging ${MICROSERVICE} v.${VERSION} docker image failed"
+				mail -s "${FAILED_SUBJECT}" Development@avispl.com < ${LOG_FILE}
+			else
+				echo "pushing ${MICROSERVICE} v.${VERSION} docker tag to harbor registry"
+				sudo docker push registry.vnocsymphony.com/symphony-microservices/${MICROSERVICE}:${VERSION}
+				if grep -q -m 1 -e "\] ERROR" -e "\[ERROR\]" ${LOG_FILE}; then
+					echo "pushing ${MICROSERVICE} v.${VERSION} docker tag to harbor registry failed"
+					mail -s "${FAILED_SUBJECT}" Development@avispl.com < ${LOG_FILE}
+				else
+					echo "tagging ${MICROSERVICE} SNAPSHOT version docker image"
+					sudo docker tag registry.vnocsymphony.com/symphony-microservices/${MICROSERVICE}:${VERSION} registry.vnocsymphony.com/symphony-microservices/${MICROSERVICE}:snapshot
+					if grep -q -m 1 -e "\] ERROR" -e "\[ERROR\]" ${LOG_FILE}; then
+						echo "tagging ${MICROSERVICE} SNAPSHOT version docker image" failed
+						mail -s "${FAILED_SUBJECT}" Development@avispl.com < ${LOG_FILE}
+					else
+						echo "pushing ${MICROSERVICE} SNAPSHOT version docker image tag to harbor registry"
+						sudo docker push registry.vnocsymphony.com/symphony-microservices/${MICROSERVICE}:snapshot
+						if grep -q -m 1 -e "\] ERROR" -e "\[ERROR\]" ${LOG_FILE}; then
+							echo "pushing ${MICROSERVICE} SNAPSHOT version docker image tag to harbor registry failed"
+							mail -s "${FAILED_SUBJECT}" Development@avispl.com < ${LOG_FILE}
+						else
+							# Cleanup old images, if any. Following will locate and remove old ${MICROSERVICE} images, excluding one marked as snapshot, and ones marked with version this script is running under
+							echo "locate and remove old ${MICROSERVICE} images, excluding one marked as 'snapshot', and ones marked with v.${VERSION} this script is running under"
+							sudo docker rmi -f $(sudo docker images | grep -E "${MICROSERVICE}" | grep -v ${VERSION} | grep -v snapshot | awk '{printf"%s ",$3}')
+							if grep -q -m 1 -e "\] ERROR" -e "\[ERROR\]" ${LOG_FILE}; then
+								echo "Old ${MICROSERVICE} image(s) cleanup failed"
+								mail -s "${FAILED_SUBJECT}" Development@avispl.com < ${LOG_FILE}
+							else
+								mail -s "${SUCCESS_SUBJECT}" Development@avispl.com < ${LOG_FILE}
+							fi
+						fi
+					fi
+				fi
+			fi
+		fi
+	fi
 fi
