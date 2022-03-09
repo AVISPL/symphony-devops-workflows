@@ -21,7 +21,6 @@ SUCCESS_SUBJECT = "${MICROSERVICE} Docker Image Creation Succeeded"
 
 if [ -z "$MICROSERVICE" ]; then 
 	echo "microservice argument cannot be null...Unable to build and tag docker image!";
-	exit 1
 else 
 	echo "Building and tagging Docker image for ${MICROSERVICE}";
 	echo "Determining version of ${MICROSERVICE}"
