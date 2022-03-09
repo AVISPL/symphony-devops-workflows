@@ -29,11 +29,11 @@ else
 	echo "Determining version of ${MICROSERVICE}"
 	# determine version
 	PROJECT_VERSION=$(mvn -B -q -f . -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
-	echo "SHERVIN SUCKS ${PROJECT_VERSION}"
-	if [ "$PROJECT_VERSION" = "\[ERROR\]" ]; then
+	if [ $PROJECT_VERSION == "\[ERROR\]" ]; then
 		echo "${MICROSERVICE} project version determination failed"
 		exit 1
 	fi
+	
 	# remove "SNAPSHOT" from PROJECT_VERSION and append current yymmddHHMM to it
 	VERSION="${PROJECT_VERSION%SNAPSHOT}$(echo $(date +%y%m%d%H%M) | cut -c 1-11)"
 	
