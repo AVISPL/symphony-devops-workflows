@@ -31,6 +31,7 @@ else
 	PROJECT_VERSION=$(mvn -B -q -f . -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
 	if [ "$PROJECT_VERSION" = "\[ERROR\]" ]; then
 		echo "${MICROSERVICE} project version determination failed"
+		exit 1
 	if
 	# remove "SNAPSHOT" from PROJECT_VERSION and append current yymmddHHMM to it
 	VERSION="${PROJECT_VERSION%SNAPSHOT}$(echo $(date +%y%m%d%H%M) | cut -c 1-11)"
