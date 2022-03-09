@@ -29,6 +29,7 @@ else
 	echo "Determining version of ${MICROSERVICE}"
 	# determine version
 	PROJECT_VERSION=$(mvn -B -q -f . -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
+	echo "${PROJECT_VERSION}"
 	if [ "$PROJECT_VERSION" = "\[ERROR\]" ]; then
 		echo "${MICROSERVICE} project version determination failed"
 		exit 1
@@ -36,7 +37,7 @@ else
 	# remove "SNAPSHOT" from PROJECT_VERSION and append current yymmddHHMM to it
 	VERSION="${PROJECT_VERSION%SNAPSHOT}$(echo $(date +%y%m%d%H%M) | cut -c 1-11)"
 	
-	if [ grep -q -m 1 -e "\] Error" -e "\[Error\]" ${LOG_FILE} ]; then
+	if grep -q -m 1 -e "\] Error" -e "\[Error\]" ${LOG_FILE}; then
 		echo "${MICROSERVICE} version determination failed"
 		mail -s "${FAILED_SUBJECT}" Development@avispl.com < ${LOG_FILE}
 	else
