@@ -29,7 +29,7 @@ else
 	echo "Determining version of ${MICROSERVICE}"
 	# determine version
 	PROJECT_VERSION=$(mvn -B -q -f . -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
-	echo "${PROJECT_VERSION}"
+	echo "SHERVIN SUCKS ${PROJECT_VERSION}"
 	if [ "$PROJECT_VERSION" = "\[ERROR\]" ]; then
 		echo "${MICROSERVICE} project version determination failed"
 		exit 1
