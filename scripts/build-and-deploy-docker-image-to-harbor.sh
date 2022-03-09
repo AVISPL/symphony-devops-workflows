@@ -22,7 +22,7 @@ NOT_A_MICROSERVICE="NOT_A_MICROSERVICE"
 	
 if [ -z "$MICROSERVICE" ]; then 
 	echo "microservice argument cannot be null...Unable to build and tag docker image!";
-elif [ "$MICROSERVICE" = "$NOT_A_MICROSERVICE"]; then
+elif [ "$MICROSERVICE" = "$NOT_A_MICROSERVICE" ]; then
 	echo "Not a microservice, skipping docker tasks";
 else 
 	echo "Building and tagging Docker image for ${MICROSERVICE}";
