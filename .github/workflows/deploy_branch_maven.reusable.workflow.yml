@@ -76,12 +76,16 @@ jobs:
           java-version: 16
           distribution: adopt # Adopt OpenJDK
 
+      - name: Compute build number
+        id: compute_build_number
+        uses: ./.github/symphony-devops-workflows/actions/build_number
+
       - name: Maven build and Git tag
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
         with:
           # Maven options
           maven_goals: ${{ inputs.maven_goals }}
-          maven_other_options: ${{ inputs.maven_other_options }}
+          maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven_other_options }}
           # Git tag options
           # TODO should tag options be parameterized with inputs as the caller job knows
           # what triggered it ?
