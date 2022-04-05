@@ -2,10 +2,13 @@
 # All Rights Reserved.
 #
 # Delete a Git if exists in current repository/branch
-# WARNING successive Git actions are not transactional: delete of tag can succeed
-# but afterwards tagging may fail so tag is lost. Still execution log shows previous tag Git SHA,
+# WARNING Successive Git actions are not transactional: delete of tag can succeed
+#   but afterwards tagging may fail so tag is lost. Still execution log shows previous tag Git SHA,
 # so it can be recovered, but this requires manual actions
 # Prerequisites:
+# - Security : this action requires that running workflow/job has write permission to the
+#   project contents (contents: write)
+# - Security : tag name must have been verified beforehand, this action does not do any validity check
 # - the git command line must be available
 # - the Git repository tags must be checkouted, otherwise the tag won't be found
 name: 'Git delete tag if exists'

@@ -1,4 +1,5 @@
 #!/bin/bash
+# TODO remove this script when not needed anymore
 # usage:
 # ./build-and-deploy-docker-image-to-harbor[-m <microservice>]
 
