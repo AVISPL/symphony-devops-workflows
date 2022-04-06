@@ -45,12 +45,10 @@ on:
         required: false
         type: string
         default: 'main'
-      # Added by shervin
       symphony-microservice-name:
         description: 'symphony-microservice-name is used by shell script to build and tag docker image'
         required: true
         type: string
-        default: ''
 
 jobs:
   reusable_job_deploy_branch_maven:
