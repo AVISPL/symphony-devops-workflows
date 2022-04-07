@@ -130,6 +130,6 @@ runs:
         echo ""
 
         echo "Send email..."
-        echo "TODO Actual send email"
+        echo "TODO IMPLEMENT Actual send email"
         echo "Send email DONE"
       shell: bash

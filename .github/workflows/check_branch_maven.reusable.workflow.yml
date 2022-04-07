@@ -4,8 +4,9 @@
 # Builds and runs tests on a Maven project, but does NOT deploy to Nexus
 # nor act on Git tags
 # Checkouts current repository/branch (inherited from caller workflow)
-# TODO review naming : pull_request depends on caller, nothing specific here except printing info
 name: reusable_workflow_check_branch_maven
+
+# TODO workflow is out of date - need to be in line with deploy_ workflow
 
 on:
   workflow_call:
@@ -76,4 +77,5 @@ jobs:
           # NO Git tag actions
           git_tag: ''
 
+      # TODO ? do docker build (without tagging) to validate project still fully builds ?
   # TODO should email be sent upon every check ? (same as for deploy workflow)

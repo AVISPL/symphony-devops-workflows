@@ -9,6 +9,16 @@ name: reusable_workflow_deploy_branch_maven
 on:
   workflow_call:
     inputs:
+      # TODO naming of parameters - use "-" or "_" but not mixup of both
+      pom-xml-file:
+        description: 'The path of the project pom.xml'
+        required: true
+        type: string
+      git_tag:
+        description: 'Tag to be created on Git revision, e.g. "snapshot" for daily build. Empty means no tag'
+        required: false
+        type: string
+        default: 'snapshot'
       maven_goals:
         description: 'The goals for the mvn command (optional)'
         required: false
@@ -24,7 +34,6 @@ on:
         description: 'The job runner first label (optional)'
         required: false
         type: string
-        # TODO review runner labels to be used
         default: 'self-hosted'
       runs-on_label_2:
         description: 'The job runner second label (optional)'
@@ -36,15 +45,23 @@ on:
         required: false
         type: string
         default: 'main'
-      # Added by shervin
       symphony-microservice-name:
         description: 'symphony-microservice-name is used by shell script to build and tag docker image'
         required: true
         type: string
-        default: ''
 
 jobs:
   reusable_job_deploy_branch_maven:
+    # Permissions are required for actions that need to do changes on repository
+    # (change files or git operations) or which require access to some GitHub APIs
+    # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
+    permissions:
+      # Contents write is required for git tagging
+      contents: write
+      # Actions read is required by technote-space/workflow-conclusion-action for accessing
+      # actions API for getting actions results
+      actions: read
+
     # Use runner which has requested labels
     # Note: GitHub does not allow to pass an object as job input (such as an array)
     # so need this trick with multiple variables
@@ -76,9 +93,21 @@ jobs:
           java-version: 16
           distribution: adopt # Adopt OpenJDK
 
+      - name: Get project version
+        id: get_project_version
+        uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
+        with:
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+
       - name: Compute build number
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
+
+      - name: Validate tags
+        id: validate_tags
+        uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
+        with:
+          tags: '${{ inputs.git_tag }},snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
 
       - name: Maven build and Git tag
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
@@ -86,21 +115,23 @@ jobs:
           # Maven options
           maven_goals: ${{ inputs.maven_goals }}
           maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven_other_options }}
-          # Git tag options
-          # TODO should tag options be parameterized with inputs as the caller job knows
-          # what triggered it ?
-          git_tag: 'snapshot'
+          # Git options
+          git_tag: ${{ inputs.git_tag }}
           git_tag_fail_if_exists: 'false'
           git_delete_tag_if_exists: 'true'
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      
-      # ADDED by Shervin: run shell script to build and push docker image to harbor
-      - name: script to build and push docker image to harbor
-        shell: bash
-        run: |
-          sudo chmod +x ./.github/symphony-devops-workflows/scripts/build-and-deploy-docker-image-to-harbor.sh
-          sudo ./.github/symphony-devops-workflows/scripts/build-and-deploy-docker-image-to-harbor.sh -m ${{ inputs.symphony-microservice-name }}
-          
+
+      # Docker
+      - name: Docker build tag push
+        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
+        with:
+          docker-file: ${GITHUB_WORKSPACE}/Dockerfile
+          docker-registry-name: 'registry.vnocsymphony.com'
+          docker-registry-project-name: 'symphony-microservices'
+          docker-registry-microservice-name: ${{ inputs.symphony-microservice-name }}
+          docker-tags: 'snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
+
+
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
     # For details on if condition when previous job is skipped and there is a needs condition,
@@ -110,5 +141,17 @@ jobs:
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
     needs: reusable_job_deploy_branch_maven
     steps:
+      # Job might not be executed on same runner than first job (if several candidates
+      # match labels), in which case workspace will be empty,
+      # so need to checkout again required actions from dedicated repository
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v2
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          # Select revision
+          ref: '${{ inputs.symphony-devops-workflows_ref }}'
+          # Indicate where to checkout project to
+          path: ./.github/symphony-devops-workflows
+
       - name: Send email workflow status
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status

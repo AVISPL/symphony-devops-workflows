@@ -1,0 +1,83 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+# Validate a list of tags : check it does not contain invalid characters, otherwise exits with an error
+# Also produces a cleaned output version : coma separated list without empty values
+name: 'Validate tag'
+description: 'Validate that a list of tags does not contain invalid characters'
+
+inputs:
+  tags:
+    description: >
+      Coma separated list of tags to be validated, e.g. 'snapshot,1.1.0.202204051407' or 'qa'.
+      Only alphanumeric, dot, hyphen and underscore characters are authorized
+    required: true
+outputs:
+  tags-cleaned:
+    description: >
+      Cleaned version of input tags, without empty values
+      Sample conversions:
+        input 'snapshot,' produces 'snapshot' output (no more trailing empty value)
+        input ',snapshot' produces 'snapshot' output (no more leading empty value)
+        input 'snapshot,,1.0.0-2204061400' produces 'snapshot,1.0.0-2204061400' output
+          (no more intermediary empty value)
+    value: ${{ steps.validate_tags.outputs.CLEAN_TAGS_STR }}
+runs:
+  using: "composite"
+  steps:
+    - name: Validate tags
+      id: validate_tags
+      run: |
+        # Validate tags
+        TAGS="${{ inputs.tags }}"
+        echo "Tags to validate: [${TAGS}]"
+
+        if [[ -z "${TAGS}" ]]; then
+          echo "[ERROR] Invalid tags [${TAGS}] : empty"
+          exit 1
+        fi
+
+        # Security and sanity
+        #  Remove special character '*' that can cause pattern to be interpreted as globbing
+        #  and would transform values into lists of file names
+        #  Spaces are unauthorized and cause a value to be splitted as two values when looping over
+        TAGS_CLEANED=$(echo "${TAGS}" | tr -d '*' | tr -d ' ')
+        if [[ "${TAGS}" != "${TAGS_CLEANED}" ]]; then
+          echo "[ERROR] Invalid tags [${TAGS}] : contains unauthorized characters"
+          exit 1
+        fi
+
+        # Convert tags string (comma separated list) to an array for easier usage
+        declare -a TAGS_ARRAY=( $(echo ${TAGS} | tr ',' ' ') )
+
+        # Remove null / empty elements in tags array
+        declare -a CLEAN_TAGS_ARRAY=( )
+        for VALUE in "${TAGS_ARRAY[@]}"
+        do
+          echo "DEBUG : current value: [${VALUE}]"
+
+          # Skip empty/null values
+          if [[ -z "${VALUE}" ]]; then
+            continue
+          fi
+
+          # Check value does not contain invalid characters
+          CLEANED_VALUE=${VALUE//[^-[:alnum:]_.-]/}
+          if [[ "${VALUE}" != "${CLEANED_VALUE}" ]]; then
+            echo "[ERROR] Invalid tag [${VALUE}] : contains unauthorized characters"
+            exit 1
+          fi
+
+          # Everything is fine, keep value
+          CLEAN_TAGS_ARRAY+=("${VALUE}")
+        done
+
+        # Convert back to coma separated string
+        # WARNING : the IFS must be forced in command in order to ensure that
+        # values are output by the echo command with desired "," separator
+        # It happends to be "," on runner, but script must be robust to a change
+        CLEAN_TAGS_STR=$( IFS=, ; echo "${CLEAN_TAGS_ARRAY[*]}" )
+        printf "Tags after cleaning: CLEAN_TAGS_STR: [%s]\n" "${CLEAN_TAGS_STR}"
+
+        # Action output
+        printf "::set-output name=CLEAN_TAGS_STR::%s\n" "${CLEAN_TAGS_STR}"
+      shell: bash
