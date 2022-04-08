@@ -11,6 +11,11 @@ inputs:
       Coma separated list of tags to be validated, e.g. 'snapshot,1.1.0.202204051407' or 'qa'.
       Only alphanumeric, dot, hyphen and underscore characters are authorized
     required: true
+  allowEmpty:
+    description: 'Allow empty tags list (after and before cleaning), "true"/"false", defaults to false'
+    required: false
+    default: 'false'
+
 outputs:
   tags-cleaned:
     description: >
@@ -31,7 +36,8 @@ runs:
         TAGS="${{ inputs.tags }}"
         echo "Tags to validate: [${TAGS}]"
 
-        if [[ -z "${TAGS}" ]]; then
+        # Fail when empty value, except when "allowEmpty" is "true"
+        if [[ "${{ inputs.allowEmpty }}" != "true" && -z "${TAGS}" ]]; then
           echo "[ERROR] Invalid tags [${TAGS}] : empty"
           exit 1
         fi
@@ -53,8 +59,7 @@ runs:
         declare -a CLEAN_TAGS_ARRAY=( )
         for VALUE in "${TAGS_ARRAY[@]}"
         do
-          echo "DEBUG : current value: [${VALUE}]"
-
+          #echo "DEBUG : current value: [${VALUE}]"
           # Skip empty/null values
           if [[ -z "${VALUE}" ]]; then
             continue
@@ -70,6 +75,12 @@ runs:
           # Everything is fine, keep value
           CLEAN_TAGS_ARRAY+=("${VALUE}")
         done
+
+        # Fail when cleaned array is empty, except when "allowEmpty" is "true"
+        if [[ "${{ inputs.allowEmpty }}" != "true" && ${#CLEAN_TAGS_ARRAY[@]} -lt 1 ]]; then
+          echo "[ERROR] Invalid tags [${TAGS}] : empty"
+          exit 1
+        fi
 
         # Convert back to coma separated string
         # WARNING : the IFS must be forced in command in order to ensure that

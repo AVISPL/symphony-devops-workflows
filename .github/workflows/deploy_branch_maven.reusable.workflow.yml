@@ -23,8 +23,7 @@ on:
         description: 'The goals for the mvn command (optional)'
         required: false
         type: string
-        # TODO fix default maven goals : use "deploy" instead of "install" when everything is OK
-        default: 'clean install'
+        default: 'clean deploy'
       maven_other_options:
         description: 'Maven options added at the end of the mvn command, overrides previous options'
         required: false
@@ -45,10 +44,20 @@ on:
         required: false
         type: string
         default: 'main'
-      symphony-microservice-name:
-        description: 'symphony-microservice-name is used by shell script to build and tag docker image'
-        required: true
+      docker-file:
+        description: 'The path of the Dockerfile to be built. If empty, no docker build will occur'
+        required: false
         type: string
+      docker-tag-push:
+        description: 'Whether to tag and push docker image. Mandatory when docker-file is present'
+        required: false
+        type: boolean
+        default: false
+      symphony-microservice-name:
+        description: 'symphony-microservice-name is used to build and tag docker image. Mandatory when docker-file is present'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   reusable_job_deploy_branch_maven:
@@ -103,11 +112,20 @@ jobs:
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
 
-      - name: Validate tags
-        id: validate_tags
+      - # Git tag is mandatory for this workflow
+        name: Validate git tags
+        id: validate_git_tags
         uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
         with:
-          tags: '${{ inputs.git_tag }},snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
+          tags: '${{ inputs.git_tag }}'
+          allowEmpty: 'false'
+
+      - name: Validate docker tags
+        id: validate_docker_tags
+        uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
+        with:
+          tags: 'snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
+          allowEmpty: 'false'
 
       - name: Maven build and Git tag
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
@@ -123,13 +141,16 @@ jobs:
 
       # Docker
       - name: Docker build tag push
+        # Run docker build only when a docker file has been specified (not empty value)
+        if: ${{ !cancelled() && inputs.docker-file != '' }}
         uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
         with:
-          docker-file: ${GITHUB_WORKSPACE}/Dockerfile
+          docker-file: ${{ inputs.docker-file }}
+          docker-tag-push: ${{ inputs.docker-tag-push }}
+          docker-tags: 'snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
           docker-registry-name: 'registry.vnocsymphony.com'
           docker-registry-project-name: 'symphony-microservices'
           docker-registry-microservice-name: ${{ inputs.symphony-microservice-name }}
-          docker-tags: 'snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
 
 
   # Job to send email - execute event when previous job(s) in workflow have failed

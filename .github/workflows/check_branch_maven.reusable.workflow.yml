@@ -77,5 +77,4 @@ jobs:
           # NO Git tag actions
           git_tag: ''
 
-      # TODO ? do docker build (without tagging) to validate project still fully builds ?
   # TODO should email be sent upon every check ? (same as for deploy workflow)

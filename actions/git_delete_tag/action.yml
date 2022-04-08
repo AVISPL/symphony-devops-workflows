@@ -48,14 +48,14 @@ runs:
         git show-ref --tags || echo 'No tags exist'
         # Check if tag requested exists
         if git rev-parse -q --verify "refs/tags/${tag_name}" >/dev/null; then
-          echo "Tag ${tag_name} found"
+          echo "Tag [${tag_name}] found"
 
           # Should job be failed because tag exists?
           if [[ 'false' != "${git_tag_fail_if_exists}" ]]; then
-            echo "Tag exists and git_tag_fail_if_exists=[${git_tag_fail_if_exists}] => FAILING the job"
+            echo "Tag [${tag_name}] exists and git_tag_fail_if_exists=[${git_tag_fail_if_exists}] => FAILING the job"
             exit 1
           else
-            echo "Tag exists and git_tag_fail_if_exists=[${git_tag_fail_if_exists}] => continue"
+            echo "Tag [${tag_name}] exists and git_tag_fail_if_exists=[${git_tag_fail_if_exists}] => continue"
           fi
 
           # Delete existing tag
@@ -64,6 +64,6 @@ runs:
           # Delete remote
           git push --delete origin "refs/tags/${tag_name}"
         else
-          echo "Tag ${tag_name} NOT found, nothing to do"
+          echo "Tag [${tag_name}] NOT found, nothing to do"
         fi
       shell: bash
