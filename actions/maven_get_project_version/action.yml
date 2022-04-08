@@ -26,6 +26,11 @@ runs:
         which mvn || echo "mvn command not found !"
         mvn --version
 
+        echo "inputs.pom-xml-file : ${{ inputs.pom-xml-file }}"
+        ls -lh ${{ inputs.pom-xml-file }} || echo "ls FAILED !"
+        echo "DEBUG :"
+        mvn -B -f "${{ inputs.pom-xml-file }}" -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec
+        
         PROJECT_VERSION=$(mvn -B -q -f "${{ inputs.pom-xml-file }}" -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
         echo "PROJECT_VERSION [${PROJECT_VERSION}]"
         echo "::set-output name=PROJECT_VERSION::${PROJECT_VERSION}"
