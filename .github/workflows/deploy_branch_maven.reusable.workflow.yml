@@ -65,7 +65,8 @@ jobs:
     # Use runner which has requested labels
     # Note: GitHub does not allow to pass an object as job input (such as an array)
     # so need this trick with multiple variables
-    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    #runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    runs-on: ${{ inputs.runs-on_label_1 }}
     steps:
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
