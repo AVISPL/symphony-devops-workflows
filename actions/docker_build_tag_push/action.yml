@@ -51,6 +51,9 @@ runs:
         sudo docker version --format '{{json .}}'
         echo
 
+        # WARNING : Dockerfile might not be in current directory
+        DOCKERFILE_DIR=$( dirname "${{ inputs.docker-file }}" )
+
         if [[ "${{ inputs.docker-tag-push }}" == "true" ]]; then
           # Build + tag + push
           #
@@ -91,8 +94,9 @@ runs:
 
           # Build and tag
           echo "Docker build file [${{ inputs.docker-file }}]..."
-          echo Running: sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" .
-          sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}"
+
+          echo Running: sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" "${DOCKERFILE_DIR}"
+          sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" "${DOCKERFILE_DIR}"
 
           # Docker push
           sudo docker push "${FIRST_TAG}"
@@ -114,8 +118,8 @@ runs:
           # Build only
           #
           echo "Docker build file [${{ inputs.docker-file }}]..."
-          echo Running: sudo docker build -f "${{ inputs.docker-file }}" .
-          sudo docker build -f "${{ inputs.docker-file }}" .
+          echo Running: sudo docker build -f "${{ inputs.docker-file }}" "${DOCKERFILE_DIR}"
+          sudo docker build -f "${{ inputs.docker-file }}" "${DOCKERFILE_DIR}"
         fi
 
         echo
