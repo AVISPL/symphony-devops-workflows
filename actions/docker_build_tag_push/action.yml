@@ -12,20 +12,23 @@ inputs:
   docker-file:
     description: 'The path of the Dockerfile to be built'
     required: true
-  docker-registry-name:
-    description: 'The Docker registry name (url) used for tagging built docker image, e.g. "myregistry.com"'
-    required: true
-  docker-registry-project-name:
-    description: 'The project name inside registry used for tagging built docker image, e.g. "symphony-microservices"'
-    required: true
-  docker-registry-microservice-name:
-    description: 'The microservice name used for tagging built docker image, e.g. "my-microservice"'
+  docker-tag-push:
+    description: 'Whether to tag and push docker image. Mandatory when docker-file is present'
     required: true
   docker-tags:
     description: >
       Coma separated list of tags to set on built docker image, e.g. "1.1.0.202204051407", "qa".
-      Do not use following special characters: '*'
+      Mandatory when docker-file is "docker-tag-push" is "true"
     required: true
+  docker-registry-name:
+    description: 'The Docker registry name (url) used for tagging built docker image, e.g. "myregistry.com". Mandatory when docker-file is "docker-tag-push" is "true"'
+    required: false
+  docker-registry-project-name:
+    description: 'The project name inside registry used for tagging built docker image, e.g. "symphony-microservices". Mandatory when docker-file is "docker-tag-push" is "true"'
+    required: false
+  docker-registry-microservice-name:
+    description: 'The microservice name used for tagging built docker image, e.g. "my-microservice". Mandatory when docker-file is "docker-tag-push" is "true"'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -33,6 +36,12 @@ runs:
       run: |
         echo "Docker build tag push"
         # WARNING need to use sudo to run docker commands
+
+        # Ensure docker-file has been specified
+        if [[ -z "${{ inputs.docker-file }}" ]]; then
+          echo "[ERROR] Dockerfile must be specified"
+          exit 1
+        fi
 
         # TODO non self-hosted runner - handle credentials to private docker registry
         # TODO non self-hosted runner - test if using sudo is OK
@@ -42,49 +51,73 @@ runs:
         sudo docker version --format '{{json .}}'
         echo
 
-        # Prepare docker image tag prefix
-        IMAGE_TAG_PREFIX="${{ inputs.docker-registry-name }}/${{ inputs.docker-registry-project-name }}/${{ inputs.docker-registry-microservice-name }}"
-        echo "IMAGE_TAG_PREFIX: [${IMAGE_TAG_PREFIX}]"
-        echo
+        if [[ "${{ inputs.docker-tag-push }}" == "true" ]]; then
+          # Build + tag + push
+          #
+          # Check mandatory inputs
+          if [[ -z "${{ inputs.docker-registry-name }}" \
+              || -z "${{ inputs.docker-registry-project-name }}" \
+              || -z "${{ inputs.docker-registry-microservice-name }}" ]]; then
+            echo "[ERROR] One of docker registry parameters has empty value"
+            exit 1
+          fi
 
-        # Compute tags
-        TAGS="${{ inputs.docker-tags }}"
-        echo "Tags requested: [${TAGS}]"
+          # Prepare docker image tag prefix
+          IMAGE_TAG_PREFIX="${{ inputs.docker-registry-name }}/${{ inputs.docker-registry-project-name }}/${{ inputs.docker-registry-microservice-name }}"
+          echo "IMAGE_TAG_PREFIX: [${IMAGE_TAG_PREFIX}]"
 
-        # Convert tags string to an array for easier usage
-        declare -a TAGS_ARRAY=( $(echo ${TAGS} | tr ',' ' ') )
-        echo "Tags that will be created (array form): [${TAGS_ARRAY[@]}]"
-        # DEBUG TAGS_ARRAY contents
-        #echo "TAGS_ARRAY length : ${#TAGS_ARRAY[@]}"
-        #echo "TAGS_ARRAY[0]: [${TAGS_ARRAY[0]}]"
-        #echo "TAGS_ARRAY[1]: [${TAGS_ARRAY[1]}]"
-        #echo "TAGS_ARRAY[2]: [${TAGS_ARRAY[2]}]"
+          # Compute tags
+          TAGS="${{ inputs.docker-tags }}"
+          echo "Tags requested: [${TAGS}]"
 
-        # TODO handle option to not add tags ? (in which case empty is not an error)
-        # Check there is at least one tag
-        if [[ ${#TAGS_ARRAY[@]} -lt 1 ]]; then
-          echo "[ERROR] No valid tags have been specified"
-          exit 1
+          # Convert tags string to an array for easier usage
+          declare -a TAGS_ARRAY=( $(echo ${TAGS} | tr ',' ' ') )
+          echo "Tags that will be created (array form): [${TAGS_ARRAY[@]}]"
+          # DEBUG TAGS_ARRAY contents
+          #echo "TAGS_ARRAY length : ${#TAGS_ARRAY[@]}"
+          #echo "TAGS_ARRAY[0]: [${TAGS_ARRAY[0]}]"
+          #echo "TAGS_ARRAY[1]: [${TAGS_ARRAY[1]}]"
+          #echo "TAGS_ARRAY[2]: [${TAGS_ARRAY[2]}]"
+
+          # At least 1 tag is required to be able to tag and push
+          if [[ ${#TAGS_ARRAY[@]} -lt 1 ]]; then
+            echo "[ERROR] At least one tag must be specified"
+            exit 1
+          fi
+
+          # Prepare tag options for docker build command
+          echo
+          FIRST_TAG="${IMAGE_TAG_PREFIX}:${TAGS_ARRAY[0]}"
+
+          # Build and tag
+          echo "Docker build file [${{ inputs.docker-file }}]..."
+          echo Running: sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" .
+          sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" .
+
+          # Docker push
+          sudo docker push "${FIRST_TAG}"
+
+          # Re-tag and push other tags
+          for (( i=1; i<${#TAGS_ARRAY[@]}; i++ )); do
+            echo
+            CURRENT_TAG="${IMAGE_TAG_PREFIX}:${TAGS_ARRAY[$i]}"
+            #
+            echo "Adding tag [${CURRENT_TAG}]..."
+            sudo docker tag "${FIRST_TAG}" "${CURRENT_TAG}"
+            #
+            echo "Pushing tag [${CURRENT_TAG}]..."
+            sudo docker push "${CURRENT_TAG}"
+            #
+            echo "Tag [${CURRENT_TAG}] DONE"
+          done
+        else
+          # Build only
+          #
+          echo "Docker build file [${{ inputs.docker-file }}]..."
+          echo Running: sudo docker build -f "${{ inputs.docker-file }}" .
+          sudo docker build -f "${{ inputs.docker-file }}" .
         fi
 
-        # Build and push docker image with first tag
         echo
-        FIRST_TAG="${IMAGE_TAG_PREFIX}:${TAGS_ARRAY[0]}"
-        echo "Docker build..."
-        sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" .
-        sudo docker push "${FIRST_TAG}"
-
-        # Loop over other tags (if any) and re-tag and push tag
-        for (( i=1; i<${#TAGS_ARRAY[@]}; i++ )); do
-          echo
-          CURRENT_TAG="${IMAGE_TAG_PREFIX}:${TAGS_ARRAY[$i]}"
-          #
-          echo "Adding tag [${CURRENT_TAG}]..."
-          sudo docker tag "${FIRST_TAG}" "${CURRENT_TAG}"
-          #
-          echo "Pushing tag [${CURRENT_TAG}]..."
-          sudo docker push "${CURRENT_TAG}"
-          #
-          echo "Tag [${CURRENT_TAG}] DONE"
-        done
+        echo "Docker build file [${{ inputs.docker-file }}] DONE"
       shell: bash
