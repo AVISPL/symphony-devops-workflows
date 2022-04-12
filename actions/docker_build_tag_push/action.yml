@@ -92,7 +92,7 @@ runs:
           # Build and tag
           echo "Docker build file [${{ inputs.docker-file }}]..."
           echo Running: sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" .
-          sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" .
+          sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}"
 
           # Docker push
           sudo docker push "${FIRST_TAG}"
