@@ -71,7 +71,7 @@ runs:
         echo
         FIRST_TAG="${IMAGE_TAG_PREFIX}:${TAGS_ARRAY[0]}"
         echo "Docker build..."
-        sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" .
+        sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}"
         sudo docker push "${FIRST_TAG}"
 
         # Loop over other tags (if any) and re-tag and push tag
