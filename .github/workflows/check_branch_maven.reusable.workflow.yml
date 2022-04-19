@@ -48,13 +48,13 @@ jobs:
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
       - name: Git checkout current repository/branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.0.1
 
       # GitHub actions cannot be executed directly from private repository
       # (feature not available yet)
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.0.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
