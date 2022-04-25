@@ -4,8 +4,8 @@
 # Perform a Maven build and optionally add Git tag
 # Prerequisites:
 # - JDK must be available
-name: 'Maven build and Git tag'
-description: 'Maven build and Git tag'
+name: 'Maven build (Git tag)'
+description: 'Maven build and optionally add Git tag'
 
 inputs:
   # Maven options
