@@ -6,14 +6,14 @@
 # - Linux docker (cli) command must be available on current runner
 # - All files required for building the image must be present on the disk at expected location
 # - TODO non self-hosted runner - document prerequisites : credentials for accessing to Docker registry
-name: 'Docker build tag push'
-description: 'Docker build, tag and push to Docker registry'
+name: 'Docker build (tag push)'
+description: 'Docker build, optionally tag and push to Docker registry'
 inputs:
   docker-file:
     description: 'The path of the Dockerfile to be built'
     required: true
   docker-tag-push:
-    description: 'Whether to tag and push docker image. Mandatory when docker-file is present'
+    description: 'Whether to tag and push docker image'
     required: true
   docker-tags:
     description: >
