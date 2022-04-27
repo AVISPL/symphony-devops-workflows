@@ -62,7 +62,7 @@ on:
         description: 'harbor-registry-project-name is used to build and tag docker image. Mandatory when docker-file is present'
         required: false
         type: string
-        default: ''
+        default: 'symphony-microservices'
 
 jobs:
   reusable_job_deploy_branch_maven:
