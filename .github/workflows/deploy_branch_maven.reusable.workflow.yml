@@ -58,8 +58,8 @@ on:
         required: false
         type: string
         default: ''
-      harbor-registry-project-name:
-        description: 'harbor-registry-project-name is used to build and tag docker image. Mandatory when docker-file is present'
+      docker-registry-project-name:
+        description: 'docker-registry-project-name is used to build and tag docker image. Mandatory when docker-file is present'
         required: false
         type: string
         default: 'symphony-microservices'
@@ -154,7 +154,7 @@ jobs:
           docker-tag-push: ${{ inputs.docker-tag-push }}
           docker-tags: 'snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
           docker-registry-name: 'registry.vnocsymphony.com'
-          docker-registry-project-name: ${{ inputs.harbor-registry-project-name }}
+          docker-registry-project-name: ${{ inputs.docker-registry-project-name }}
           docker-registry-microservice-name: ${{ inputs.symphony-microservice-name }}
 
 
