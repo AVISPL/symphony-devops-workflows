@@ -1,0 +1,39 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# TODO doc
+# - Security : tag(s) name(s) must have been verified beforehand, this action does not do any validity check
+# - Linux docker (cli) command must be available on current runner
+# - All files required for building the image must be present on the disk at expected location
+# - TODO non self-hosted runner - document
+name: 'Docker setup env vars'
+description: 'Set DOCKER_HOST environment variable depending on runner'
+runs:
+  using: 'composite'
+  steps:
+    - name: Docker setup env vars
+      run: |
+        echo "Docker setup env vars"
+        # WARNING need to use sudo to run docker commands
+
+        echo "Runner name: [${{ runner.name }}]"
+
+        echo "DEBUG DOCKER_HOST before: [${DOCKER_HOST}]"
+
+
+        if [[ -z "${{ runner.name }}" ]]; then
+          # Should not occur
+          echo "[ERROR] Runner name empty, cannot determine how to setup docker"
+          exit 1
+        fi
+
+        if [[ "${{ runner.name }}" =~ .*symphony.* ]]; then
+          echo "Self-hosted runner found"
+
+          # TODO compute and set DOCKER_HOST
+        else
+          echo "Not a self-hosted runner -> do nothing"
+        fi
+
+        echo "DEBUG DOCKER_HOST after: [${DOCKER_HOST}]"
+      shell: bash
