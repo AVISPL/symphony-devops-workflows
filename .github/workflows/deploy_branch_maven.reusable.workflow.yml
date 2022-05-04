@@ -12,7 +12,8 @@ on:
       # TODO naming of parameters - use "-" or "_" but not mixup of both
       pom-xml-file:
         description: 'The path of the project pom.xml'
-        required: true
+        required: false
+        default: 'pom.xml'
         type: string
       git_tag:
         description: 'Tag to be created on Git revision, e.g. "snapshot" for daily build. Empty means no tag'
@@ -136,6 +137,7 @@ jobs:
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
         with:
           # Maven options
+          pom-xml-file: ${{ inputs.pom-xml-file }}
           maven_goals: ${{ inputs.maven_goals }}
           maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven_other_options }}
           # Git options
