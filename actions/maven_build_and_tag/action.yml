@@ -9,6 +9,9 @@ description: 'Maven build and optionally add Git tag'
 
 inputs:
   # Maven options
+  pom-xml-file:
+    description: 'The path of the project pom.xml'
+    required: true
   maven_goals:
     description: 'The goals for the mvn command'
     required: false
@@ -50,7 +53,7 @@ runs:
       # Option -U (or --update-snapshots)
       #   Forces a check for missing releases and updated snapshots on remote repositories
       #   Required because using caching of Maven dependencies
-      run: mvn -B -U --file pom.xml ${{ inputs.maven_goals }} ${{ inputs.maven_other_options }}
+      run: mvn -B -U --file ${{ inputs.pom-xml-file }} ${{ inputs.maven_goals }} ${{ inputs.maven_other_options }}
       shell: bash
 
     # Remove existing tag (if tagging is requested and tag exists)
