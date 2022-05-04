@@ -1,0 +1,135 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+# Prerequisites:
+# - jq utility must be available
+#
+name: 'Email workflow status'
+description: 'Email workflow status for current Git push or PR event'
+
+inputs:
+  sendEmailOnlyOnFailure:
+    description: 'Send email only when current workflow status is not success'
+    required: false
+    default: 'false'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install jq
+      uses: ./.github/symphony-devops-workflows/actions/install_jq
+
+    - name: Get workflow status
+      # TODO security thirdparty action (but recommended by GitHub support)
+      #      Check if better way to get workflow status
+      #      WARNING: variable job.status provides current job status,
+      #      not status of previous jobs in same workflow
+      #      Functions such as success() or failure() can ONLY be used in if: conditionals
+      #      Solution should be generic and avoid hardcoding ob job names
+      #      (found examples with "needs.job1.result=='failure'" that need to hardcode job name)
+      # Get workflow conclusion (sets env variable WORKFLOW_CONCLUSION)
+      uses: technote-space/workflow-conclusion-action@v2
+
+    - name: Send email
+      run: |
+        # Send email
+
+        # Status uppercase : SUCCESS / FAILURE (other value is unexpected)
+        status="${WORKFLOW_CONCLUSION}"
+        status="${status^^}"
+        echo "Status is: [${status}]"
+
+        # Should email be sent ?
+        sendEmailOnlyOnFailure="${{inputs.sendEmailOnlyOnFailure}}"
+        if [[ "true" == "${sendEmailOnlyOnFailure}" && "SUCCESS" == "${status}" ]]; then
+          echo "Status is [${status}] and sendEmailOnlyOnFailure is [${sendEmailOnlyOnFailure}] => nothing to do, exiting"
+          # Exit with success
+          exit 0
+        fi
+
+        # Email subject variable (email_subject) is set below
+        # Prepare body file (empty and ensure has write rights)
+        body_file='body.txt'
+        echo "" > ${body_file}
+
+        # Get fields from event and build email contents
+        run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+        event_name="${{github.event_name}}"
+        if [[ "pull_request" == "${event_name}" ]]; then
+          echo "This is a pull request event"
+
+          # Get data from event
+          repo_name="${{ github.event.pull_request._links.html.href }}"
+          repo_url="${{ github.event.pull_request.svn_url }}"
+          author="${{ github.event.sender.login }}"
+          branch_source="${{ github.event.pull_request.head.ref }}"
+          branch_dest="${{ github.event.pull_request.base.ref }}"
+          # Commit information
+          git_sha_merge="${{ github.event.after }}"
+          git_sha_source="${{ github.event.pull_request.head.sha }}"
+          git_head_message=$(jq -r .head_commit.message "${GITHUB_EVENT_PATH}")
+          git_head_author="${{ github.event.head_commit.author.email }}"
+          # PR information
+          pr_url="${{ github.event.pull_request.html.href }}"
+          pr_title=$(jq -r .pull_request.title "${GITHUB_EVENT_PATH}")
+          pr_updated_at="${{ github.event.pull_request.updated_at }}"
+
+          # Email Subject
+          email_subject="[${repo_name}] PR branch [${branch_source}] [${status}]"
+
+          # Write body file
+          echo "Repository url: ${repo_url}" > ${body_file}
+          echo "PR: ${pr_url}" >> ${body_file}
+          echo "PR title: ${pr_title}" >> ${body_file}
+          echo "PR from branch [${branch_source}] into [${branch_dest}]" >> ${body_file}
+          echo "PR updated at [${pr_updated_at}]" >> ${body_file}
+
+          echo "Git merge commit being built: ${git_sha_merge}" >> ${body_file}
+          echo "Git commit SHA from source branch: ${git_sha_source}" >> ${body_file}
+          echo "Workflow run url: ${run_url}" >> ${body_file}
+          #
+        elif [[ "push" == "${event_name}" ]]; then
+          echo "This is a push event"
+
+          # Get data from event
+          repo_name="${{ github.event.repository.name }}"
+          repo_url="${{ github.event.repository.url }}"
+          author="${{ github.event.pusher.name }}"
+          branch_name="${{ github.ref }}"
+          # Latest commit information
+          git_head_sha="${{ github.event.head_commit.id }}"
+          git_head_message=$(jq -r .head_commit.message "${GITHUB_EVENT_PATH}")
+          git_head_author="${{ github.event.head_commit.author.email }}"
+          git_head_url="${{ github.event.head_commit.url }}"
+          git_head_timestamp="${{ github.event.head_commit.timestamp }}"
+          # Pusher
+          git_pusher="${{ github.event.pusher.name }} (${{ github.event.pusher.email }})"
+
+          # Email Subject
+          email_subject="[${repo_name}] Push on branch [${branch_name}] [${status}]"
+
+          # Write body file
+          echo "Repository url: ${repo_url}" > ${body_file}
+          echo "Branch: ${branch_name}" >> ${body_file}
+          echo "Workflow run url: ${run_url}" >> ${body_file}
+          echo "Latest Git commit SHA: ${git_head_sha}" >> ${body_file}
+          echo "Latest Git commit message: ${git_head_message}" >> ${body_file}
+          echo "Latest Git commit author: ${git_head_author}" >> ${body_file}
+          echo "Latest Git commit timestamp: ${git_head_timestamp}" >> ${body_file}
+          echo "Latest Git commit url: ${git_head_url}" >> ${body_file}
+          echo "Pushed by : ${git_pusher}" >> ${body_file}
+
+        else # just in case the workflow was triggered by unexpected event
+          echo "ERROR unexpected event name [${event_name}] (expected 'pull_request' or 'push')"
+          exit 1
+        fi
+
+        # Print email contents
+        echo "Email subject: [${email_subject}]"
+        echo "Email body:" && cat ${body_file}
+        echo ""
+
+        echo "Send email..."
+        echo "TODO IMPLEMENT Actual send email"
+        echo "Send email DONE"
+      shell: bash

@@ -1,0 +1,27 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+name: 'Setup JDK'
+description: 'Setup JDK (actions/setup-java@v2) using compatible options with AVI-SPL self-hosted runners'
+
+inputs:
+  java-version:
+    description: 'Java version'
+    required: false
+    default: '17.0.2'
+  distribution:
+    description: 'Distribution (e.g. "adopt")'
+    required: false
+    default: 'adopt' # Adopt OpenJDK
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up JDK
+      uses: actions/setup-java@v3.1.1
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: ${{ inputs.distribution }}
+        # Do NOT overwrite Maven settings.xml with auto-generated one
+        overwrite-settings: false
+

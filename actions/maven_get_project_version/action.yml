@@ -1,0 +1,27 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Prerequisites:
+# - mvn command must be available on current runner
+# - pom.xml must be accessible at provided location
+name: 'Maven get project version'
+description: 'Maven get project version from pom.xml'
+inputs:
+  pom-xml-file:
+    description: 'The path of the project pom.xml'
+    required: true
+outputs:
+  project-version:
+    description: 'The project version, such as "1.0.0-SNAPSHOT" or "1.0.0"'
+    value: ${{ steps.maven_get_project_version.outputs.PROJECT_VERSION }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Maven get project version
+      id: maven_get_project_version
+      run: |
+        echo "Maven get project version"
+        PROJECT_VERSION=$(mvn -B -q -f "${{ inputs.pom-xml-file }}" -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
+        echo "PROJECT_VERSION [${PROJECT_VERSION}]"
+        echo "::set-output name=PROJECT_VERSION::${PROJECT_VERSION}"
+      shell: bash

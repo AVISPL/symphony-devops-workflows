@@ -1,0 +1,69 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Delete a Git if exists in current repository/branch
+# WARNING Successive Git actions are not transactional: delete of tag can succeed
+#   but afterwards tagging may fail so tag is lost. Still execution log shows previous tag Git SHA,
+# so it can be recovered, but this requires manual actions
+# Prerequisites:
+# - Security : this action requires that running workflow/job has write permission to the
+#   project contents (contents: write)
+# - Security : tag name must have been verified beforehand, this action does not do any validity check
+# - the git command line must be available
+# - the Git repository tags must be checkouted, otherwise the tag won't be found
+name: 'Git delete tag if exists'
+description: 'Delete provided Git tag if exists, otherwise do nothing'
+
+inputs:
+  tag_name:
+    description: 'Name of tag to be deleted'
+    required: true
+  git_tag_fail_if_exists:
+    description: >
+      A security to avoid overwriting tags by mistake
+      If tag exists and value is not 'false', fail the job
+      Otherwise, has no effect
+    required: true
+    default: 'true'
+runs:
+  using: "composite"
+  steps:
+    #- name: Debug git
+    #  run: |
+    #    echo "Git SHA ${{ github.sha }}"
+    #    echo "DEBUG Git log:" && git log --max-count=3 --pretty=oneline
+    #    echo "DEBUG Git tags:" && git tag -l
+    #  shell: bash
+
+    - name: Delete Git tag if exists
+      if: "${{ inputs.tag_name != '' }}"
+      run: |
+        # Delete Git tag if exists
+        tag_name="${{ inputs.tag_name }}"
+        git_tag_fail_if_exists="${{ inputs.git_tag_fail_if_exists }}"
+
+        # Ensure git command line is available
+        git --version
+        # Debug : show all existing tags
+        git show-ref --tags || echo 'No tags exist'
+        # Check if tag requested exists
+        if git rev-parse -q --verify "refs/tags/${tag_name}" >/dev/null; then
+          echo "Tag [${tag_name}] found"
+
+          # Should job be failed because tag exists?
+          if [[ 'false' != "${git_tag_fail_if_exists}" ]]; then
+            echo "Tag [${tag_name}] exists and git_tag_fail_if_exists=[${git_tag_fail_if_exists}] => FAILING the job"
+            exit 1
+          else
+            echo "Tag [${tag_name}] exists and git_tag_fail_if_exists=[${git_tag_fail_if_exists}] => continue"
+          fi
+
+          # Delete existing tag
+          # Delete local
+          git tag --delete "${tag_name}"
+          # Delete remote
+          git push --delete origin "refs/tags/${tag_name}"
+        else
+          echo "Tag [${tag_name}] NOT found, nothing to do"
+        fi
+      shell: bash
