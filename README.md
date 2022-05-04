@@ -3,7 +3,7 @@ All Rights Reserved.**
 
 # symphony-devops-workflows
 **<font color="red">This repository is public so no sensitive data
-such as logins or passwords should EVER be written in files, 
+such as logins or passwords should NEVER be written in files,
 not even in files history!
 Use GitHub secrets and provide them to workflows/actions via inputs
 </font>**
@@ -19,7 +19,7 @@ Caller workflows must checkout this repository in above path
 
 ## Workflows
 Workflows must be located in directory `.github\workflows`.
-Otherwise workflow call will fail with error 
+Otherwise workflow call will fail with this error
 `invalid value workflow reference: references to workflows must be rooted in '.github/workflows'`
 
 # Gotchas
@@ -34,11 +34,11 @@ For example this will cause a syntax error:
   uses: AVISPL/symphony-devops-workflows/actions/setup_jdk@${{ inputs.symphony-devops-workflows_ref }}
 ```
 
-Solution is to checkout the actions repository at required Git revision 
+Solution is to checkout the actions repository at required Git revision
 (in example above, revision was `inputs.symphony-devops-workflows_ref`)
 into a temporary directory and to call the actions with a local path.
 
-For example, assuming the `symphony-devops-workflows` repository was checkouted 
+For example, assuming the `symphony-devops-workflows` repository was checkouted
 into the `/.github/symphony-devops-workflows/` directory, `use` clause would look like:
 ```
 - name: Setup JDK
