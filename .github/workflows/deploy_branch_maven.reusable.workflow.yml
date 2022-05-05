@@ -149,7 +149,7 @@ jobs:
       # Docker
       - name: Docker build tag push
         # Run docker build only when a docker file has been specified (not empty value)
-        if: ${{ !cancelled() && inputs.docker-file != '' }}
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
         uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
         with:
           docker-file: ${{ inputs.docker-file }}
