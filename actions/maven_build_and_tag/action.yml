@@ -65,7 +65,7 @@ runs:
         tag_name: ${{ inputs.git_tag }}
         git_tag_fail_if_exists: ${{ inputs.git_tag_fail_if_exists }}
 
-    # Tag with git_tag (if defined) the currently checkouted Git revision
+    # Tag with git_tag (if defined) the currently checked out Git revision
     - name: Git tag current commit
       if: "${{ inputs.git_tag != '' }}"
       uses: pkgdeps/git-tag-action@v2

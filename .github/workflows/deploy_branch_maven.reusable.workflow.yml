@@ -64,6 +64,20 @@ on:
         required: false
         type: string
         default: 'symphony-microservices'
+      kubernetes-update-deployment-descriptor:
+        description: 'Whether or not to update Kubernetes deployment descriptor so service is automatically deployed to cluster'
+        required: false
+        type: boolean
+        default: false
+    #
+    secrets:
+      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
+      userToken:
+        description: 'Token of the user who is running the workflow. Required for updating Git tags'
+        required: true
+      ciToken:
+        description: '(optional) CI token is required only for updating Kubernetes deployment files'
+        required: false
 
 jobs:
   reusable_job_deploy_branch_maven:
@@ -118,6 +132,24 @@ jobs:
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
 
+      # Compute docker tags to be reused as "global variables"
+      - name: Compute docker tags
+        id: compute_docker_tags
+        run: |
+          echo "Compute docker tags"
+          DOCKER_TAG_WITH_VERSION="${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}"
+          DOCKER_TAGS_ALL="snapshot,${DOCKER_TAG_WITH_VERSION}"
+          DOCKER_IMAGE_TAG_PREFIX="registry.vnocsymphony.com/${{ inputs.docker-registry-project-name }}/${{ inputs.symphony-microservice-name }}"
+          #
+          echo "DOCKER_TAG_WITH_VERSION: [${DOCKER_TAG_WITH_VERSION}]"
+          echo "DOCKER_TAGS_ALL: [${DOCKER_TAGS_ALL}]"
+          echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
+          #
+          echo "::set-output name=DOCKER_TAG_WITH_VERSION::${DOCKER_TAG_WITH_VERSION}"
+          echo "::set-output name=DOCKER_TAGS_ALL::${DOCKER_TAGS_ALL}"
+          echo "::set-output name=DOCKER_IMAGE_TAG_PREFIX::${DOCKER_IMAGE_TAG_PREFIX}"
+        shell: bash
+
       - # Git tag is mandatory for this workflow
         name: Validate git tags
         id: validate_git_tags
@@ -130,7 +162,7 @@ jobs:
         id: validate_docker_tags
         uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
         with:
-          tags: 'snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
+          tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
           allowEmpty: 'false'
 
       - name: Maven build and Git tag
@@ -144,21 +176,38 @@ jobs:
           git_tag: ${{ inputs.git_tag }}
           git_tag_fail_if_exists: 'false'
           git_delete_tag_if_exists: 'true'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.userToken }}
 
       # Docker
-      - name: Docker build tag push
+      - name: Docker build
+        id: docker_build_tag_push
         # Run docker build only when a docker file has been specified (not empty value)
         if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
         uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
         with:
           docker-file: ${{ inputs.docker-file }}
           docker-tag-push: ${{ inputs.docker-tag-push }}
-          docker-tags: 'snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
-          docker-registry-name: 'registry.vnocsymphony.com'
-          docker-registry-project-name: ${{ inputs.docker-registry-project-name }}
-          docker-registry-microservice-name: ${{ inputs.symphony-microservice-name }}
+          docker-tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
+          docker-image-prefix: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}'
 
+      - name: Kubernetes update deployment
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        with:
+          # Path is relative to deployer project root
+          deployment-file: '${{ inputs.symphony-microservice-name }}/deploy-service.yaml'
+          # New value for docker image in deployment file
+          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}:${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
+          fail-if-no-file-change: 'true'
+          # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
+          workspace-checkout-dir: 'symphony-kubernetes-deployer'
+          # The revision (branch) to be updated
+          symphony-kubernetes-deployer-ref: 'dev'
+          commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
+          # Token for checking-out private directory. Need a PAT (Personal Access Token)
+          # for checking-out private repositories
+          # https://github.com/actions/checkout#Checkout-multiple-repos-side-by-side
+          github-token: ${{ secrets.ciToken }}
 
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
