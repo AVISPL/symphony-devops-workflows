@@ -138,10 +138,10 @@ runs:
         skip_dirty_check: ${{ inputs.fail-if-no-file-change }}
 
         # Optional. Skip internal call to `git fetch`
-        # (repository has just been checkouted)
+        # (repository has just been checked out)
         skip_fetch: true
         # Skip internal call to `git checkout`
-        # (repository has just been checkouted)
+        # (repository has just been checked out)
         skip_checkout: true
 
         # Optional. Prevents the shell from expanding filenames
