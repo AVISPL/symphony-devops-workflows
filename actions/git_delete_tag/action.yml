@@ -10,7 +10,7 @@
 #   project contents (contents: write)
 # - Security : tag name must have been verified beforehand, this action does not do any validity check
 # - the git command line must be available
-# - the Git repository tags must be checkouted, otherwise the tag won't be found
+# - the Git repository tags must be checked out, otherwise the tag won't be found
 name: 'Git delete tag if exists'
 description: 'Delete provided Git tag if exists, otherwise do nothing'
 

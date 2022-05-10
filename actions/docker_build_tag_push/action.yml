@@ -20,19 +20,21 @@ inputs:
       Coma separated list of tags to set on built docker image, e.g. "1.1.0.202204051407", "qa".
       Mandatory when docker-file is "docker-tag-push" is "true"
     required: true
-  docker-registry-name:
-    description: 'The Docker registry name (url) used for tagging built docker image, e.g. "myregistry.com". Mandatory when docker-file is "docker-tag-push" is "true"'
-    required: false
-  docker-registry-project-name:
-    description: 'The project name inside registry used for tagging built docker image, e.g. "symphony-microservices". Mandatory when docker-file is "docker-tag-push" is "true"'
-    required: false
-  docker-registry-microservice-name:
-    description: 'The microservice name used for tagging built docker image, e.g. "my-microservice". Mandatory when docker-file is "docker-tag-push" is "true"'
-    required: false
+  docker-image-prefix:
+    description: >
+      The prefix to image name used for tagging built docker image,
+      e.g. "https://registry.vnocsymphony.com/harbor/projects/74/repositories/symphony-notifications-email"
+      Mandatory when "docker-tag-push" is "true"
+    required: true
+outputs:
+  docker-pushed:
+    description: "(boolean) Indicates whether or not docker image has been pushed to the registry"
+    value: ${{ steps.docker_build_tag_push.outputs.DOCKER_PUSHED }}
 runs:
   using: 'composite'
   steps:
     - name: Docker build tag push
+      id: docker_build_tag_push
       run: |
         echo "Docker build tag push"
         # WARNING need to use sudo to run docker commands
@@ -56,18 +58,16 @@ runs:
 
         if [[ "${{ inputs.docker-tag-push }}" == "true" ]]; then
           # Build + tag + push
-          #
+
           # Check mandatory inputs
-          if [[ -z "${{ inputs.docker-registry-name }}" \
-              || -z "${{ inputs.docker-registry-project-name }}" \
-              || -z "${{ inputs.docker-registry-microservice-name }}" ]]; then
-            echo "[ERROR] One of docker registry parameters has empty value"
+          if [[ -z "${{ inputs.docker-image-prefix }}" ]]; then
+            echo "[ERROR] Docker image prefix parameter must not be empty"
             exit 1
           fi
 
           # Prepare docker image tag prefix
-          IMAGE_TAG_PREFIX="${{ inputs.docker-registry-name }}/${{ inputs.docker-registry-project-name }}/${{ inputs.docker-registry-microservice-name }}"
-          echo "IMAGE_TAG_PREFIX: [${IMAGE_TAG_PREFIX}]"
+          IMAGE_TAG_PREFIX="${{ inputs.docker-image-prefix }}"
+          #echo "IMAGE_TAG_PREFIX: [${IMAGE_TAG_PREFIX}]"
 
           # Compute tags
           TAGS="${{ inputs.docker-tags }}"
@@ -100,6 +100,7 @@ runs:
 
           # Docker push
           sudo docker push "${FIRST_TAG}"
+          echo "::set-output name=DOCKER_PUSHED::true"
 
           # Re-tag and push other tags
           for (( i=1; i<${#TAGS_ARRAY[@]}; i++ )); do
@@ -120,6 +121,7 @@ runs:
           echo "Docker build file [${{ inputs.docker-file }}]..."
           echo Running: sudo docker build -f "${{ inputs.docker-file }}" "${DOCKERFILE_DIR}"
           sudo docker build -f "${{ inputs.docker-file }}" "${DOCKERFILE_DIR}"
+          echo "::set-output name=DOCKER_PUSHED::false"
         fi
 
         echo
