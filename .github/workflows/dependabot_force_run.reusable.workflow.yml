@@ -1,0 +1,105 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Trigger Dependabot on requested GitHub repositories
+# by updating Dependabot configuration file in each repository's default branch
+# This workflow assumes that all repositories default branch is 'develop' and that
+# Dependabot configuration file is located at '.github/dependabot.yml'
+#
+name: dependabot_force_run
+
+on:
+  # Reusable workflow (use "inputs" variable to read inputs)
+  workflow_call:
+    inputs:
+      repositories:
+        description: |
+          List of repositories (in JSON string array form,
+          can use either single or double quotes around values)
+        type: string
+        required: true
+      cleanup-old-dummy-changes:
+        description: |
+          Cleanup previous dummy lines. Should be true in general to keep
+          Dependabot configuration file clean
+        type: boolean
+        required: false
+        default: true
+      symphony-devops-workflows_ref:
+        description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''develop'''
+        required: false
+        type: string
+        default: 'develop'
+      runs-on-labels:
+        description: |
+          List of labels for the job runs-on clause (in JSON string array form,
+          can use either single or double quotes around values)
+        required: false
+        type: string
+        default: '[ "self-hosted", "linux" ]'
+    #
+    secrets:
+      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
+      ciToken:
+        description: |
+          CI token is required for checking out and updating private repositories
+          GitHub token must be a PAT (Personal Access Token) which belongs to a user
+          who has read and write authorizations on the repositories
+        required: false
+jobs:
+  dependabot_force_run:
+    # Use runner which has requested labels
+    # Note: GitHub does not allow to pass an object as job input (such as an array),
+    # so need this trick to convert text input to an array
+    runs-on: ${{ fromJSON(inputs.runs-on-labels) }}
+
+    # Matrix strategy
+    strategy:
+      max-parallel: 5
+      # When one job fails, let the others proceed anyway
+      fail-fast: false
+      matrix:
+        repository: ${{ fromJson(inputs.repositories) }}
+
+    # Job steps
+    steps:
+      - name: Print info
+        run: |
+          echo "Running for repository: ${{ matrix.repository }}"
+          echo "All repositories in matrix: [${{ inputs.repositories }}]"
+        shell: bash
+      
+      # GitHub actions cannot be executed directly from private repository
+      # (feature not available yet)
+      # So checkout the actions into local workspace directory and run them from there
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v3.0.1
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          # Select revision
+          ref: '${{ inputs.symphony-devops-workflows_ref }}'
+          # Indicate where to checkout project to
+          path: ./.github/symphony-devops-workflows
+          # Force clean to avoid leftover changes from previous runs in workspace in current runner
+          clean: 'true'
+
+      # Call action to actually update file
+      - name: Update dependabot file
+        uses: ./.github/symphony-devops-workflows/actions/yaml_dummy_update_file_commit_push
+        with:
+          repository: ${{ matrix.repository }}
+          git-ref: 'develop'
+          yaml-file: '.github/dependabot.yml'
+          workspace-checkout-dir: '${{ matrix.repository }}-tmp'
+          # Avoid issues with existing temporary directory in runner workspace
+          # with unexpected local changes
+          workspace-checkout-dir-git-clean: 'true'
+          cleanup-old-dummy-changes: ${{ inputs.cleanup-old-dummy-changes }}
+          # Token for working with private repository
+          github-token: ${{ secrets.ciToken }}
+
+      # Purposely do not remove temporary directory, so existing checked out contents
+      # does not need to be downloaded again. BUT in order to avoid issues with
+      # unexpected local changes, this requires that checking out repository
+      # in temporary directory, the "clean: 'true'" option is used
+      # to reset local contents with latest remote repository changes
