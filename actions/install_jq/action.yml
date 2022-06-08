@@ -1,8 +1,10 @@
 # Copyright (c) 2022 AVI-SPL Inc.
 # All Rights Reserved.
 #
-name: 'Install the jq utility (https://stedolan.github.io/jq/)'
-description: 'Install jq : jq is a lightweight and flexible command-line JSON processor'
+name: 'Install jq'
+description: |
+  Install the jq utility (https://stedolan.github.io/jq/) : jq is a lightweight and flexible
+  command-line JSON processor
 
 runs:
   using: "composite"

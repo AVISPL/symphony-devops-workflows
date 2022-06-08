@@ -1,7 +1,7 @@
 # Copyright (c) 2022 AVI-SPL Inc.
 # All Rights Reserved.
-# Prerequisites:
-# - jq utility must be available
+# Prerequisites :
+# - GitHub actions from AVI-SPL private repository must be available in local workspace directory
 #
 name: 'Email workflow status'
 description: 'Email workflow status for current Git push or PR event'

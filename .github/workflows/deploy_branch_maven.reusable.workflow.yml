@@ -44,7 +44,7 @@ on:
         description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''main'''
         required: false
         type: string
-        default: 'main'
+        default: 'develop'
       docker-file:
         description: 'The path of the Dockerfile to be built. If empty, no docker build will occur'
         required: false
@@ -113,7 +113,7 @@ jobs:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
           ref: '${{ inputs.symphony-devops-workflows_ref }}'
-          # Indicate where to checkout project to
+          # Indicate where to check out project to
           path: ./.github/symphony-devops-workflows
 
       - name: Setup JDK
@@ -227,7 +227,7 @@ jobs:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
           ref: '${{ inputs.symphony-devops-workflows_ref }}'
-          # Indicate where to checkout project to
+          # Indicate where to check out project to
           path: ./.github/symphony-devops-workflows
 
       - name: Send email workflow status
