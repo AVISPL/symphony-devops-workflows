@@ -2,6 +2,9 @@
 # All Rights Reserved.
 # Update Kubernetes deployment file : set docker image to be used with provided one
 # This action checkouts the deployment repository, updates deployment file and pushes the change to GitHub
+# Prerequisites :
+# - GitHub actions from AVI-SPL private repository must be available in local workspace directory
+#
 name: 'Kubernetes update deployment'
 description: 'Update Kubernetes deployment file : set docker image to be used with provided one'
 
@@ -64,12 +67,12 @@ runs:
     - name: Checkout Kubernetes deployer repository
       uses: actions/checkout@v3.0.1
       with:
-        # Repository to checkout
+        # Repository to be checked out
         repository: 'AVISPL/symphony-kubernetes-deployer'
         # Select revision
         ref: '${{ inputs.symphony-kubernetes-deployer-ref }}'
         token: '${{ inputs.github-token }}'
-        # Indicate where to checkout project to. Relative path under $GITHUB_WORKSPACE
+        # Indicate where to check out project to. Relative path under $GITHUB_WORKSPACE
         path: "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
         # Force clean to avoid leftover changes from previous runs in current workspace
         clean: 'true'
@@ -96,6 +99,8 @@ runs:
         grep 'image: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
       shell: bash
 
+    # TODO git commit and push - move to separate action ?
+    #   (ensures same options are used in all projects)
     # Git commit and push
     # Note: many options are possible, see action documentation
     #   https://github.com/marketplace/actions/git-auto-commit
@@ -107,6 +112,7 @@ runs:
 
         # Git commit message
         commit_message: '${{ inputs.commit-message }}'
+        # TODO Git commit user and author - use secrets instead of hardcoded value
         # Git commit user and author
         commit_user_name: 'AVISymphonyDev'
         commit_user_email: 'AVISymphonyDev@avispl.com'
