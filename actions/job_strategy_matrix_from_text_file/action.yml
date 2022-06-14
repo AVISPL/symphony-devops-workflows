@@ -41,14 +41,12 @@ runs:
 
           // Cleanup list: trim left/right, remove lines starting with '#' and empty lines
           // Also add single quote around value (required for the matrix format)
-          let cleanedArr = arr.map(function(e) { return e.trim(); })
-            .filter(function (e) {
-              return !e.startsWith("#") && (e.length > 0);
-            })
-            .map(function(e) { return "'" + e + "'"; });
+          let cleanedArr = arr.map(e => e.trim())
+            .filter(e => !e.startsWith("#") && e.length > 0)
+            .map(e => `'${e}'`);
 
           // Build matrix as a string with expected format for a job strategy
-          let matrixStr = "[" + cleanedArr.join(',') + "]";
+          let matrixStr = `[${cleanedArr.join(",")}]`;
           console.log("Final matrix (without additional surrounding brackets): " + matrixStr);
           console.log(`::set-output name=matrix::${matrixStr}`);
           return matrixStr;
