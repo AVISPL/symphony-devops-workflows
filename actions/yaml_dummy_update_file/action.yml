@@ -1,0 +1,50 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+# Add a dummy comment line at end of specified file
+# Line starts with a constant prefix and ends with a timestamp of current date
+#   For example:
+#   # AUTO DUMMY CHANGE 2206071438
+name: 'Yaml dummy update file'
+description: 'Add a dummy comment line at end of specified file'
+inputs:
+  yaml-file:
+    description: 'The path to Yaml file to be updated, relative to project root directory'
+    required: true
+  cleanup-old-dummy-changes:
+    description: |
+      Whether or not to cleanup all the dummy lines introduced by previous runs
+      Should be set to 'true' to avoid cluttering file
+      Prefix must be unchanged otherwise old lines cannot be found
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Yaml dummy update file
+      id: yaml_dummy_update_file
+      run: |
+        echo "Compute timestamp in UTC timezone"
+        TS=$( date -u +%y%m%d%H%M | cut -c 1-11 )
+
+        # Constants
+        DUMMY_LINE_PREFIX="# AUTO DUMMY CHANGE "
+
+        # Create temporary file
+        SOURCE_FILE="${{ inputs.yaml-file }}"
+        TMP_FILE="${SOURCE_FILE}.tmp"
+
+        # Cleanup old dummy changes
+        if [[ "true" == "${{ inputs.cleanup-old-dummy-changes }}" ]]; then
+          cp "${SOURCE_FILE}" "${TMP_FILE}"
+          grep -v "${DUMMY_LINE_PREFIX}" "${TMP_FILE}" > "${SOURCE_FILE}"
+        fi
+
+        # Append dummy line to temporary file
+        cp "${SOURCE_FILE}" "${TMP_FILE}"
+        echo "${DUMMY_LINE_PREFIX}${TS}" >> "${TMP_FILE}"
+
+        # Overwrite source file
+        cp "${TMP_FILE}" "${SOURCE_FILE}"
+        rm -rf "${TMP_FILE}"
+      shell: bash

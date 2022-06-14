@@ -29,7 +29,7 @@ inputs:
      without leading "./" (for some reason this breaks replacement). E.g. "localcheckout"
     required: true
   symphony-kubernetes-deployer-ref:
-    description: 'Reference (revision) to Kubernetes deployment repository (branch or tag) to be updated. E.g. ''main'''
+    description: 'Reference (revision) to Kubernetes deployment repository (branch or tag) to be updated. E.g. ''develop'''
     required: false
     default: 'dev'
   commit-message:
