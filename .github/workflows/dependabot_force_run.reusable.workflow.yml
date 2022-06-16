@@ -98,6 +98,7 @@ jobs:
           workspace-checkout-dir-git-clean: 'true'
           cleanup-old-dummy-changes: ${{ inputs.cleanup-old-dummy-changes }}
           # Token for working with private repository
+          # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
           github-token: ${{ secrets.ciToken }}
 
       # Purposely do not remove temporary directory, so existing checked out contents
