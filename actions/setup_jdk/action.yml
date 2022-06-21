@@ -2,7 +2,7 @@
 # All Rights Reserved.
 #
 name: 'Setup JDK'
-description: 'Setup JDK (actions/setup-java@v2) using compatible options with AVI-SPL self-hosted runners'
+description: 'Setup JDK (actions/setup-java) using compatible options with AVI-SPL self-hosted runners'
 
 inputs:
   java-version:
