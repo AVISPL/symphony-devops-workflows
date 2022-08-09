@@ -16,7 +16,7 @@ description: 'Delete provided Git tag if exists, otherwise do nothing'
 
 inputs:
   tag_name:
-    description: 'Name of tag to be deleted'
+    description: 'Name of tag to be deleted (not empty)'
     required: true
   git_tag_fail_if_exists:
     description: >
@@ -35,38 +35,23 @@ runs:
     #    echo "DEBUG Git tags:" && git tag -l
     #  shell: bash
 
+    # Git - check tag does not already exist
+    - name: Check if tag already exists
+      id: git_tag_exists
+      uses: ./.github/symphony-devops-workflows/actions/git_tag_exists
+      with:
+        tag-name: ${{ inputs.tag_name }}
+        git-tag-fail-if-exists: ${{ inputs.git_tag_fail_if_exists }}
+
     - name: Delete Git tag if exists
-      if: "${{ inputs.tag_name != '' }}"
       run: |
-        echo "Delete Git tag if exists"
-        # TODO use action git_tag_exists instead of recoding same thing
-
         # Delete Git tag if exists
-        tag_name="${{ inputs.tag_name }}"
-        git_tag_fail_if_exists="${{ inputs.git_tag_fail_if_exists }}"
-
-        # Ensure git command line is available
-        git --version
-        # Debug : show all existing tags
-        git show-ref --tags || echo 'No tags exist'
-        # Check if tag requested exists
-        if git rev-parse -q --verify "refs/tags/${tag_name}" >/dev/null; then
-          echo "Tag [${tag_name}] found"
-
-          # Should job be failed because tag exists?
-          if [[ 'false' != "${git_tag_fail_if_exists}" ]]; then
-            echo "Tag [${tag_name}] exists and git_tag_fail_if_exists=[${git_tag_fail_if_exists}] => FAILING the job"
-            exit 1
-          else
-            echo "Tag [${tag_name}] exists and git_tag_fail_if_exists=[${git_tag_fail_if_exists}] => continue"
-          fi
-
-          # Delete existing tag
-          # Delete local
-          git tag --delete "${tag_name}"
-          # Delete remote
-          git push --delete origin "refs/tags/${tag_name}"
-        else
-          echo "Tag [${tag_name}] NOT found, nothing to do"
+        # If tag exists and failure is requested in such case, previous step must
+        # have failed the job
+        if [[ "true" == "${{ steps.git_tag_exists.outputs.tag-exists }}" ]]; then
+          # Delete local tag
+          git tag --delete "${{ inputs.tag_name }}"
+          # Delete remote tag
+          git push --delete origin "refs/tags/${{ inputs.tag_name }}"
         fi
       shell: bash
