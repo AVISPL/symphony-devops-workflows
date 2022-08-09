@@ -38,6 +38,9 @@ runs:
     - name: Delete Git tag if exists
       if: "${{ inputs.tag_name != '' }}"
       run: |
+        echo "Delete Git tag if exists"
+        # TODO use action git_tag_exists instead of recoding same thing
+
         # Delete Git tag if exists
         tag_name="${{ inputs.tag_name }}"
         git_tag_fail_if_exists="${{ inputs.git_tag_fail_if_exists }}"

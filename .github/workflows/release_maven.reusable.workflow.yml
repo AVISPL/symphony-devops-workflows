@@ -1,0 +1,266 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Release workflow for Maven projects
+# Update project version, full project build (Maven, docker), Git tagging, deploy to Kubernetes
+# See design document : https://avi-spl.atlassian.net/wiki/spaces/SYM/pages/3011969048/Versioning+strategy
+name: reusable_workflow_release_branch_maven
+
+on:
+  # Reusable workflow
+  workflow_call:
+    inputs:
+      git-ref:
+        description: Project's reference branch (or tag) to be used. E.g. 'release/5.7'
+        required: true
+        type: string
+      pom-xml-file:
+        description: 'The path of the project pom.xml'
+        required: true
+        default: 'pom.xml'
+        type: string
+      new-project-version:
+        description: |
+          (optional) The project version to be set in pom.xml and release.
+          Format : "5.7.0.2206241630"
+          When not specified, version is read from pom.xml and a timestamp is generated
+        required: false
+        type: string
+      maven-goals:
+        description: 'The goals for the mvn command (optional)'
+        required: false
+        type: string
+        default: 'clean deploy'
+      maven-other-options:
+        description: 'Maven options added at the end of the mvn command, overrides previous options'
+        required: false
+        type: string
+        default: '-DskipTests=false -DskipITs=false'
+      docker-file:
+        description: 'The path of the Dockerfile to be built. If empty, no docker build will occur'
+        required: false
+        type: string
+      symphony-microservice-name:
+        description: |
+          symphony-microservice-name is used to build and tag docker image.
+          Mandatory when docker-file is present
+        required: false
+        type: string
+        default: ''
+      docker-registry-project-name:
+        description: |
+          docker-registry-project-name is used to build and tag docker image.
+          Mandatory when docker-file is present
+        required: false
+        type: string
+        default: 'symphony-microservices'
+      kubernetes-update-deployment-descriptor:
+        description: 'Whether or not to update Kubernetes deployment descriptor so service is automatically deployed to cluster'
+        required: false
+        type: boolean
+        default: false
+      symphony-devops-workflows-ref:
+        description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''develop'''
+        required: false
+        type: string
+        default: 'develop'
+      runs-on-labels:
+        description: |
+          List of labels for the job runs-on clause (in JSON string array form,
+          can use either single or double quotes around values)
+          E.g. [ "ubuntu-latest" ] for using GitHub runners
+          E.g. [ "self-hosted", "linux" ] for using AVI-SPLI self-hosted runner
+        required: false
+        type: string
+        default: '[ "self-hosted", "linux" ]'
+    #
+    secrets:
+      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
+      commitUserName:
+        description: User name to be used as committer
+        required: true
+      commitUserEmail:
+        description: User email to be used as committer
+        required: true
+      ciToken:
+        description: |
+          CI token is required for checking out and updating private repositories
+          GitHub token must be a PAT (Personal Access Token) which belongs to a user
+          who has read and write authorizations on the repositories
+        required: false
+
+jobs:
+  reusable_job_release_branch_maven:
+    # Permissions are required for actions that need to do changes on repository
+    # (change files or git operations) or which require access to some GitHub APIs
+    # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
+    permissions:
+      # Contents write is required for git tagging
+      contents: write
+      # Actions read is required by technote-space/workflow-conclusion-action for accessing
+      # actions API for getting actions results
+      actions: read
+
+    # Use runner which has requested labels
+    # Note: GitHub does not allow to pass an object as job input (such as an array),
+    # so need this trick to convert text input to an array
+    runs-on: ${{ fromJSON(inputs.runs-on-labels) }}
+
+    steps:
+      # WARNING checkout repository first because this action resets the checkout directory
+      # (so other files written into it will be removed)
+      - name: Git checkout
+        uses: actions/checkout@v3.0.1
+        with:
+          # Select revision
+          ref: '${{ inputs.git-ref }}'
+          # Checkout all branches and tags (required to work with tags in git_delete_tag action)
+          fetch-depth: '0' # 0 indicates all history for all branches and tags
+          # Force clean to avoid leftover changes from previous runs in workspace in current runner
+          clean: 'true'
+
+      # GitHub actions cannot be executed directly from private repository
+      # (feature not available yet)
+      # So checkout the actions into local workspace directory and run them from there
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v3.0.1
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          # Select revision
+          ref: '${{ inputs.symphony-devops-workflows-ref }}'
+          # Indicate where to check out project to
+          path: ./.github/symphony-devops-workflows
+
+      - name: Setup JDK
+        uses: ./.github/symphony-devops-workflows/actions/setup_jdk
+        with:
+          java-version: '17.0.2'
+          distribution: 'adopt' # Adopt OpenJDK
+
+      # Build number always reflects actual date/time when build was produced
+      # It is sent to Maven command, so it can be used by build process, for example
+      # for adding value inside built artifact
+      # It is also used as new project version, when version is not provided by workflow input
+      # parameter
+      - name: Compute build number
+        id: compute_build_number
+        uses: ./.github/symphony-devops-workflows/actions/build_number
+
+      # Get project version (used to compute new version if not provided)
+      - name: Get project version
+        id: get_project_version
+        uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
+        with:
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+
+      # Compute release version depending on user input, current version and
+      # build number
+      - name: Compute release version
+        id: compute_release_version
+        uses: ./.github/symphony-devops-workflows/actions/maven_compute_release_version
+        with:
+          user-version: ${{ inputs.new-project-version }}
+          current-version: ${{ steps.get_project_version.outputs.project-version }}
+          build-number: ${{ steps.compute_build_number.outputs.build-number }}
+
+      # Git - check tag does not already exist
+      - name: Check tag does NOT already exist
+        uses: ./.github/symphony-devops-workflows/actions/git_tag_exists
+        with:
+          tag-name: ${{ steps.compute_release_version.outputs.release-version }}
+          git-tag-fail-if-exists: "true"
+
+      # Update pom.xml locally
+      - name: Update pom.xml version
+        uses: ./.github/symphony-devops-workflows/actions/maven_update_project_version
+        with:
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+          new-project-version: ${{ steps.compute_release_version.outputs.release-version }}
+
+      - name: Print pom.xml version
+        uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
+        with:
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+
+      # Git commit and push
+      - name: Git commit push
+        uses: ./.github/symphony-devops-workflows/actions/git_add_commit_push
+        with:
+          repository-dir: '.'
+          # Use Git globbing syntax to include submodules pom.xml
+          file-pattern: ':(glob)**/pom.xml'
+          commit-message: '[AUTO] Release ${{ steps.compute_release_version.outputs.release-version }}'
+          git-tag: ${{ steps.compute_release_version.outputs.release-version }}
+          commit-user-name: ${{ secrets.commitUserName }}
+          commit-user-email: ${{ secrets.commitUserEmail }}
+
+      # Compute docker tags to be reused as "global variables"
+      # Release docker tag must be exact same as the Maven project version
+      #   e.g. 5.6.1.2208051600
+      - name: Compute docker tags
+        id: compute_docker_tags
+        run: |
+          echo "Compute docker tags"
+          DOCKER_TAG_WITH_VERSION="${{ steps.compute_release_version.outputs.release-version }}"
+          DOCKER_IMAGE_TAG_PREFIX="registry.vnocsymphony.com/${{ inputs.docker-registry-project-name }}/${{ inputs.symphony-microservice-name }}"
+          #
+          echo "DOCKER_TAG_WITH_VERSION: [${DOCKER_TAG_WITH_VERSION}]"
+          echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
+          #
+          echo "::set-output name=DOCKER_TAG_WITH_VERSION::${DOCKER_TAG_WITH_VERSION}"
+          echo "::set-output name=DOCKER_IMAGE_TAG_PREFIX::${DOCKER_IMAGE_TAG_PREFIX}"
+        shell: bash
+
+      # Validate Docker tags
+      # Always use the common action for Docker tags validation. Docker image tags
+      # could have additional or different rules, and rules could change in time.
+      # This way we enforce that all docker tags pushed to the Docker registry follow
+      # same rules whatever the workflow which created them,
+      # event though Maven version provided as workflow input has already been checked,
+      # or the workflow itself computes the version
+      - name: Validate docker tags
+        uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
+        with:
+          tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
+          allowEmpty: 'false'
+
+      # Build and deploy project
+      - name: Maven build
+        uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
+        with:
+          # Maven options
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+          maven_goals: ${{ inputs.maven-goals }}
+          maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven-other-options }}
+          # Disable Git tagging (already done when updating pom.xml version)
+          git_tag: ''
+
+      # Docker
+      - name: Docker build
+        id: docker_build_tag_push
+        # Run docker build only when a docker file has been specified (not empty value)
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
+        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
+        with:
+          docker-file: ${{ inputs.docker-file }}
+          docker-tag-push: 'true'
+          docker-tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
+          docker-image-prefix: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}'
+
+      - name: Kubernetes update deployment
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        with:
+          # Path is relative to deployer project root
+          deployment-file: '${{ inputs.symphony-microservice-name }}/deploy-service.yaml'
+          # New value for docker image in deployment file
+          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}:${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
+          fail-if-no-file-change: 'true'
+          # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
+          workspace-checkout-dir: 'symphony-kubernetes-deployer'
+          # The revision (branch) to be updated
+          symphony-kubernetes-deployer-ref: 'dev'
+          commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
+          # Token for checking-out private repository
+          # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
+          github-token: ${{ secrets.ciToken }}
