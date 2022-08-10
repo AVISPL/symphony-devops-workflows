@@ -46,7 +46,13 @@ on:
         type: string
         default: 'develop'
       docker-file:
-        description: 'The path of the Dockerfile to be built. If empty, no docker build will occur'
+        description: |
+          The path of the Dockerfile to be built. If empty, no docker build will occur.
+          Path can be either a relative path, in which case it is relative to the project's
+          workspace directory (e.g. './path/to/Dockerfile'), or an aboslute path
+          (e.g. '${GITHUB_WORKSPACE}/path/to/Dockerfile')
+          Note that there GitHub workflows enforce limitations for accessing files
+          outside of workspace directory
         required: false
         type: string
       docker-tag-push:
@@ -77,9 +83,12 @@ on:
         required: true
       ciToken:
         description: |
-          CI token is required for checking out and updating private repositories
-          GitHub token must be a PAT (Personal Access Token) which belongs to a user
-          who has read and write authorizations on the repositories
+          GitHub token to be used for updating AVI-SPL private repositories. In this workflow,
+          it is used only for updating Kubernetes deployment files
+          This token should belong to the CI user, although workflow would work with any token
+          with correct permissions
+          It must be a GitHub PAT (Personal Access Token) with read and write authorizations
+          on the GitHub repositories to be read/updated
         required: false
 
 jobs:

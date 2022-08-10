@@ -52,11 +52,13 @@ runs:
 
         tag_exists="";
 
-        # Edge case: when no tag exists in repository, command exists with an error
+        # Edge case: when no tag exists in repository, 'git show-ref' command
+        # exits with an error, so need special care
         git show-ref -q --tags || (echo 'No tags exist' && tag_exists="false")
 
+        # Does any tag exist in repository ?
         if [[ 'false' != "${tag_exists}" ]]; then
-          # Check if tag requested exists
+          # Check if requested tag does exist
           # ("if" condition evaluates to true when command exit code is 0)
           if git rev-parse -q --verify "refs/tags/${tag_name}" >/dev/null; then
             echo "Tag [${tag_name}] found"

@@ -44,9 +44,12 @@ on:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
       ciToken:
         description: |
-          CI token is required for checking out and updating private repositories
-          GitHub token must be a PAT (Personal Access Token) which belongs to a user
-          who has read and write authorizations on the repositories
+          GitHub token to be used for updating AVI-SPL private repositories. In this workflow,
+          it is used for updating the 'dependabot.yaml' file in each repository which is requested.
+          This token should belong to the CI user, although workflow would work with any token
+          with correct permissions
+          It must be a GitHub PAT (Personal Access Token) with read and write authorizations
+          on the GitHub repositories to be read/updated
         required: false
 jobs:
   dependabot_force_run:

@@ -13,7 +13,14 @@
 #   So explicitly set an output (here, "release-version") which is working fine
 #
 name: 'Maven compute version for release'
-description: 'Maven compute version for release'
+description: >
+  Maven compute version for release
+  When user provided a version, it is used (if format is valid)
+  When user did not provide a version, the version is computed based on current project's
+  version (read from the pom.xml) and the build number
+    E.g. current version = "5.6.1-SNAPSHOT" => release-version looks like "5.6.1.2208052000"
+    E.g. current version = "5.6.1.2208051600" => release-version looks like "5.6.1.2208052000"
+      where 2208052000 is the build number
 inputs:
   user-version:
     description: 'Version provided by user'
@@ -73,6 +80,7 @@ runs:
             }
             else if (current_version.match(REGEXP_WITH_BUILD_NUMBER)) {
               // Version already contains build number -> change build number
+              //   5.6.1.2208051600 -> 5.6.1.2208052000
               release_version =
                 current_version.substring(0, current_version.length - "2208051600".length)
                 + '${{ inputs.build-number }}'

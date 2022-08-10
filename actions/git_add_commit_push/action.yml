@@ -15,7 +15,7 @@ inputs:
     required: true
   file-pattern:
     description: >
-      Pattern of file(s) to be added, in Git pahtspec format. Git "Magic signatures" can
+      Pattern of file(s) to be added, in Git Pathspecs format. Git "Magic signatures" can
       also be used.
       Shell filename expansion is disabled
       E.g. 'pom.xml', '*.xml', ':(glob)**/pom.xml'

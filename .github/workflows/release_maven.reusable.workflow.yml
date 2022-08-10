@@ -37,7 +37,13 @@ on:
         type: string
         default: '-DskipTests=false -DskipITs=false'
       docker-file:
-        description: 'The path of the Dockerfile to be built. If empty, no docker build will occur'
+        description: |
+          The path of the Dockerfile to be built. If empty, no docker build will occur.
+          Path can be either a relative path, in which case it is relative to the project's
+          workspace directory (e.g. './path/to/Dockerfile'), or an aboslute path
+          (e.g. '${GITHUB_WORKSPACE}/path/to/Dockerfile')
+          Note that there GitHub workflows enforce limitations for accessing files
+          outside of workspace directory
         required: false
         type: string
       symphony-microservice-name:
@@ -77,16 +83,27 @@ on:
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
       commitUserName:
-        description: User name to be used as committer
+        description: |
+          User name to be used as Git committer. This is NOT the user name of the person who
+          ran the workflow.
+          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
+          the commit will look like:
+            Author: John <John@users.noreply.github.com>
+            Committer: MyCIUser
+            Signed-off-by: MyCIUser <MyCIUser@...com>
         required: true
       commitUserEmail:
-        description: User email to be used as committer
+        description: User email to be used as Git committer. This is NOT the user email
+          of the person who ran the workflow, see commit user name.
         required: true
       ciToken:
         description: |
-          CI token is required for checking out and updating private repositories
-          GitHub token must be a PAT (Personal Access Token) which belongs to a user
-          who has read and write authorizations on the repositories
+          GitHub token to be used for updating AVI-SPL private repositories. In this workflow,
+          it is used only for updating Kubernetes deployment files
+          This token should belong to the CI user, although workflow would work with any token
+          with correct permissions
+          It must be a GitHub PAT (Personal Access Token) with read and write authorizations
+          on the GitHub repositories to be read/updated
         required: false
 
 jobs:
@@ -216,7 +233,7 @@ jobs:
       # could have additional or different rules, and rules could change in time.
       # This way we enforce that all docker tags pushed to the Docker registry follow
       # same rules whatever the workflow which created them,
-      # event though Maven version provided as workflow input has already been checked,
+      # even though the Maven version provided as workflow input has already been checked,
       # or the workflow itself computes the version
       - name: Validate docker tags
         uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
