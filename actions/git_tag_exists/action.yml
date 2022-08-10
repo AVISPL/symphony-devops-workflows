@@ -1,0 +1,84 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Indicates whether or not a Git exists in current repository
+# Prerequisites:
+# - Security : tag name must have been verified beforehand, this action does not do any validity check
+# - the git command line must be available
+# - the Git repository tags must be checked out, otherwise the tag won't be found
+name: 'Git tag exists'
+description: 'Indicates whether or not a Git exists in current repository'
+
+inputs:
+  tag-name:
+    description: 'Name of tag to be deleted'
+    required: true
+  git-tag-fail-if-exists:
+    description: >
+      A security to avoid overwriting tags by mistake
+      If tag exists and value is not 'false', fail the job
+      Otherwise, has no effect
+    required: true
+    # Set default because even if required GitHub does NOT enforce that
+    # value is supplied by caller
+    default: 'true'
+outputs:
+  tag-exists:
+    description: >
+      Boolean string "true"/"false" which indicates whether or not
+      requested tag exists
+    value: ${{ steps.tag_exists.outputs.tag-exists }}
+runs:
+  using: "composite"
+  steps:
+    #- name: Debug git
+    #  run: |
+    #    echo "Git SHA ${{ github.sha }}"
+    #    echo "DEBUG Git log:" && git log --max-count=3 --pretty=oneline
+    #    echo "DEBUG Git tags:" && git tag -l
+    #  shell: bash
+
+    - id: tag_exists
+      run: |
+        # Delete Git tag if exists
+        tag_name="${{ inputs.tag-name }}"
+        git_tag_fail_if_exists="${{ inputs.git-tag-fail-if-exists }}"
+
+        # Ensure git command line is available
+        git --version
+
+        # Ensure command is run in a Git repository directory (will fail if not)
+        git show-ref -q
+
+        tag_exists="";
+
+        # Edge case: when no tag exists in repository, 'git show-ref' command
+        # exits with an error, so need special care
+        git show-ref -q --tags || (echo 'No tags exist' && tag_exists="false")
+
+        # Does any tag exist in repository ?
+        if [[ 'false' != "${tag_exists}" ]]; then
+          # Check if requested tag does exist
+          # ("if" condition evaluates to true when command exit code is 0)
+          if git rev-parse -q --verify "refs/tags/${tag_name}" >/dev/null; then
+            echo "Tag [${tag_name}] found"
+
+            # Should job be failed because tag exists?
+            if [[ 'true' == "${git_tag_fail_if_exists}" ]]; then
+              echo "Tag [${tag_name}] exists and git_tag_fail_if_exists=[${git_tag_fail_if_exists}] => FAIL the job"
+              # Fail the job
+              exit 1
+            else
+              echo "Tag [${tag_name}] exists and git_tag_fail_if_exists=[${git_tag_fail_if_exists}] => continue"
+            fi
+            tag_exists="true"
+          else
+            echo "Tag [${tag_name}] NOT found"
+            tag_exists="false"
+          fi
+        fi
+
+        # Output
+        echo "::set-output name=tag-exists::${tag_exists}"
+
+      shell: bash

@@ -1,0 +1,111 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Compute Maven project version for a release
+# When user provides a version, use it
+# When user does not provide a version, use current project version with
+# an updated build number. Supporter current version formats are :
+#   - snapshot version (e.g. "5.6.1-SNAPSHOT")
+#   - version with already a build number (e.g. "5.6.1.2208051600")
+# WARNING
+#   For unknown reason the "result" output created by the actions/github-script@v6
+#   action when returning value at the end of script is not visible to the outside.
+#   So explicitly set an output (here, "release-version") which is working fine
+#
+name: 'Maven compute version for release'
+description: >
+  Maven compute version for release
+  When user provided a version, it is used (if format is valid)
+  When user did not provide a version, the version is computed based on current project's
+  version (read from the pom.xml) and the build number
+    E.g. current version = "5.6.1-SNAPSHOT" => release-version looks like "5.6.1.2208052000"
+    E.g. current version = "5.6.1.2208051600" => release-version looks like "5.6.1.2208052000"
+      where 2208052000 is the build number
+inputs:
+  user-version:
+    description: 'Version provided by user'
+    required: true
+  current-version:
+    description: 'Current project version'
+    required: true
+  build-number:
+    description: 'The build number to be used in produced version (if adequate)'
+    required: true
+outputs:
+  release-version:
+    description: >
+      Project version, e.g. "5.6.1.2208051600"
+    value: ${{ steps.version.outputs.release-version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: version
+      uses: actions/github-script@v6
+      with:
+        script: |
+          // Regular expressions for possible versions formats
+          // 5.6.1-SNAPSHOT
+          const REGEXP_SNAPSHOT = /^[0-9]+\.[0-9]+\.[0-9]+-SNAPSHOT$/;
+          // 5.6.1.2208051600
+          const REGEXP_WITH_BUILD_NUMBER = /^[0-9]+\.[0-9]+\.[0-9]+\.([0-9]){10}$/;
+
+          // User version - trim whitespaces (left and right)
+          let user_version = "${{ inputs.user-version }}".trim();
+
+          // Computed version
+          let release_version;
+
+          if (user_version.length === 0) {
+            // When user provided version is empty: compute new version based on
+            // current project version and new build number
+
+            // Check build number
+            if (!"${{ inputs.build-number }}".match(/^[0-9]{10}$/)) {
+              let msg = "Invalid build number: [${{ inputs.build-number }}]";
+              // Fail the build
+              core.setFailed(msg);
+              return;
+            }
+
+            let current_version = "${{ inputs.current-version }}";
+            if (current_version.match(REGEXP_SNAPSHOT)) {
+              // Remove -SNAPSHOT and use build number instead
+              //   5.6.1-SNAPSHOT -> 5.6.1.2208051600
+              release_version =
+                current_version.substring(0, current_version.length - "-SNAPSHOT".length)
+                + '.'
+                + '${{ inputs.build-number }}'
+              ;
+            }
+            else if (current_version.match(REGEXP_WITH_BUILD_NUMBER)) {
+              // Version already contains build number -> change build number
+              //   5.6.1.2208051600 -> 5.6.1.2208052000
+              release_version =
+                current_version.substring(0, current_version.length - "2208051600".length)
+                + '${{ inputs.build-number }}'
+              ;
+            }
+            else {
+              let msg = "[ERROR] Unrecognized version format: [" + current_version + "]";
+              // Fail the build
+              core.setFailed(msg);
+              return;
+            }
+          }
+          else {
+            // User has provided a version : check and use it
+            if (!user_version.match(REGEXP_WITH_BUILD_NUMBER)) {
+              let msg = "[ERROR] Invalid version format: [" + user_version + "]";
+              // Fail the build
+              core.setFailed(msg);
+              return;
+            }
+            release_version = user_version;
+          }
+
+          // Output
+          console.log("Project version: [" + release_version + "]");
+          console.log(`::set-output name=release-version::${release_version}`);
+          return release_version;
+        result-encoding: string

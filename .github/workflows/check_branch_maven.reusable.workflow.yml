@@ -43,7 +43,13 @@ on:
         type: string
         default: 'develop'
       docker-file:
-        description: 'The path of the Dockerfile to be built. If empty, no docker build will occur'
+        description: |
+          The path of the Dockerfile to be built. If empty, no docker build will occur.
+          Path can be either a relative path, in which case it is relative to the project's
+          workspace directory (e.g. './path/to/Dockerfile'), or an aboslute path
+          (e.g. '${GITHUB_WORKSPACE}/path/to/Dockerfile')
+          Note that there GitHub workflows enforce limitations for accessing files
+          outside of workspace directory
         required: false
         type: string
 
