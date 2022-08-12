@@ -93,7 +93,8 @@ on:
             Signed-off-by: MyCIUser <MyCIUser@...com>
         required: true
       commitUserEmail:
-        description: User email to be used as Git committer. This is NOT the user email
+        description: |
+          User email to be used as Git committer. This is NOT the user email
           of the person who ran the workflow, see commit user name.
         required: true
       ciToken:
