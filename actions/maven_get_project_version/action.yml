@@ -21,7 +21,18 @@ runs:
       id: maven_get_project_version
       run: |
         echo "Maven get project version"
-        PROJECT_VERSION=$(mvn -B -q -f "${{ inputs.pom-xml-file }}" -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
+
+        # Execute Maven exec plugin to get version
+        # Maven execution log appears on standard output, but final plugin output
+        # (the project version) is redirected to a temporary file
+        # If command fails, the workflow will fail
+        TMP_FILE=$(mktemp)
+        mvn -B -f "${{ inputs.pom-xml-file }}" -Dexec.executable="echo" -Dexec.args='${project.version}' -Dexec.outputFile="${TMP_FILE}" --non-recursive exec:exec
+        PROJECT_VERSION=$(cat "${TMP_FILE}")
         echo "PROJECT_VERSION [${PROJECT_VERSION}]"
+
+        # Cleanup temporary file
+        rm -rf "${TMP_FILE}"
+
         echo "::set-output name=PROJECT_VERSION::${PROJECT_VERSION}"
       shell: bash
