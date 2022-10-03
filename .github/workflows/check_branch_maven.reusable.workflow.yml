@@ -21,7 +21,7 @@ on:
         description: 'The goals for the mvn command (optional)'
         required: false
         type: string
-        default: 'clean install'
+        default: 'clean verify'
       maven_other_options:
         description: 'Maven options added at the end of the mvn command, overrides previous options'
         required: false
