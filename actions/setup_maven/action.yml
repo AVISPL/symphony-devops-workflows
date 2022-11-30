@@ -12,9 +12,6 @@ inputs:
   nexus-password:
     description: 'password of nexus user'
     required: true
-env:
-  NEXUS_USER: ${{ inputs.nexus-user }}
-  NEXUS_PASSWORD: ${{ inputs.nexus-password }}
 runs:
   using: "composite"
   steps:
@@ -24,10 +21,10 @@ runs:
         servers: |
           [{
             "id": "avi-spl.snapshots",
-            "username": "${NEXUS_USER}",
-            "password": "${NEXUS_PASSWORD}"
+            "username": "${{ inputs.nexus-user }}",
+            "password": "${{ inputs.nexus-password }}"
           },{
             "id": "avi-spl.releases",
-            "username": "${NEXUS_USER}",
-            "password": "${NEXUS_PASSWORD}"
+            "username": "${{ inputs.nexus-user }}",
+            "password": "${{ inputs.nexus-password }}"
           }]
