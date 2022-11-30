@@ -1,0 +1,22 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+name: 'Setup Maven'
+description: |
+  Reusable action to help with configuring Maven within a given workflow
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Maven
+      uses: s4u/maven-settings-action@v2.7.0
+      with:
+        servers: |
+          [{
+            "id": "avi-spl.snapshots",
+            "username": "${NEXUS_USER}",
+            "password": "${NEXUS_PASSWORD}"
+          },{
+            "id": "avi-spl.releases",
+            "username": "${NEXUS_USER}",
+            "password": "${NEXUS_PASSWORD}"
+          }]
