@@ -14,7 +14,7 @@ inputs:
     required: true
 env:
   NEXUS_USER: ${{ inputs.nexus-user }}
-  NEXUS_USER: ${{ inputs.nexus-password }}
+  NEXUS_PASSWORD: ${{ inputs.nexus-password }}
 runs:
   using: "composite"
   steps:
