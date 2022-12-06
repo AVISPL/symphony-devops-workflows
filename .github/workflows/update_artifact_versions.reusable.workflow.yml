@@ -56,7 +56,7 @@ on:
           on the GitHub repositories to be read/updated
         required: false
 env:
-  BASE_REPOSITORY: "symphony-devops-workflows"
+  BASE_REPOSITORY: "symphony-devops-workflows-private"
   # Since Maven will automatically pick the latest, hard-coding its version to avoid new version of plugin 
   # failing build due to possible of behaviour change
   MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property"
