@@ -81,8 +81,6 @@ jobs:
       - name: Update dependency versions of AVISPL/${{ inputs.symphony-module-name }}
         shell: bash
         run: |
-          cd $GITHUB_WORKSPACE//${BASE_REPOSITORY}
-          ls -al
           # extract content of modules.txt
           SYMPHONY_MODULES=`cat ./${BASE_REPOSITORY}/release_modules/modules.txt`
           # convert into array
