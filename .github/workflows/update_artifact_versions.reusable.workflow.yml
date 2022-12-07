@@ -68,7 +68,7 @@ jobs:
         uses: actions/checkout@v2.5.0
         with:
           repository: AVISPL/${{ env.BASE_REPOSITORY }}
-          ref: 'feature/SYUS-10905'
+          ref: 'develop'
           path: ./${{ env.BASE_REPOSITORY }}
           token: ${{ secrets.ciToken }}
       - name: Checkout AVISPL/${{ inputs.symphony-module-name }}
