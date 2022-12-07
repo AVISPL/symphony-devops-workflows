@@ -78,6 +78,13 @@ jobs:
           ref: '${{ inputs.branch }}'
           path: ./${{ inputs.symphony-module-name }}
           token: ${{ secrets.ciToken }}
+      - name: Checkout AVISPL/symphony-devops-workflows
+        uses: actions/checkout@v2.5.0
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          ref: 'develop'
+          path: ./symphony-devops-workflows
+          token: ${{ secrets.ciToken }}
       - name: Update dependency versions of AVISPL/${{ inputs.symphony-module-name }}
         shell: bash
         run: |
