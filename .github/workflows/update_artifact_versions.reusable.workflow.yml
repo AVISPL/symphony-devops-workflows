@@ -165,7 +165,7 @@ jobs:
       - name: Commit updates to AVISPL/${{ env.BASE_REPOSITORY }}'s modules.txt
         uses: ./symphony-devops-workflows/actions/git_add_commit_push
         with:
-          repository-dir: ./${{ env.BASE_REPOSITORY }}/.github/release_modules/
+          repository-dir: ./${{ env.BASE_REPOSITORY }}/release_modules/
           file-pattern: 'modules.txt'
           commit-message: '[AUTO] updated ${{ env.BASE_REPOSITORY }} modules.txt'
           commit-user-name: ${{ secrets.commitUserName }}
