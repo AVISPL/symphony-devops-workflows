@@ -122,9 +122,10 @@ jobs:
                   #fi
               fi
           done
+          echo "Commit pom variable is equal to $commit_pom"
           echo "COMMIT_POM=$commit_pom" >> $GITHUB_OUTPUT
       - name: Commit dependency version updates to AVISPL/${{ inputs.symphony-module-name }}'s pom.xml
-        if: steps.update_pom.outputs.COMMIT_POM==true
+        if: steps.update_pom.outputs.COMMIT_POM
         uses: ./symphony-devops-workflows/actions/git_add_commit_push
         with:
           repository-dir: ./${{ inputs.symphony-module-name }}
