@@ -113,7 +113,6 @@ jobs:
                   fi
               fi
           done
-          #echo "::set-output name=COMMIT_POM::$COMMIT_POM"
           echo "COMMIT_POM=$commit_pom" >> $GITHUB_OUTPUT
       - name: Commit dependency version updates to AVISPL/${{ inputs.symphony-module-name }}'s pom.xml
         if: steps.update_pom.outputs.COMMIT_POM==true
