@@ -104,13 +104,22 @@ jobs:
                   # first member being the artifact's name, and second member being the artifact's version
                   IFS=':' read -ra artifact_version <<< "$module"
                   VERSION="${artifact_version[0]}.version"
+                  while IFS= read -d '' -r pom; do
+                      # only modify pom.xml if the dependency exists
+                      if grep -q "${VERSION}" $pom; then
+                          echo updating $pom/${VERSION} to ${artifact_version[1]}
+                          # run maven command to update the version of dependent module
+                          ${MAVEN_COMMAND_STARTER} -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
+                          commit_pom=true
+                      fi
+                  done < <(find . -name pom.xml -not -path "*/target/*" -print0)
                   # only modify pom.xml if the dependency exists
-                  if grep -q "${VERSION}" pom.xml; then
-                      echo updating ${VERSION} to ${artifact_version[1]}
-                      # run maven command to update the version of dependent module
-                      ${MAVEN_COMMAND_STARTER} -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
-                      commit_pom=true
-                  fi
+                  #if grep -q "${VERSION}" pom.xml; then
+                  #    echo updating ${VERSION} to ${artifact_version[1]}
+                  #    # run maven command to update the version of dependent module
+                  #    ${MAVEN_COMMAND_STARTER} -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
+                  #    commit_pom=true
+                  #fi
               fi
           done
           echo "COMMIT_POM=$commit_pom" >> $GITHUB_OUTPUT
