@@ -60,7 +60,6 @@ env:
   # Since Maven will automatically pick the latest, hard-coding its version to avoid new version of plugin 
   # failing build due to possible of behaviour change
   MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property"
-  COMMIT_POM: "false"
 jobs:
   update_artifact_versions:
     runs-on: ubuntu-latest
@@ -87,6 +86,7 @@ jobs:
           path: ./symphony-devops-workflows
           token: ${{ secrets.ciToken }}
       - name: Update dependency versions of AVISPL/${{ inputs.symphony-module-name }}
+        id: update_pom
         shell: bash
         run: |
           # extract content of modules.txt
@@ -95,6 +95,7 @@ jobs:
           SYMPHONY_MODULES=(${SYMPHONY_MODULES//,/ })
           # navigate next to pom file of module
           cd ./${{ inputs.symphony-module-name }}/
+          COMMIT_POM=false
           for module in ${SYMPHONY_MODULES[@]}; do
               # only look for modules with set version (should contain ":" between artifact ID and respective version)
               # the format of the modules already released in modules.txt file are "<MODULE_NAME>:<MODULE_VERSION>",
@@ -109,12 +110,13 @@ jobs:
                       echo updating ${VERSION} to ${artifact_version[1]}
                       # run maven command to update the version of dependent module
                       ${MAVEN_COMMAND_STARTER} -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
-                      ${COMMIT_POM}=true
+                      COMMIT_POM=true
                   fi
               fi
           done
+          echo "::set-output name=COMMIT_POM::$COMMIT_POM"
       - name: Commit dependency version updates to AVISPL/${{ inputs.symphony-module-name }}'s pom.xml
-        if: ${COMMIT_POM}==true
+        if: steps.update_pom.outputs.COMMIT_POM==true
         uses: ./symphony-devops-workflows/actions/git_add_commit_push
         with:
           repository-dir: ./${{ inputs.symphony-module-name }}
