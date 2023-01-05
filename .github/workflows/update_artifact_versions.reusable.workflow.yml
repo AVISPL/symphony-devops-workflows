@@ -60,6 +60,7 @@ env:
   # Since Maven will automatically pick the latest, hard-coding its version to avoid new version of plugin 
   # failing build due to possible of behaviour change
   MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property"
+  COMMIT_POM: "false"
 jobs:
   update_artifact_versions:
     runs-on: ubuntu-latest
@@ -108,10 +109,12 @@ jobs:
                       echo updating ${VERSION} to ${artifact_version[1]}
                       # run maven command to update the version of dependent module
                       ${MAVEN_COMMAND_STARTER} -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
+                      ${COMMIT_POM}=true
                   fi
               fi
           done
       - name: Commit dependency version updates to AVISPL/${{ inputs.symphony-module-name }}'s pom.xml
+        if: ${COMMIT_POM}==true
         uses: ./symphony-devops-workflows/actions/git_add_commit_push
         with:
           repository-dir: ./${{ inputs.symphony-module-name }}
