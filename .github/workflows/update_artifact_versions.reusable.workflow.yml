@@ -48,8 +48,7 @@ on:
         required: true
       ciToken:
         description: |
-          GitHub token to be used for updating AVI-SPL private repositories. In this workflow,
-          it is used only for updating Kubernetes deployment files
+          GitHub token to be used for updating AVI-SPL private repositories.
           This token should belong to the CI user, although workflow would work with any token
           with correct permissions
           It must be a GitHub PAT (Personal Access Token) with read and write authorizations
