@@ -164,7 +164,7 @@ jobs:
           version=${{ steps.new-version.outputs.VERSION }}
           # updating the module that was released within module.txt file to include its new version
           # if "inputs.symphony-module-name" property is not found in the file no error occurs and workflow continues
-          sed -i "s/${{ inputs.symphony-module-name }}/${{ inputs.symphony-module-name }}:$version/g" modules.txt
+          sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
           cat modules.txt
       - name: Commit updates to AVISPL/${{ env.BASE_REPOSITORY }}'s modules.txt
         uses: ./symphony-devops-workflows/actions/git_add_commit_push
