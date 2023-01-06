@@ -174,6 +174,12 @@ jobs:
         shell: bash
         run: |
           cd $GITHUB_WORKSPACE/${{ inputs.symphony-module-name }}
+          # some Symphony modules (specifically symphony-audit) do not have their pom file in root directory, 
+          # therefore following if statement locates the pom.xml and changes directory to its location
+          if [ ! -f pom.xml ]; then
+             path=$(find . -name 'pom.xml' -not -path "*/target/*")
+             cd ${path//pom.xml/}
+          fi
           # following will run maven command to determine if there are child modules and puts result in an array
           IFS=$'\n' read -r -d '' -a modules < <( mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.groupId}:${project.artifactId}:${project.version}' | grep '###MODULE_PREFIX### ' | cut -f2 -d' ' && printf '\0' )
           version=${{ steps.new-version.outputs.VERSION }}
