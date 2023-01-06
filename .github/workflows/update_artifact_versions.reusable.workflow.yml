@@ -185,10 +185,13 @@ jobs:
               for module in ${modules[@]}; do
                   echo $module
                   IFS=':' read -ra splitted <<< "$module"
-                  # set version of parent modules (aka inputs.symphony-module-name)
-                  sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
-                  # grab the child module's name (at position 1 of splitted array), add its version (same as parent), and append to end of modules.txt
-                  "${splitted[1]}:$version" >> modules.txt 
+                  if [ "${splitted[1]}" = "${{ inputs.symphony-module-name }}" ]; then
+                      # set version of parent modules (aka inputs.symphony-module-name)
+                      sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
+                  else
+                      # grab the child module's name (at position 1 of splitted array), add its version (same as parent), and append to end of modules.txt
+                      '${splitted[1]}:$version' >> modules.txt
+                  fi
               done
           fi
       - name: Commit updates to AVISPL/${{ env.BASE_REPOSITORY }}'s modules.txt
