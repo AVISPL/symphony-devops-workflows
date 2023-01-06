@@ -110,10 +110,10 @@ jobs:
                       # only modify pom.xml if the dependency exists
                       if grep -q "${VERSION}" $pom; then
                           echo updating $pom/${VERSION} to ${artifact_version[1]}
-                          git add $pom
                           # run maven command to update the version of dependent module
                           ${MAVEN_COMMAND_STARTER} -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
                           # pom was updated
+                          git add $pom
                           commit_pom=true
                       fi
                   done < <(find . -name pom.xml -not -path "*/target/*" -print0)
