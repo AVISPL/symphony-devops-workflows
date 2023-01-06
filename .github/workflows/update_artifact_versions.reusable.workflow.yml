@@ -58,7 +58,7 @@ env:
   BASE_REPOSITORY: "symphony-devops-workflows-private"
   # Since Maven will automatically pick the latest, hard-coding its version to avoid new version of plugin 
   # failing build due to possible of behaviour change
-  MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property"
+  MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property -f $pom "
 jobs:
   update_artifact_versions:
     runs-on: ubuntu-latest
