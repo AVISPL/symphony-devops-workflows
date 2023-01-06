@@ -96,27 +96,27 @@ jobs:
           cd ./${{ inputs.symphony-module-name }}/
           commit_pom=false
           for module in ${SYMPHONY_MODULES[@]}; do
-              # only look for modules with set version (should contain ":" between artifact ID and respective version)
-              # the format of the modules already released in modules.txt file are "<MODULE_NAME>:<MODULE_VERSION>",
-              # such as "symphony-shared:5.8.0.21129"
-              if [[ $module == *":"* ]]; then
-                  # Following line will generate an array called "artifact_version" (split by ":") with
-                  # first member being the artifact's name, and second member being the artifact's version
-                  IFS=':' read -ra artifact_version <<< "$module"
-                  VERSION="${artifact_version[0]}.version"
-                  # Following while loop will locate all pom.xmls within a Github repository and verifies if it contains
-                  # modules being updated that require to be updated. 
-                  while IFS= read -d '' -r pom; do
-                      # only modify pom.xml if the dependency exists
-                      if grep -q "${VERSION}" $pom; then
-                          echo updating $pom/${VERSION} to ${artifact_version[1]}
-                          # run maven command to update the version of dependent module
-                          ${MAVEN_COMMAND_STARTER} -f $pom -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
-                          # pom was updated
-                          commit_pom=true
-                      fi
-                  done < <(find . -name pom.xml -not -path "*/target/*" -print0)
-              fi
+             # only look for modules with set version (should contain ":" between artifact ID and respective version)
+             # the format of the modules already released in modules.txt file are "<MODULE_NAME>:<MODULE_VERSION>",
+             # such as "symphony-shared:5.8.0.21129"
+             if [[ $module == *":"* ]]; then
+                # Following line will generate an array called "artifact_version" (split by ":") with
+                # first member being the artifact's name, and second member being the artifact's version
+                IFS=':' read -ra artifact_version <<< "$module"
+                VERSION="${artifact_version[0]}.version"
+                # Following while loop will locate all pom.xmls within a Github repository and verifies if it contains
+                # modules being updated that require to be updated. 
+                while IFS= read -d '' -r pom; do
+                   # only modify pom.xml if the dependency exists
+                   if grep -q "${VERSION}" $pom; then
+                      echo updating $pom/${VERSION} to ${artifact_version[1]}
+                      # run maven command to update the version of dependent module
+                      ${MAVEN_COMMAND_STARTER} -f $pom -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
+                      # pom was updated
+                      commit_pom=true
+                   fi
+                done < <(find . -name pom.xml -not -path "*/target/*" -print0)
+             fi
           done
           # output commit_pom to indicate to next step that it needs to be committed
           echo "COMMIT_POM=$commit_pom" >> $GITHUB_OUTPUT
@@ -183,30 +183,21 @@ jobs:
           # following will run maven command to determine if there are child modules and puts result in an array
           IFS=$'\n' read -r -d '' -a modules < <( mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.groupId}:${project.artifactId}:${project.version}' | grep '###MODULE_PREFIX### ' | cut -f2 -d' ' && printf '\0' )
           version=${{ steps.new-version.outputs.VERSION }}
-          # if there are no child modules add the version of module that was just released
-          if [ ${#modules[@]} -eq 0 ]; then
-              cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
-              # updating the module that was released within module.txt file to include its new version
-              # if "inputs.symphony-module-name" property is not found in the file no error occurs and workflow continues
-              sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
-              cat modules.txt
-          else
-              cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
-              # if there are child modules, add them to modules.txt with their respective parent version
-              for module in ${modules[@]}; do
-                  echo $module
-                  IFS=':' read -ra splitted <<< "$module"
-                  if [ "${splitted[1]}" = "${{ inputs.symphony-module-name }}" ]; then
-                      # set version of parent modules (aka inputs.symphony-module-name)
-                      sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
-                  else
-                      # grab the child module's name (at position 1 of splitted array), add its version (same as parent), and append to end of modules.txt
-                      new_module="${splitted[1]}:$version"
-                      echo "Child module being added is: ${new_module}"
-                      echo ${new_module} >> modules.txt
-                  fi
-              done
-          fi
+          cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
+          # if there are child modules, add them to modules.txt with their respective parent version
+          for module in ${modules[@]}; do
+             IFS=':' read -ra splitted <<< "$module"
+             if [ "${splitted[1]}" = "${{ inputs.symphony-module-name }}" ]; then
+                # set version of parent modules (aka inputs.symphony-module-name)
+                sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
+             else
+                # grab the child module's name (at position 1 of splitted array), add its version (same as parent), and append to end of modules.txt
+                new_module="${splitted[1]}:$version"
+                echo "Child module being added is: ${new_module}"
+                echo ${new_module} >> modules.txt
+             fi
+          done
+          cat modules.txt
       - name: Commit updates to AVISPL/${{ env.BASE_REPOSITORY }}'s modules.txt
         uses: ./symphony-devops-workflows/actions/git_add_commit_push
         with:
