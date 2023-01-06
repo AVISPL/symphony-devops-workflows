@@ -113,7 +113,7 @@ jobs:
                           # run maven command to update the version of dependent module
                           ${MAVEN_COMMAND_STARTER} -f $pom -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
                           # pom was updated
-                          git add $pom
+                          #git add $pom
                           commit_pom=true
                       fi
                   done < <(find . -name pom.xml -not -path "*/target/*" -print0)
@@ -127,7 +127,7 @@ jobs:
         uses: ./symphony-devops-workflows/actions/git_add_commit_push
         with:
           repository-dir: ./${{ inputs.symphony-module-name }}
-          file-pattern: 'pom.xml'
+          file-pattern: '*.xml'
           commit-message: '[AUTO] updated ${{ inputs.symphony-module-name }} dependency versions'
           commit-user-name: ${{ secrets.commitUserName }}
           commit-user-email: ${{ secrets.commitUserEmail }}
