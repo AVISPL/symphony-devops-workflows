@@ -59,6 +59,7 @@ env:
   # Since Maven will automatically pick the latest, hard-coding its version to avoid new version of plugin 
   # failing build due to possible of behaviour change
   MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property"
+  MAVEN_COMMAND_MODULE_EXTRACTOR: "mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.groupId}:${project.artifactId}:${project.version}' | grep '###MODULE_PREFIX### ' | cut -f2 -d' ' | tail +2"
 jobs:
   update_artifact_versions:
     runs-on: ubuntu-latest
@@ -167,12 +168,21 @@ jobs:
       - name: Update AVISPL/${{ env.BASE_REPOSITORY }} modules.txt file
         shell: bash
         run: |
-          cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
-          version=${{ steps.new-version.outputs.VERSION }}
-          # updating the module that was released within module.txt file to include its new version
-          # if "inputs.symphony-module-name" property is not found in the file no error occurs and workflow continues
-          sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
-          cat modules.txt
+          cd $GITHUB_WORKSPACE/${{ inputs.symphony-module-name }}
+          # following will run maven command to determine if there are child modules and puts result in an array
+          IFS=$'\n' read -r -d '' -a modules < <( ${MAVEN_COMMAND_MODULE_EXTRACTOR} && printf '\0' )
+          # if there are no child modules add the version of module that was just released
+          if [ ${#modules[@]} -eq 0 ]; then
+              cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
+              version=${{ steps.new-version.outputs.VERSION }}
+              # updating the module that was released within module.txt file to include its new version
+              # if "inputs.symphony-module-name" property is not found in the file no error occurs and workflow continues
+              sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
+              cat modules.txt
+          else
+              # if there are child modules, add them to modules.txt with their respective parent version
+              echo "more than 0 modules"
+          fi
       - name: Commit updates to AVISPL/${{ env.BASE_REPOSITORY }}'s modules.txt
         uses: ./symphony-devops-workflows/actions/git_add_commit_push
         with:
