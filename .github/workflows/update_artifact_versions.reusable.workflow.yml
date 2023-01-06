@@ -190,7 +190,7 @@ jobs:
                       sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
                   else
                       # grab the child module's name (at position 1 of splitted array), add its version (same as parent), and append to end of modules.txt
-                      '${splitted[1]}:$version' >> modules.txt
+                      echo '${splitted[1]}:$version' >> modules.txt
                   fi
               done
           fi
