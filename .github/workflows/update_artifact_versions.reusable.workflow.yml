@@ -170,7 +170,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/${{ inputs.symphony-module-name }}
           # following will run maven command to determine if there are child modules and puts result in an array
-          IFS=$'\n' read -r -d '' -a modules < <( mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.groupId}:${project.artifactId}:${project.version}' | grep '###MODULE_PREFIX### ' | cut -f2 -d' ' | tail +2 && printf '\0' )
+          IFS=$'\n' read -r -d '' -a modules < <( mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.groupId}:${project.artifactId}:${project.version}' | grep '###MODULE_PREFIX### ' | cut -f2 -d' ' && printf '\0' )
           # if there are no child modules add the version of module that was just released
           if [ ${#modules[@]} -eq 0 ]; then
               cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
@@ -190,7 +190,9 @@ jobs:
                       sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
                   else
                       # grab the child module's name (at position 1 of splitted array), add its version (same as parent), and append to end of modules.txt
-                      echo '${splitted[1]}:$version' >> modules.txt
+                      new_module="${splitted[1]}:$version"
+                      echo "New module being added is: ${new_module}
+                      echo ${new_module} >> modules.txt
                   fi
               done
           fi
