@@ -59,7 +59,7 @@ env:
   # Since Maven will automatically pick the latest, hard-coding its version to avoid new version of plugin 
   # failing build due to possible of behaviour change
   MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property"
-  MAVEN_COMMAND_MODULE_EXTRACTOR: "mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.groupId}:${project.artifactId}:${project.version}' | grep '###MODULE_PREFIX### ' | cut -f2 -d ' ' | tail +2"
+  MAVEN_COMMAND_MODULE_EXTRACTOR: "mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.groupId}:${project.artifactId}:${project.version}' | grep '###MODULE_PREFIX### ' | cut -d ' ' -f 2 | tail +2"
 jobs:
   update_artifact_versions:
     runs-on: ubuntu-latest
