@@ -191,7 +191,7 @@ jobs:
                   else
                       # grab the child module's name (at position 1 of splitted array), add its version (same as parent), and append to end of modules.txt
                       new_module="${splitted[1]}:$version"
-                      echo "New module being added is: ${new_module}
+                      echo "New module being added is: ${new_module}"
                       echo ${new_module} >> modules.txt
                   fi
               done
