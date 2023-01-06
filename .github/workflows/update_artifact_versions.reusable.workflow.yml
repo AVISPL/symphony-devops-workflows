@@ -179,8 +179,16 @@ jobs:
               sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
               cat modules.txt
           else
+              $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
               # if there are child modules, add them to modules.txt with their respective parent version
-              echo "more than 0 modules"
+              for module in ${modules[@]}; do
+                  echo $module
+                  IFS=':' read -ra splitted <<< "$module"
+                  # set version of parent modules (aka inputs.symphony-module-name)
+                  sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
+                  # grab the child module's name (at position 1 of splitted array), add its version (same as parent), and append to end of modules.txt
+                  "${splitted[1]}:$version" >> modules.txt 
+              done
           fi
       - name: Commit updates to AVISPL/${{ env.BASE_REPOSITORY }}'s modules.txt
         uses: ./symphony-devops-workflows/actions/git_add_commit_push
