@@ -58,7 +58,7 @@ env:
   BASE_REPOSITORY: "symphony-devops-workflows-private"
   # Since Maven will automatically pick the latest, hard-coding its version to avoid new version of plugin 
   # failing build due to possible of behaviour change
-  MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property -f $pom "
+  MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property"
 jobs:
   update_artifact_versions:
     runs-on: ubuntu-latest
@@ -111,7 +111,7 @@ jobs:
                       if grep -q "${VERSION}" $pom; then
                           echo updating $pom/${VERSION} to ${artifact_version[1]}
                           # run maven command to update the version of dependent module
-                          ${MAVEN_COMMAND_STARTER} -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
+                          ${MAVEN_COMMAND_STARTER} -f $pom -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
                           # pom was updated
                           git add $pom
                           commit_pom=true
