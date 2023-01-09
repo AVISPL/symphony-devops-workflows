@@ -170,7 +170,6 @@ jobs:
              path=$(find . -name 'pom.xml' -not -path "*/target/*")
              cd ${path//pom.xml/}
           fi
-          module_name=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.artifactId}' --non-recursive exec:exec 2>/dev/null)
           # symphony distributed cache is setup very differently than other modules and need following custom code to be able to retrieve its version
           if [ "symphony-distributed-cache" = "${{ inputs.symphony-module-name }}" ]; then
              echo "symphony-distibuted-cache module is being processed...custom code is changing directory to /cache-api"
