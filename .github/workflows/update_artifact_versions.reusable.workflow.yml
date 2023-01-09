@@ -94,7 +94,6 @@ jobs:
           SYMPHONY_MODULES=(${SYMPHONY_MODULES//,/ })
           # navigate next to pom file of module
           cd ./${{ inputs.symphony-module-name }}/
-          commit_pom=false
           for module in ${SYMPHONY_MODULES[@]}; do
              # only look for modules with set version (should contain ":" between artifact ID and respective version)
              # the format of the modules already released in modules.txt file are "<MODULE_NAME>:<MODULE_VERSION>",
@@ -112,12 +111,16 @@ jobs:
                       echo updating $pom/${VERSION} to ${artifact_version[1]}
                       # run maven command to update the version of dependent module
                       ${MAVEN_COMMAND_STARTER} -f $pom -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
-                      # pom was updated
-                      commit_pom=true
                    fi
                 done < <(find . -name pom.xml -not -path "*/target/*" -print0)
              fi
           done
+          # determine if pom.xml file was updated by checking git status and verifying pom.xml is dirty
+          changes=$(git status --short)
+          commit_pom=false
+          if [[ $changes == *"pom.xml"* ]]; then
+             commit_pom=true
+          fi
           # output commit_pom to indicate to next step that it needs to be committed
           echo "COMMIT_POM=$commit_pom" >> $GITHUB_OUTPUT
       - name: Commit dependency version updates to AVISPL/${{ inputs.symphony-module-name }}'s pom.xml
