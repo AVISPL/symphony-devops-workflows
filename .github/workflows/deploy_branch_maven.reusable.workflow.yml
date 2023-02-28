@@ -131,7 +131,7 @@ jobs:
       - name: Setup JDK
         uses: ./.github/symphony-devops-workflows/actions/setup_jdk
         with:
-          java-version: '17.0.2'
+          java-version: '19.0.2'
           distribution: 'adopt' # Adopt OpenJDK
 
       - name: Get project version
