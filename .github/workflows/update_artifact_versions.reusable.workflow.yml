@@ -84,10 +84,11 @@ jobs:
           ref: 'develop'
           path: ./symphony-devops-workflows
           token: ${{ secrets.ciToken }}
-      - name: print settings.xml file
-        shell: bash
-        run: |
-          cat ~/.m2/settings.xml
+      - name: Setup Maven settings
+        uses: ./symphony-devops-workflows/actions/setup_maven_settings
+        with:
+          nexus-user: ${{ secrets.nexusUser }}
+          nexus-password: ${{ secrets.nexusPassword }}
       - name: Update dependency versions of AVISPL/${{ inputs.symphony-module-name }}
         id: update_pom
         shell: bash
@@ -158,11 +159,6 @@ jobs:
           ref: '${{ inputs.branch }}'
           path: ./${{ inputs.symphony-module-name }}
           token: ${{ secrets.ciToken }}
-      - name: Setup Maven settings
-        uses: ./symphony-devops-workflows/actions/setup_maven_settings
-        with:
-          nexus-user: ${{ secrets.nexusUser }}
-          nexus-password: ${{ secrets.nexusPassword }}
       - name: Extract latest version of AVISPL/${{ inputs.symphony-module-name }}
         id: new-version
         shell: bash
