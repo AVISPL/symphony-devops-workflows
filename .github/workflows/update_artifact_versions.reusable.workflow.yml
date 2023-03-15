@@ -84,6 +84,10 @@ jobs:
           ref: 'develop'
           path: ./symphony-devops-workflows
           token: ${{ secrets.ciToken }}
+      - name: print settings.xml file
+        shell: bash
+        run: |
+          cat ~/.m2/settings.xml
       - name: Update dependency versions of AVISPL/${{ inputs.symphony-module-name }}
         id: update_pom
         shell: bash
