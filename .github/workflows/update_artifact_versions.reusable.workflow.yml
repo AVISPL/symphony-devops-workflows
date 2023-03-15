@@ -87,6 +87,7 @@ jobs:
       - name: print settings.xml file
         shell: bash
         run: |
+          mvn -X clean
           cat ~/.m2/settings.xml
       - name: Update dependency versions of AVISPL/${{ inputs.symphony-module-name }}
         id: update_pom
