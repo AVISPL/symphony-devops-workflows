@@ -1,0 +1,125 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+# Checkout a repository in temporary directory at requested Git ref (branch/tag),
+# add a dummy comment line at end of specified file
+# and commit and push changes to Git
+# Prerequisites :
+# - GitHub actions from AVI-SPL private repository must be available in local workspace directory
+# - GitHub token must belong to a user who has read and write authorizations on the repositories
+name: 'Yaml dummy update file commit push'
+description: 'Add a dummy comment line at end of specified file and commits and push changes to Git'
+inputs:
+  repository:
+    description: 'The repository to be checked out, e.g. "AVSPL/myrepo"'
+    required: true
+  git-ref:
+    description: 'Reference (revision) to be checked out from specified  repository. E.g. ''develop'''
+    required: false
+    default: 'develop'
+  github-token:
+    description: >
+      GitHub secret token to be provided by caller
+      Necessary for checking out private repositories
+      Use a PAT (Personal Access Token) from a user who has write permission on specified repository
+    required: true
+  workspace-checkout-dir:
+    description: >
+      Path where to checkout the deployment repository, relative to current project's
+      workspace root directory ($GITHUB_WORKSPACE)
+    required: true
+  workspace-checkout-dir-git-clean:
+    description: >
+      Whether to execute `git clean -ffdx && git reset --hard HEAD` before fetching
+      See actions/checkout@v3.0.1 "clean" option for details
+      Should be true when caller assumes that some contents might already exist
+      in temporary checkout dir, which needs to be updated to get latest repository contents,
+      to avoid issues with unexpected local changes
+    required: false
+    default: 'true'
+  yaml-file:
+    description: 'The path to Yaml file to be updated, relative to project root directory'
+    required: true
+  cleanup-old-dummy-changes:
+    description: |
+      Whether or not to cleanup all the dummy lines introduced by previous runs
+      Should be set to 'true' to avoid cluttering file
+      Prefix must be unchanged otherwise old lines cannot be found
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+      # Checkout specified repository/ref
+      - name: Git checkout repository/branch
+        uses: actions/checkout@v3.0.1
+        with:
+          # Repository to be checked out
+          repository: ${{ inputs.repository }}
+          ref: ${{ inputs.git-ref }}
+          token: ${{ inputs.github-token }}
+          # Relative path under $GITHUB_WORKSPACE to place the repository
+          path: ${{ inputs.workspace-checkout-dir }}
+          # Checkout all branches and tags (required to work with tags in git_delete_tag action)
+          fetch-depth: '0' # 0 indicates all history for all branches and tags
+          # Force clean to avoid leftover changes from previous runs in current workspace
+          clean: ${{ inputs.workspace-checkout-dir-git-clean }}
+
+      # Update file in checkout dir
+      - name: Update yaml file
+        uses: ./.github/symphony-devops-workflows/actions/yaml_dummy_update_file
+        with:
+          yaml-file: '${{ inputs.workspace-checkout-dir }}/${{ inputs.yaml-file  }}'
+          cleanup-old-dummy-changes: ${{ inputs.cleanup-old-dummy-changes  }}
+
+      # Git commit and push
+      # Note: many options are possible, see action documentation
+      #   https://github.com/marketplace/actions/git-auto-commit
+      #   https://github.com/stefanzweifel/git-auto-commit-action
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          # Local file path to the repository
+          repository: '${{ inputs.workspace-checkout-dir }}'
+
+          # Git commit message
+          commit_message: 'AUTO Update ${{ inputs.yaml-file  }}'
+          # TODO Git commit user and author - use secrets instead of hardcoded value
+          # Git commit user and author
+          commit_user_name: 'AVISymphonyDev'
+          commit_user_email: 'AVISymphonyDev@avispl.com'
+          # commit_author - Do NOT specify value and use default action behaviour
+          #   "commit author defaults to author of the commit that triggered the run"
+          #   Author in GitHub will look like:
+          #   SebastienB-AVISPL authored and AVISymphonyDev committed
+
+          # Optional. Options used by `git-commit`.
+          # See https://git-scm.com/docs/git-commit#_options
+          # Git Sign-off contents is created using the "commit_*" options from this action call
+          commit_options: '--no-verify --signoff'
+
+          # Optional glob pattern of files which should be added to the commit
+          # Defaults to all (.)
+          # See the `pathspec`-documentation for git
+          # - https://git-scm.com/docs/git-add#Documentation/git-add.txt-ltpathspecgt82308203
+          # - https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
+          # Specify file path to ensure no unwanted files are committed/pushed by mistake
+          # WARNING: file path is relative to repository (see repository parameter)
+          file_pattern: ${{ inputs.yaml-file }}
+          # Optional. Option used by `git-status` to determine if the repository is
+          # dirty. See https://git-scm.com/docs/git-status#_options
+          status_options: '--untracked-files=no'
+
+          # When "true", makes the action fail when replacement causes no file change
+          # (which would make an empty commit)
+          skip_dirty_check: true
+
+          # Optional. Skip internal call to `git fetch`
+          # (repository has just been checked out)
+          skip_fetch: true
+          # Skip internal call to `git checkout`
+          # (repository has just been checked out)
+          skip_checkout: true
+
+          # Optional. Prevents the shell from expanding filenames
+          # Details: https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html
+          disable_globbing: true

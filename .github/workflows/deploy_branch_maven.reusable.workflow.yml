@@ -1,0 +1,245 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Builds, runs tests and deploys a Maven project
+# Moves Git tag 'snapshot' to the latest commit on branch
+# Checkouts current repository/branch (inherited from caller workflow)
+name: reusable_workflow_deploy_branch_maven
+
+on:
+  workflow_call:
+    inputs:
+      # TODO naming of parameters - use "-" or "_" but not mixup of both
+      pom-xml-file:
+        description: 'The path of the project pom.xml'
+        required: false
+        default: 'pom.xml'
+        type: string
+      git_tag:
+        description: 'Tag to be created on Git revision, e.g. "snapshot" for daily build. Empty means no tag'
+        required: false
+        type: string
+        default: 'snapshot'
+      maven_goals:
+        description: 'The goals for the mvn command (optional)'
+        required: false
+        type: string
+        default: 'clean deploy'
+      maven_other_options:
+        description: 'Maven options added at the end of the mvn command, overrides previous options'
+        required: false
+        type: string
+        default: '-DskipTests=false -DskipITs=false'
+      runs-on_label_1:
+        description: 'The job runner first label (optional)'
+        required: false
+        type: string
+        default: 'self-hosted'
+      runs-on_label_2:
+        description: 'The job runner second label (optional)'
+        required: false
+        type: string
+        default: 'linux'
+      symphony-devops-workflows_ref:
+        description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''develop'''
+        required: false
+        type: string
+        default: 'develop'
+      docker-file:
+        description: |
+          The path of the Dockerfile to be built. If empty, no docker build will occur.
+          Path can be either a relative path, in which case it is relative to the project's
+          workspace directory (e.g. './path/to/Dockerfile'), or an aboslute path
+          (e.g. '${GITHUB_WORKSPACE}/path/to/Dockerfile')
+          Note that there GitHub workflows enforce limitations for accessing files
+          outside of workspace directory
+        required: false
+        type: string
+      docker-tag-push:
+        description: 'Whether to tag and push docker image. Mandatory when docker-file is present'
+        required: false
+        type: boolean
+        default: false
+      symphony-microservice-name:
+        description: 'symphony-microservice-name is used to build and tag docker image. Mandatory when docker-file is present'
+        required: false
+        type: string
+        default: ''
+      docker-registry-project-name:
+        description: 'docker-registry-project-name is used to build and tag docker image. Mandatory when docker-file is present'
+        required: false
+        type: string
+        default: 'symphony-microservices'
+      kubernetes-update-deployment-descriptor:
+        description: 'Whether or not to update Kubernetes deployment descriptor so service is automatically deployed to cluster'
+        required: false
+        type: boolean
+        default: false
+    #
+    secrets:
+      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
+      userToken:
+        description: 'Token of the user who is running the workflow. Required for updating Git tags'
+        required: true
+      ciToken:
+        description: |
+          GitHub token to be used for updating AVI-SPL private repositories. In this workflow,
+          it is used only for updating Kubernetes deployment files
+          This token should belong to the CI user, although workflow would work with any token
+          with correct permissions
+          It must be a GitHub PAT (Personal Access Token) with read and write authorizations
+          on the GitHub repositories to be read/updated
+        required: false
+
+jobs:
+  reusable_job_deploy_branch_maven:
+    # Permissions are required for actions that need to do changes on repository
+    # (change files or git operations) or which require access to some GitHub APIs
+    # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
+    permissions:
+      # Contents write is required for git tagging
+      contents: write
+      # Actions read is required by technote-space/workflow-conclusion-action for accessing
+      # actions API for getting actions results
+      actions: read
+
+    # Use runner which has requested labels
+    # Note: GitHub does not allow to pass an object as job input (such as an array)
+    # so need this trick with multiple variables
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    steps:
+      # WARNING checkout repository first because this action resets the checkout directory
+      # (so other files written into it will be removed)
+      - name: Git checkout current repository/branch
+        uses: actions/checkout@v3.0.1
+        with:
+          # Checkout all branches and tags (required to work with tags in git_delete_tag action)
+          fetch-depth: '0' # 0 indicates all history for all branches and tags
+
+      # GitHub actions cannot be executed directly from private repository
+      # (feature not available yet)
+      # So checkout the actions into local workspace directory and run them from there
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v3.0.1
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          # Select revision
+          ref: '${{ inputs.symphony-devops-workflows_ref }}'
+          # Indicate where to check out project to
+          path: ./.github/symphony-devops-workflows
+
+      - name: Setup JDK
+        uses: ./.github/symphony-devops-workflows/actions/setup_jdk
+        with:
+          java-version: '19.0.2'
+          distribution: 'adopt' # Adopt OpenJDK
+
+      - name: Get project version
+        id: get_project_version
+        uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
+        with:
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+
+      - name: Compute build number
+        id: compute_build_number
+        uses: ./.github/symphony-devops-workflows/actions/build_number
+
+      # Compute docker tags to be reused as "global variables"
+      - name: Compute docker tags
+        id: compute_docker_tags
+        run: |
+          echo "Compute docker tags"
+          DOCKER_TAG_WITH_VERSION="${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}"
+          DOCKER_TAGS_ALL="snapshot,${DOCKER_TAG_WITH_VERSION}"
+          DOCKER_IMAGE_TAG_PREFIX="registry.vnocsymphony.com/${{ inputs.docker-registry-project-name }}/${{ inputs.symphony-microservice-name }}"
+          #
+          echo "DOCKER_TAG_WITH_VERSION: [${DOCKER_TAG_WITH_VERSION}]"
+          echo "DOCKER_TAGS_ALL: [${DOCKER_TAGS_ALL}]"
+          echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
+          #
+          echo "::set-output name=DOCKER_TAG_WITH_VERSION::${DOCKER_TAG_WITH_VERSION}"
+          echo "::set-output name=DOCKER_TAGS_ALL::${DOCKER_TAGS_ALL}"
+          echo "::set-output name=DOCKER_IMAGE_TAG_PREFIX::${DOCKER_IMAGE_TAG_PREFIX}"
+        shell: bash
+
+      - # Git tag is mandatory for this workflow
+        name: Validate git tags
+        id: validate_git_tags
+        uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
+        with:
+          tags: '${{ inputs.git_tag }}'
+          allowEmpty: 'false'
+
+      - name: Validate docker tags
+        id: validate_docker_tags
+        uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
+        with:
+          tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
+          allowEmpty: 'false'
+
+      - name: Maven build and Git tag
+        uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
+        with:
+          # Maven options
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+          maven_goals: ${{ inputs.maven_goals }}
+          maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven_other_options }}
+          # Git options
+          git_tag: ${{ inputs.git_tag }}
+          git_tag_fail_if_exists: 'false'
+          git_delete_tag_if_exists: 'true'
+          github_token: ${{ secrets.userToken }}
+
+      # Docker
+      - name: Docker build
+        id: docker_build_tag_push
+        # Run docker build only when a docker file has been specified (not empty value)
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
+        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
+        with:
+          docker-file: ${{ inputs.docker-file }}
+          docker-tag-push: ${{ inputs.docker-tag-push }}
+          docker-tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
+          docker-image-prefix: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}'
+
+      - name: Kubernetes update deployment
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        with:
+          # Path is relative to deployer project root
+          deployment-file: '${{ inputs.symphony-microservice-name }}-deploy/deployment.yaml'
+          # New value for docker image in deployment file
+          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}:${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
+          fail-if-no-file-change: 'true'
+          # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
+          workspace-checkout-dir: 'symphony-kubernetes-deployer'
+          # The revision (branch) to be updated
+          symphony-kubernetes-deployer-ref: 'dev'
+          commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
+          # Token for checking-out private repository
+          # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
+          github-token: ${{ secrets.ciToken }}
+
+  # Job to send email - execute event when previous job(s) in workflow have failed
+  job_send_mail:
+    # For details on if condition when previous job is skipped and there is a needs condition,
+    # see discussions here:
+    # https://github.com/actions/runner/issues/491#issuecomment-926924523
+    if: ${{ !cancelled() }}
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    needs: reusable_job_deploy_branch_maven
+    steps:
+      # Job might not be executed on same runner than first job (if several candidates
+      # match labels), in which case workspace will be empty,
+      # so need to checkout again required actions from dedicated repository
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v3.0.1
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          # Select revision
+          ref: '${{ inputs.symphony-devops-workflows_ref }}'
+          # Indicate where to check out project to
+          path: ./.github/symphony-devops-workflows
+
+      - name: Send email workflow status
+        uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status

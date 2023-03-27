@@ -1,0 +1,100 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Git add, commit and push changes
+# Prerequisites :
+# - Git repository must already be checked out locally with a user which was write permission
+# - GitHub actions from AVI-SPL private repository must be available in local workspace directory
+# -
+name: 'Git add commit push'
+description: 'Git add, commit and push changes'
+inputs:
+  repository-dir:
+    description: >
+      Path to the Git repository, relative to workspace root directory ($GITHUB_WORKSPACE)
+    required: true
+  file-pattern:
+    description: >
+      Pattern of file(s) to be added, in Git Pathspecs format. Git "Magic signatures" can
+      also be used.
+      Shell filename expansion is disabled
+      E.g. 'pom.xml', '*.xml', ':(glob)**/pom.xml'
+    required: true
+  commit-message:
+    description: 'Git commit message'
+    required: true
+  git-tag:
+    description: |
+      Git tag to be created in the local repository and pushed to remote repository,
+      e.g. '5.6.1.2208051600'
+    required: false
+  commit-user-name:
+    description: User to be used as committer
+    required: true
+  commit-user-email:
+    description: User email to be used as committer
+    required: true
+  github-token:
+    description: >
+      GitHub secret token to be provided by caller
+      Necessary for checking out private repositories
+      Use a PAT (Personal Access Token) from a user who has write permission on specified repository
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+      # Git commit and push
+      # Note: many options are possible, see action documentation
+      #   https://github.com/marketplace/actions/git-auto-commit
+      #   https://github.com/stefanzweifel/git-auto-commit-action
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          # Local file path to the repository
+          repository: '${{ inputs.repository-dir }}'
+          # Git commit message
+          commit_message: ${{ inputs.commit-message }}
+          # Git commit user and author
+          commit_user_name: ${{ inputs.commit-user-name }}
+          commit_user_email: ${{ inputs.commit-user-email }}
+          # commit_author - Do NOT specify value and use default action behaviour
+          #   "commit author defaults to author of the commit that triggered the run"
+          #   Author in GitHub will look like:
+          #   SebastienB-AVISPL authored and AVISymphonyDev committed
+
+          # Optional. Options used by `git-commit`.
+          # See https://git-scm.com/docs/git-commit#_options
+          # Git Sign-off contents is created using the "commit_*" options from this action call
+          commit_options: '--no-verify --signoff'
+
+          # Optional glob pattern of files which should be added to the commit
+          # Defaults to all (.)
+          # See the `pathspec`-documentation for git
+          # - https://git-scm.com/docs/git-add#Documentation/git-add.txt-ltpathspecgt82308203
+          # - https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
+          # Specify file path to ensure no unwanted files are committed/pushed by mistake
+          # WARNING: file path is relative to repository (see repository parameter)
+          file_pattern: ${{ inputs.file-pattern }}
+
+          # Optional. Tag name being created in the local repository and
+          # pushed to remote repository and defined branch.
+          tagging_message: ${{ inputs.git-tag }}
+
+          # Optional. Option used by `git-status` to determine if the repository is
+          # dirty. See https://git-scm.com/docs/git-status#_options
+          status_options: '--untracked-files=no'
+
+          # When "true", makes the action fail when replacement causes no file change
+          # (which would make an empty commit)
+          skip_dirty_check: false
+
+          # Optional. Skip internal call to `git fetch`
+          # (repository has just been checked out)
+          skip_fetch: true
+          # Skip internal call to `git checkout`
+          # (repository has just been checked out)
+          skip_checkout: true
+
+          # Optional. Prevents the shell from expanding filenames
+          # Details: https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html
+          disable_globbing: true

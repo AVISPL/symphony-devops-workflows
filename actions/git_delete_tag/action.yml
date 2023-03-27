@@ -1,0 +1,57 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Delete a Git if exists in current repository/branch
+# WARNING Successive Git actions are not transactional: delete of tag can succeed
+#   but afterwards tagging may fail so tag is lost. Still execution log shows previous tag Git SHA,
+# so it can be recovered, but this requires manual actions
+# Prerequisites:
+# - Security : this action requires that running workflow/job has write permission to the
+#   project contents (contents: write)
+# - Security : tag name must have been verified beforehand, this action does not do any validity check
+# - the git command line must be available
+# - the Git repository tags must be checked out, otherwise the tag won't be found
+name: 'Git delete tag if exists'
+description: 'Delete provided Git tag if exists, otherwise do nothing'
+
+inputs:
+  tag_name:
+    description: 'Name of tag to be deleted (not empty)'
+    required: true
+  git_tag_fail_if_exists:
+    description: >
+      A security to avoid overwriting tags by mistake
+      If tag exists and value is not 'false', fail the job
+      Otherwise, has no effect
+    required: true
+    default: 'true'
+runs:
+  using: "composite"
+  steps:
+    #- name: Debug git
+    #  run: |
+    #    echo "Git SHA ${{ github.sha }}"
+    #    echo "DEBUG Git log:" && git log --max-count=3 --pretty=oneline
+    #    echo "DEBUG Git tags:" && git tag -l
+    #  shell: bash
+
+    # Git - check tag does not already exist
+    - name: Check if tag already exists
+      id: git_tag_exists
+      uses: ./.github/symphony-devops-workflows/actions/git_tag_exists
+      with:
+        tag-name: ${{ inputs.tag_name }}
+        git-tag-fail-if-exists: ${{ inputs.git_tag_fail_if_exists }}
+
+    - name: Delete Git tag if exists
+      run: |
+        # Delete Git tag if exists
+        # If tag exists and failure is requested in such case, previous step must
+        # have failed the job
+        if [[ "true" == "${{ steps.git_tag_exists.outputs.tag-exists }}" ]]; then
+          # Delete local tag
+          git tag --delete "${{ inputs.tag_name }}"
+          # Delete remote tag
+          git push --delete origin "refs/tags/${{ inputs.tag_name }}"
+        fi
+      shell: bash

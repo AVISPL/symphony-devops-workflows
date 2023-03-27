@@ -1,0 +1,54 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+# Build a job strategy matrix with one field by reading an input file line by line
+# and adding each line contents as a value to the matrix
+# Values are added with same order as encountered in input file
+# Values are trimmed left and right
+# Lines starting with a "#" character and empty lines are ignored
+# Output is a string with JSON array form
+#   E.g. "[ 'symphony-distributed-events', 'symphony-shared' ]"
+# WARNING
+#   For unknown reason the "result" output created by the actions/github-script@v6
+#   action when returning value at the end of script is not visible to the outside.
+#   So explicitly set an output (here, "matrix") which is working fine
+# Prerequisites:
+# - the input file must be readable
+#
+name: 'Build job strategy matrix from text file'
+description: 'Build job strategy matrix from text file'
+inputs:
+  file:
+    description: 'Path to input file with list of projects to read values from (relative to workspace)'
+    required: true
+outputs:
+  matrix:
+    description: >
+      Job strategy matrix as a string with JSON array form
+      E.g. "[ 'symphony-distributed-events', 'symphony-shared' ]"
+    value: ${{ steps.build_matrix.outputs.matrix }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: build_matrix
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+
+          const contents = fs.readFileSync('${{ github.workspace }}/${{ inputs.file }}', 'utf-8');
+          const arr = contents.split(/\r?\n/);
+
+          // Cleanup list: trim left/right, remove lines starting with '#' and empty lines
+          // Also add single quote around value (required for the matrix format)
+          let cleanedArr = arr.map(e => e.trim())
+            .filter(e => !e.startsWith("#") && e.length > 0)
+            .map(e => `'${e}'`);
+
+          // Build matrix as a string with expected format for a job strategy
+          let matrixStr = `[${cleanedArr.join(",")}]`;
+          console.log("Final matrix (without additional surrounding brackets): " + matrixStr);
+          console.log(`::set-output name=matrix::${matrixStr}`);
+          return matrixStr;
+        # Return result string as-is (not JSON encoded)
+        result-encoding: string

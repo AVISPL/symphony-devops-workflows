@@ -1,0 +1,220 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+# 
+# Reusable workflow to update dependencies of a given Symphony module and call existing 
+# release_maven.reusable.workflow.yml workflow to release the module.
+#
+# This workflow will take as input the module being released, and list of dependencies and respective versions to update
+#
+# Once the module has been released, this workflow will capture the version of newly released module, 
+# and appends its latest version to AVISPL/symphony-devops-workflows-private/release_modules/modules.txt
+
+name: reusable_workflow_update_artifact_versions
+
+on:
+  # Reusable workflow
+  workflow_call:
+    inputs:
+      branch:
+        description: reference branch (or tag) to be used. E.g. ''develop''
+        required: true
+        type: string
+      symphony-module-name:
+        description: name of module that is being released
+        required: true
+        type: string
+    secrets:
+      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
+      nexusUser:
+        description: the username of nexus user which performs Maven commands
+        required: true
+      nexusPassword:
+        description: the password of nexus user which performs Maven commands
+        required: true
+      commitUserName:
+        description: |
+          User name to be used as Git committer. This is NOT the user name of the person who
+          ran the workflow.
+          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
+          the commit will look like:
+            Author: John <John@users.noreply.github.com>
+            Committer: MyCIUser
+            Signed-off-by: MyCIUser <MyCIUser@...com>
+        required: true
+      commitUserEmail:
+        description: |
+          User email to be used as Git committer. This is NOT the user email
+          of the person who ran the workflow, see commit user name.
+        required: true
+      ciToken:
+        description: |
+          GitHub token to be used for updating AVI-SPL private repositories.
+          This token should belong to the CI user, although workflow would work with any token
+          with correct permissions
+          It must be a GitHub PAT (Personal Access Token) with read and write authorizations
+          on the GitHub repositories to be read/updated
+        required: false
+env:
+  BASE_REPOSITORY: "symphony-devops-workflows-private"
+  # Since Maven will automatically pick the latest, hard-coding its version to avoid new version of plugin 
+  # failing build due to possible of behaviour change
+  MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property"
+jobs:
+  update_artifact_versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout AVISPL/${{ env.BASE_REPOSITORY }} (contains modules.txt)
+        uses: actions/checkout@v2.5.0
+        with:
+          repository: AVISPL/${{ env.BASE_REPOSITORY }}
+          ref: 'develop'
+          path: ./${{ env.BASE_REPOSITORY }}
+          token: ${{ secrets.ciToken }}
+      - name: Checkout AVISPL/${{ inputs.symphony-module-name }}
+        uses: actions/checkout@v2.5.0
+        with:
+          repository: AVISPL/${{ inputs.symphony-module-name }}
+          ref: '${{ inputs.branch }}'
+          path: ./${{ inputs.symphony-module-name }}
+          token: ${{ secrets.ciToken }}
+      - name: Checkout AVISPL/symphony-devops-workflows
+        uses: actions/checkout@v2.5.0
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          ref: 'develop'
+          path: ./symphony-devops-workflows
+          token: ${{ secrets.ciToken }}
+      - name: Setup Maven settings
+        uses: ./symphony-devops-workflows/actions/setup_maven_settings
+        with:
+          nexus-user: ${{ secrets.nexusUser }}
+          nexus-password: ${{ secrets.nexusPassword }}
+      - name: Update dependency versions of AVISPL/${{ inputs.symphony-module-name }}
+        id: update_pom
+        shell: bash
+        run: |
+          # extract content of modules.txt
+          SYMPHONY_MODULES=`cat ./${BASE_REPOSITORY}/release_modules/modules.txt`
+          # convert into array
+          SYMPHONY_MODULES=(${SYMPHONY_MODULES//,/ })
+          # navigate next to pom file of module
+          cd ./${{ inputs.symphony-module-name }}/
+          for module in ${SYMPHONY_MODULES[@]}; do
+             # only look for modules with set version (should contain ":" between artifact ID and respective version)
+             # the format of the modules already released in modules.txt file are "<MODULE_NAME>:<MODULE_VERSION>",
+             # such as "symphony-shared:5.8.0.21129"
+             if [[ $module == *":"* ]]; then
+                # Following line will generate an array called "artifact_version" (split by ":") with
+                # first member being the artifact's name, and second member being the artifact's version
+                IFS=':' read -ra artifact_version <<< "$module"
+                VERSION="${artifact_version[0]}.version"
+                # Following while loop will locate all pom.xmls within a Github repository and verifies if it contains
+                # modules being updated that require to be updated. 
+                while IFS= read -d '' -r pom; do
+                   # only modify pom.xml if the dependency exists
+                   if grep -q "${VERSION}" $pom; then
+                      echo updating $pom/${VERSION} to ${artifact_version[1]}
+                      # run maven command to update the version of dependent module
+                      ${MAVEN_COMMAND_STARTER} -f $pom -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
+                   fi
+                done < <(find . -name pom.xml -not -path "*/target/*" -print0)
+             fi
+          done
+          # determine if pom.xml file was updated by checking git status and verifying pom.xml is dirty
+          changes=$(git status --short)
+          commit_pom=false
+          if [[ $changes == *"pom.xml"* ]]; then
+             commit_pom=true
+          fi
+          # output commit_pom to indicate to next step that it needs to be committed
+          echo "COMMIT_POM=$commit_pom" >> $GITHUB_OUTPUT
+      - name: Commit dependency version updates to AVISPL/${{ inputs.symphony-module-name }}'s pom.xml
+        # only perform this step if previous step updated the pom
+        if: ${{ steps.update_pom.outputs.COMMIT_POM == 'true' }}
+        uses: ./symphony-devops-workflows/actions/git_add_commit_push
+        with:
+          repository-dir: ./${{ inputs.symphony-module-name }}
+          file-pattern: '*.xml'
+          commit-message: '[AUTO] updated ${{ inputs.symphony-module-name }} dependency versions'
+          commit-user-name: ${{ secrets.commitUserName }}
+          commit-user-email: ${{ secrets.commitUserEmail }}
+      - name: Release AVISPL/${{ inputs.symphony-module-name }}
+        id: release-step
+        uses: aurelien-baudet/workflow-dispatch@v2.1.1
+        with:
+          workflow: release.maven.workflow.yml
+          token: ${{ secrets.ciToken }}
+          repo: AVISPL/${{ inputs.symphony-module-name }}
+          ref: ${{ inputs.branch }}
+          wait-for-completion: true
+          # GitHub API has a rate limit (though it is high) so we should be cautious to not call the API too many times 
+          # https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
+          wait-for-completion-interval: 10s
+          wait-for-completion-timeout: 10m
+      # checking out the module again in order to get latest updated version from previous release step
+      - name: Checkout AVISPL/${{ inputs.symphony-module-name }}
+        uses: actions/checkout@v2.5.0
+        with:
+          repository: AVISPL/${{ inputs.symphony-module-name }}
+          ref: '${{ inputs.branch }}'
+          path: ./${{ inputs.symphony-module-name }}
+          token: ${{ secrets.ciToken }}
+      - name: Extract latest version of AVISPL/${{ inputs.symphony-module-name }}
+        id: new-version
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/${{ inputs.symphony-module-name }}
+          # some Symphony modules (specifically symphony-audit) do not have their pom file in root directory, 
+          # therefore following if statement locates the pom.xml and changes directory to its location
+          if [ ! -f pom.xml ]; then
+             path=$(find . -name 'pom.xml' -not -path "*/target/*")
+             cd ${path//pom.xml/}
+          fi
+          # symphony distributed cache is setup very differently than other modules and need following custom code to be able to retrieve its version
+          if [ "symphony-distributed-cache" = "${{ inputs.symphony-module-name }}" ]; then
+             echo "symphony-distibuted-cache module is being processed...custom code is changing directory to /cache-api"
+             cd ./cache-api/
+          fi
+          version=$(mvn -B exec:exec -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive -q)
+          echo "The new version of ${{ inputs.symphony-module-name }} module is $version"
+          echo "VERSION=$version" >> $GITHUB_OUTPUT
+      - name: Update AVISPL/${{ env.BASE_REPOSITORY }} modules.txt file
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/${{ inputs.symphony-module-name }}
+          # some Symphony modules (specifically symphony-audit) do not have their pom file in root directory, 
+          # therefore following if statement locates the pom.xml and changes directory to its location
+          if [ ! -f pom.xml ]; then
+             path=$(find . -name 'pom.xml' -not -path "*/target/*")
+             cd ${path//pom.xml/}
+          fi
+          # symphony distributed cache is setup very differently than other modules and need following custom code to be able to retrieve its version
+          if [ "symphony-distributed-cache" = "${{ inputs.symphony-module-name }}" ]; then
+             echo "symphony-distibuted-cache module is being processed...custom code is changing directory to /cache-api"
+             cd ./cache-api/
+          fi
+          # following will run maven command to determine if there are child modules and puts result in an array
+          IFS=$'\n' read -r -d '' -a modules < <( mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.artifactId}' | grep '###MODULE_PREFIX### ' | cut -f2 -d' ' && printf '\0' )
+          version=${{ steps.new-version.outputs.VERSION }}
+          cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
+          # if there are child modules, add them to modules.txt with their respective parent version
+          for module in ${modules[@]}; do
+             if [ "${module}" = "${{ inputs.symphony-module-name }}" ]; then
+                # set version of parent modules (aka inputs.symphony-module-name)
+                sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
+             else
+                # grab the child module's name, add its version (same as parent), and append to end of modules.txt
+                new_module="${module}:$version"
+                echo "Child module being added is: ${new_module}"
+                echo ${new_module} >> modules.txt
+             fi
+          done
+          cat modules.txt
+      - name: Commit updates to AVISPL/${{ env.BASE_REPOSITORY }}'s modules.txt
+        uses: ./symphony-devops-workflows/actions/git_add_commit_push
+        with:
+          repository-dir: ./${{ env.BASE_REPOSITORY }}/release_modules/
+          file-pattern: 'modules.txt'
+          commit-message: '[AUTO] updated ${{ env.BASE_REPOSITORY }} modules.txt'
+          commit-user-name: ${{ secrets.commitUserName }}
+          commit-user-email: ${{ secrets.commitUserEmail }}

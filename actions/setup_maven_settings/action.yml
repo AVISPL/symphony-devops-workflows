@@ -1,0 +1,30 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+name: 'Setup Maven Settings'
+description: |
+  Reusable action to help with configuring Maven within a given workflow
+
+inputs:
+  nexus-user:
+    description: 'username of nexus user'
+    required: true
+  nexus-password:
+    description: 'password of nexus user'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Maven settings
+      uses: s4u/maven-settings-action@v2.7.0
+      with:
+        servers: |
+          [{
+            "id": "avi-spl.snapshots",
+            "username": "${{ inputs.nexus-user }}",
+            "password": "${{ inputs.nexus-password }}"
+          },{
+            "id": "avi-spl.releases",
+            "username": "${{ inputs.nexus-user }}",
+            "password": "${{ inputs.nexus-password }}"
+          }]

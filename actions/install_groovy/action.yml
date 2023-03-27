@@ -1,0 +1,22 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+name: 'Install Groovy'
+description: |
+  Install groovy to be used for running respective file types
+runs:
+  using: "composite"
+  steps:
+    - name: Install Groovy
+      run: |
+        # Install Groovy
+        # Check whether groovy is already installed
+        which groovy && ret_code=0 || ret_code=1
+        if [[ $ret_code -ne 0 ]]; then
+          echo "groovy not found, install..."
+          sudo apt-get update
+          sudo apt-get install -y groovy
+        fi
+        # Show Groovy installed version
+        groovy --version
+      shell: bash

@@ -1,0 +1,22 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Computes a build number in the form YYYYMMDDHHMM based on current date time in UTC timezone
+# Prerequisites:
+# - Linux date command must be available on current runner
+name: 'Compute build number'
+description: 'Compute build number'
+outputs:
+  build-number:
+    description: "A build number in the form YYYYMMDDHHMM based on current date time in UTC timezone"
+    value: ${{ steps.compute_build_number.outputs.BUILD_NUMBER }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Compute build number
+      id: compute_build_number
+      run: |
+        BUILD_NUMBER=$( date -u +%y%m%d%H%M | cut -c 1-11)
+        echo "BUILD_NUMBER [${BUILD_NUMBER}]"
+        echo "::set-output name=BUILD_NUMBER::${BUILD_NUMBER}"
+      shell: bash

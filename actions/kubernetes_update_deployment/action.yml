@@ -1,0 +1,155 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+# Update Kubernetes deployment file : set docker image to be used with provided one
+# This action checkouts the deployment repository, updates deployment file and pushes the change to GitHub
+# Prerequisites :
+# - GitHub actions from AVI-SPL private repository must be available in local workspace directory
+#
+name: 'Kubernetes update deployment'
+description: 'Update Kubernetes deployment file : set docker image to be used with provided one'
+
+inputs:
+  deployment-file:
+    description: 'Path to deployment file to be updated. Path is relative to the deployment repository root directory, without leading "/"'
+    required: true
+  docker-image:
+    description: 'New docker image value to be replaced in deployment file (e.g. "registry.vnocsymphony.com/symphony-microservices/symphony-notifications-email:1.1.0-SNAPSHOT.2205041703")'
+    required: true
+  fail-if-no-file-change:
+    description: >
+      When "true", makes the action fail when replacement causes no file change
+      (which would make an empty commit)
+      Otherwise, action detects that there is nothing to commit and continues without
+      an error
+    default: 'true'
+    required: false
+  workspace-checkout-dir:
+    description: >
+     Path where to checkout the deployment repository. Relative path to current project''s workspace root directory,
+     without leading "./" (for some reason this breaks replacement). E.g. "localcheckout"
+    required: true
+  symphony-kubernetes-deployer-ref:
+    description: 'Reference (revision) to Kubernetes deployment repository (branch or tag) to be updated. E.g. ''develop'''
+    required: false
+    default: 'dev'
+  commit-message:
+    description: 'Git commit message'
+    required: true
+  github-token:
+    description: >
+      GitHub secret token to be provided by caller
+      Necessary for pushing to Git updated deployment files since it is a private repository
+      Use a PAT (Personal Access Token) from a user who has write permission on deployment repository
+    required: true
+runs:
+  using: "composite"
+  steps:
+    # Compute paths to file to be reused as "global variables"
+    - name: Compute paths
+      id: compute_paths
+      run: |
+        echo "Compute paths"
+        CHECKOUT_DIR="${{ inputs.workspace-checkout-dir }}"
+        FILENAME_RELATIVE_PATH="${CHECKOUT_DIR}/${{ inputs.deployment-file }}"
+        FILENAME_ABSOLUTE_PATH="${GITHUB_WORKSPACE}/${FILENAME_RELATIVE_PATH}"
+        #
+        echo "CHECKOUT_DIR: [${CHECKOUT_DIR}]"
+        echo "FILENAME_RELATIVE_PATH: [${FILENAME_RELATIVE_PATH}]"
+        echo "FILENAME_ABSOLUTE_PATH: [${FILENAME_ABSOLUTE_PATH}]"
+        #
+        echo "::set-output name=CHECKOUT_DIR::${CHECKOUT_DIR}"
+        echo "::set-output name=FILENAME_RELATIVE_PATH::${FILENAME_RELATIVE_PATH}"
+        echo "::set-output name=FILENAME_ABSOLUTE_PATH::${FILENAME_ABSOLUTE_PATH}"
+      shell: bash
+
+    # Checkout the Git repository with Kubernetes deployment descriptors
+    # into local workspace directory
+    - name: Checkout Kubernetes deployer repository
+      uses: actions/checkout@v3.0.1
+      with:
+        # Repository to be checked out
+        repository: 'AVISPL/symphony-kubernetes-deployer'
+        # Select revision
+        ref: '${{ inputs.symphony-kubernetes-deployer-ref }}'
+        token: '${{ inputs.github-token }}'
+        # Indicate where to check out project to. Relative path under $GITHUB_WORKSPACE
+        path: "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
+        # Force clean to avoid leftover changes from previous runs in current workspace
+        clean: 'true'
+
+    - name: Show docker image value before change
+      run: |
+        echo "Value BEFORE in ${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}:"
+        grep 'image: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
+      shell: bash
+
+    # Replace in file
+    - name: Replace docker image in file
+      uses: jacobtomlinson/gha-find-replace@v2
+      with:
+        find: "image: .*"
+        replace: "image: ${{ inputs.docker-image }}"
+        # File to replace into
+        include: "${{ steps.compute_paths.outputs.FILENAME_RELATIVE_PATH }}"
+        regex: true
+
+    - name: Show docker image value after change
+      run: |
+        echo "Value AFTER in ${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}:"
+        grep 'image: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
+      shell: bash
+
+    # TODO git commit and push - move to separate action ?
+    #   (ensures same options are used in all projects)
+    # Git commit and push
+    # Note: many options are possible, see action documentation
+    #   https://github.com/marketplace/actions/git-auto-commit
+    #   https://github.com/stefanzweifel/git-auto-commit-action
+    - uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        # Local file path to the repository
+        repository: "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
+
+        # Git commit message
+        commit_message: '${{ inputs.commit-message }}'
+        # TODO Git commit user and author - use secrets instead of hardcoded value
+        # Git commit user and author
+        commit_user_name: 'AVISymphonyDev'
+        commit_user_email: 'AVISymphonyDev@avispl.com'
+        # commit_author - Do NOT specify value and use default action behaviour
+        #   "commit author defaults to author of the commit that triggered the run"
+        #   Author in GitHub will look like:
+        #   SebastienB-AVISPL authored and AVISymphonyDev committed
+
+        # Optional. Options used by `git-commit`.
+        # See https://git-scm.com/docs/git-commit#_options
+        # Git Sign-off contents is created using the "commit_*" options from this action call
+        commit_options: '--no-verify --signoff'
+
+        # Optional glob pattern of files which should be added to the commit
+        # Defaults to all (.)
+        # See the `pathspec`-documentation for git
+        # - https://git-scm.com/docs/git-add#Documentation/git-add.txt-ltpathspecgt82308203
+        # - https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
+        # Specify file path to ensure no unwanted files are committed/pushed by mistake
+        # WARNING: file path is relative to repository (see repository parameter)
+        file_pattern: ${{ inputs.deployment-file }}
+
+        # Optional. Option used by `git-status` to determine if the repository is
+        # dirty. See https://git-scm.com/docs/git-status#_options
+        status_options: '--untracked-files=no'
+
+        # When "true", makes the action fail when replacement causes no file change
+        # (which would make an empty commit)
+        skip_dirty_check: ${{ inputs.fail-if-no-file-change }}
+
+        # Optional. Skip internal call to `git fetch`
+        # (repository has just been checked out)
+        skip_fetch: true
+        # Skip internal call to `git checkout`
+        # (repository has just been checked out)
+        skip_checkout: true
+
+        # Optional. Prevents the shell from expanding filenames
+        # Details: https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html
+        disable_globbing: true

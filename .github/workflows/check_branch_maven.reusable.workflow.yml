@@ -1,0 +1,135 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Perform checks on pull request before pull request is merged
+# Builds maven project and executes tests, but
+# does NOT deploy to Nexus, nor changes Git , not pushes/tags to Docker registry
+# See discussions here about push event VS pull_request event
+# https://github.community/t/trigger-workflow-only-on-pull-request-merge/17359
+name: reusable_workflow_check_branch_maven
+
+on:
+  workflow_call:
+    inputs:
+      # TODO naming of parameters - use "-" or "_" but not mixup of both
+      pom-xml-file:
+        description: 'The path of the project pom.xml'
+        required: false
+        default: 'pom.xml'
+        type: string
+      maven_goals:
+        description: 'The goals for the mvn command (optional)'
+        required: false
+        type: string
+        default: 'clean verify'
+      maven_other_options:
+        description: 'Maven options added at the end of the mvn command, overrides previous options'
+        required: false
+        type: string
+        default: '-DskipTests=false -DskipITs=false'
+      runs-on_label_1:
+        description: 'The job runner first label (optional)'
+        required: false
+        type: string
+        default: 'self-hosted'
+      runs-on_label_2:
+        description: 'The job runner second label (optional)'
+        required: false
+        type: string
+        default: 'linux'
+      symphony-devops-workflows_ref:
+        description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''develop'''
+        required: false
+        type: string
+        default: 'develop'
+      docker-file:
+        description: |
+          The path of the Dockerfile to be built. If empty, no docker build will occur.
+          Path can be either a relative path, in which case it is relative to the project's
+          workspace directory (e.g. './path/to/Dockerfile'), or an aboslute path
+          (e.g. '${GITHUB_WORKSPACE}/path/to/Dockerfile')
+          Note that there GitHub workflows enforce limitations for accessing files
+          outside of workspace directory
+        required: false
+        type: string
+
+jobs:
+  reusable_job_deploy_branch_maven:
+    # Permissions are required for actions that need to do changes on repository
+    # (change files or git operations) or which require access to some GitHub APIs
+    # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
+    permissions:
+      # Contents write is required for git tagging
+      contents: write
+      # Actions read is required by technote-space/workflow-conclusion-action for accessing
+      # actions API for getting actions results
+      actions: read
+
+    # Use runner which has requested labels
+    # Note: GitHub does not allow to pass an object as job input (such as an array)
+    # so need this trick with multiple variables
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    steps:
+      # WARNING checkout repository first because this action resets the checkout directory
+      # (so other files written into it will be removed)
+      - name: Git checkout current repository/branch
+        uses: actions/checkout@v3.0.1
+        with:
+          # Checkout all branches and tags (required to work with tags in git_delete_tag action)
+          fetch-depth: '0' # 0 indicates all history for all branches and tags
+
+      # GitHub actions cannot be executed directly from private repository
+      # (feature not available yet)
+      # So checkout the actions into local workspace directory and run them from there
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v3.0.1
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          # Select revision
+          ref: '${{ inputs.symphony-devops-workflows_ref }}'
+          # Indicate where to check out project to
+          path: ./.github/symphony-devops-workflows
+
+      - name: Setup JDK
+        uses: ./.github/symphony-devops-workflows/actions/setup_jdk
+        with:
+          java-version: '17.0.2'
+          distribution: 'adopt' # Adopt OpenJDK
+
+      - name: Get project version
+        id: get_project_version
+        uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
+        with:
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+
+      - name: Compute build number
+        id: compute_build_number
+        uses: ./.github/symphony-devops-workflows/actions/build_number
+
+      - name: Validate docker tags
+        id: validate_docker_tags
+        uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
+        with:
+          tags: 'snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
+          allowEmpty: 'false'
+
+      - name: Maven build
+        uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
+        with:
+          # Maven options
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+          maven_goals: ${{ inputs.maven_goals }}
+          maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven_other_options }}
+          # Git options
+          git_tag: ''
+
+      # Docker
+      - name: Docker build tag push
+        # Run docker build only when a docker file has been specified (not empty value)
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
+        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
+        with:
+          docker-file: ${{ inputs.docker-file }}
+          docker-tag-push: false
+
+  # TODO should email be sent upon every check ? (same as for deploy workflow)

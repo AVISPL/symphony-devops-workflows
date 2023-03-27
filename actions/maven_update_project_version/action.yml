@@ -1,0 +1,37 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Update Maven project version in a pom.xml
+# Prerequisites:
+# - mvn command must be available on current runner
+# - pom.xml must be accessible at provided location
+name: 'Maven update project version'
+description: 'Maven update project version in pom.xml'
+inputs:
+  pom-xml-file:
+    description: 'The path of the project pom.xml'
+    required: true
+  new-project-version:
+    description: 'The new Maven project version to be written to pom.xml'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Maven update project version
+      id: maven_update_project_version
+      run: |
+        echo "Maven update project version"
+
+        # DEBUG
+        #echo "pom-xml-file : [${{ inputs.pom-xml-file }}]"
+        #echo "new-project-version : [${{ inputs.new-project-version }}]"
+
+        # Check parameters
+        if [[ -z "${{ inputs.pom-xml-file }}" || -z "${{ inputs.new-project-version }}" ]]; then
+          echo "[ERROR] Invalid inputs : pom and new project version cannot be empty"
+          exit 1
+        fi
+
+        # Update version
+        mvn -f "${{ inputs.pom-xml-file }}" versions:set -DnewVersion="${{ inputs.new-project-version }}" -DgenerateBackupPoms=false
+      shell: bash
