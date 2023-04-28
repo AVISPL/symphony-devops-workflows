@@ -86,7 +86,7 @@ runs:
 
           # When "true", makes the action fail when replacement causes no file change
           # (which would make an empty commit)
-          skip_dirty_check: false
+          skip_dirty_check: true
 
           # Optional. Skip internal call to `git fetch`
           # (repository has just been checked out)
