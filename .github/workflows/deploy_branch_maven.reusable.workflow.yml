@@ -213,7 +213,9 @@ jobs:
           # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
           workspace-checkout-dir: 'symphony-kubernetes-deployer'
           # The revision (branch) to be updated
-          symphony-kubernetes-deployer-ref: 'dev'
+          # TODO fix use correct ref
+          #symphony-kubernetes-deployer-ref: 'dev'
+          symphony-kubernetes-deployer-ref: 'feature/SYUS_10716_v2'
           commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
           # Token for checking-out private repository
           # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
