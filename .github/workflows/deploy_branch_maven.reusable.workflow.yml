@@ -202,13 +202,6 @@ jobs:
           docker-tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
           docker-image-prefix: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}'
 
-      # TODO remove test
-      - name: test file
-        id: test_file
-        run: |
-          ls -l ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment/
-          cat ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment/.*
-
       - name: Kubernetes update deployment
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
@@ -220,8 +213,9 @@ jobs:
           # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
           workspace-checkout-dir: 'symphony-kubernetes-deployer'
           # The revision (branch) to be updated
-          # TODO fix use correct ref
-          #symphony-kubernetes-deployer-ref: 'dev'
+          # For testing purpose only: use correct ref (develop) when Helm Chart changes
+          # are merged to develop branch
+          #symphony-kubernetes-deployer-ref: 'develop'
           symphony-kubernetes-deployer-ref: 'feature/SYUS_10716_v2'
           commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
           # Token for checking-out private repository
