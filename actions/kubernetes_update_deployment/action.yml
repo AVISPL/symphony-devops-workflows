@@ -1,19 +1,29 @@
 # Copyright (c) 2022 AVI-SPL Inc.
 # All Rights Reserved.
-# Update Kubernetes deployment file : set docker image to be used with provided one
-# This action checkouts the deployment repository, updates deployment file and pushes the change to GitHub
+# Set docker image to be used for given microservice with provided one
+# by updating adequate Kubernetes file descriptor
+# This action checks-out the deployment repository, updates descriptor (yaml) file
+# and pushes the change to GitHub
+# WARNING: only updates descriptor for Dev environment
 # Prerequisites :
 # - GitHub actions from AVI-SPL private repository must be available in local workspace directory
-#
-name: 'Kubernetes update deployment'
-description: 'Update Kubernetes deployment file : set docker image to be used with provided one'
+# TODO Enhancement: parameterize with an "environment" input to allow updating dev/qa/int...
+name: 'Kubernetes update microservice Docker image (only for Dev environment)'
+description: >
+  Set docker image to be used for given microservice with provided one
+  by updating adequate Kubernetes file descriptor
 
 inputs:
-  deployment-file:
-    description: 'Path to deployment file to be updated. Path is relative to the deployment repository root directory, without leading "/"'
+  symphony-microservice-name:
+    description: >
+      Name of the microservice to be updated.
+      Used to find adequate file descriptor to be updated.
+      E.g. 'symphony-audit'
     required: true
   docker-image:
-    description: 'New docker image value to be replaced in deployment file (e.g. "registry.vnocsymphony.com/symphony-microservices/symphony-notifications-email:1.1.0-SNAPSHOT.2205041703")'
+    description: >
+      New docker image value to be replaced in descriptor file
+      E.g. "registry.vnocsymphony.com/symphony-microservices/symphony-notifications-email:1.1.0-SNAPSHOT.2205041703"
     required: true
   fail-if-no-file-change:
     description: >
@@ -50,14 +60,18 @@ runs:
       run: |
         echo "Compute paths"
         CHECKOUT_DIR="${{ inputs.workspace-checkout-dir }}"
-        FILENAME_RELATIVE_PATH="${CHECKOUT_DIR}/${{ inputs.deployment-file }}"
+        # Path is relative to the Kubernetes deployer repository's root directory
+        DESCRIPTOR_FILE_NAME="symphony/charts/${{ inputs.symphony-microservice-name }}/values-dev.yaml"
+        FILENAME_RELATIVE_PATH="${CHECKOUT_DIR}/${DESCRIPTOR_FILE_NAME}"
         FILENAME_ABSOLUTE_PATH="${GITHUB_WORKSPACE}/${FILENAME_RELATIVE_PATH}"
         #
         echo "CHECKOUT_DIR: [${CHECKOUT_DIR}]"
+        echo "DESCRIPTOR_FILE_NAME: [${DESCRIPTOR_FILE_NAME}]"
         echo "FILENAME_RELATIVE_PATH: [${FILENAME_RELATIVE_PATH}]"
         echo "FILENAME_ABSOLUTE_PATH: [${FILENAME_ABSOLUTE_PATH}]"
         #
         echo "::set-output name=CHECKOUT_DIR::${CHECKOUT_DIR}"
+        echo "::set-output name=DESCRIPTOR_FILE_NAME::${DESCRIPTOR_FILE_NAME}"
         echo "::set-output name=FILENAME_RELATIVE_PATH::${FILENAME_RELATIVE_PATH}"
         echo "::set-output name=FILENAME_ABSOLUTE_PATH::${FILENAME_ABSOLUTE_PATH}"
       shell: bash
@@ -80,15 +94,15 @@ runs:
     - name: Show docker image value before change
       run: |
         echo "Value BEFORE in ${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}:"
-        grep 'image: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
+        grep 'tag: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
       shell: bash
 
     # Replace in file
     - name: Replace docker image in file
       uses: jacobtomlinson/gha-find-replace@v2
       with:
-        find: "image: .*"
-        replace: "image: ${{ inputs.docker-image }}"
+        find: "tag: .*"
+        replace: "tag: ${{ inputs.docker-image }}"
         # File to replace into
         include: "${{ steps.compute_paths.outputs.FILENAME_RELATIVE_PATH }}"
         regex: true
@@ -96,7 +110,7 @@ runs:
     - name: Show docker image value after change
       run: |
         echo "Value AFTER in ${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}:"
-        grep 'image: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
+        grep 'tag: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
       shell: bash
 
     # TODO git commit and push - move to separate action ?
@@ -133,7 +147,7 @@ runs:
         # - https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
         # Specify file path to ensure no unwanted files are committed/pushed by mistake
         # WARNING: file path is relative to repository (see repository parameter)
-        file_pattern: ${{ inputs.deployment-file }}
+        file_pattern: ${{ steps.compute_paths.outputs.DESCRIPTOR_FILE_NAME }}
 
         # Optional. Option used by `git-status` to determine if the repository is
         # dirty. See https://git-scm.com/docs/git-status#_options

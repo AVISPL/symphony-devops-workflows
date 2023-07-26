@@ -206,8 +206,7 @@ jobs:
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
-          # Path is relative to deployer project root
-          deployment-file: '${{ inputs.symphony-microservice-name }}-deploy/deployment.yaml'
+          symphony-microservice-name: '${{ inputs.symphony-microservice-name }}'
           # New value for docker image in deployment file
           docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}:${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
           fail-if-no-file-change: 'true'
