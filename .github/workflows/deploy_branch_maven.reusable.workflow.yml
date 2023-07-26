@@ -202,6 +202,13 @@ jobs:
           docker-tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
           docker-image-prefix: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}'
 
+      # TODO remove test
+      - name: test file
+        id: test_file
+        run: |
+          ls -l ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment/
+          cat ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment/.*
+
       - name: Kubernetes update deployment
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
