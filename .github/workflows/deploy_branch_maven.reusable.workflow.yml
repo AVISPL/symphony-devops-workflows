@@ -208,7 +208,8 @@ jobs:
         with:
           symphony-microservice-name: '${{ inputs.symphony-microservice-name }}'
           # New value for docker image in deployment file
-          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}:${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
+          # Only docker tag name (e.g. 1.6.0-SNAPSHOT.2307251259), not full path to repository
+          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
           fail-if-no-file-change: 'true'
           # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
           workspace-checkout-dir: 'symphony-kubernetes-deployer'
