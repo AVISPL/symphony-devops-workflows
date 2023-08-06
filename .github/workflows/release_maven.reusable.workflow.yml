@@ -154,8 +154,7 @@ jobs:
       - name: Setup JDK
         uses: ./.github/symphony-devops-workflows/actions/setup_jdk
         with:
-          java-version: '17.0.2'
-          distribution: 'adopt' # Adopt OpenJDK
+          distribution: 'custom'
 
       # Build number always reflects actual date/time when build was produced
       # It is sent to Maven command, so it can be used by build process, for example
