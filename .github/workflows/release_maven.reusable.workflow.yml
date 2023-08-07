@@ -156,6 +156,12 @@ jobs:
         with:
           distribution: 'custom'
 
+      - name: Setup Maven settings
+        uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
+        with:
+          nexus-user: ${{ secrets.nexusUser }}
+          nexus-password: ${{ secrets.nexusPassword }}
+
       # Build number always reflects actual date/time when build was produced
       # It is sent to Maven command, so it can be used by build process, for example
       # for adding value inside built artifact
