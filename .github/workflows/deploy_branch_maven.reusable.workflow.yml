@@ -133,12 +133,6 @@ jobs:
         with:
           distribution: 'custom'
 
-      - name: Setup Maven settings
-        uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
-        with:
-          nexus-user: ${{ secrets.nexusUser }}
-          nexus-password: ${{ secrets.nexusPassword }}
-
       - name: Get project version
         id: get_project_version
         uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version

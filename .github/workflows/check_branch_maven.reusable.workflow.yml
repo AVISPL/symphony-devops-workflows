@@ -52,14 +52,7 @@ on:
           outside of workspace directory
         required: false
         type: string
-    secrets:
-      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
-      nexusUser:
-        description: the username of nexus user which performs Maven commands
-        required: true
-      nexusPassword:
-        description: the password of nexus user which performs Maven commands
-        required: true
+
 jobs:
   reusable_job_deploy_branch_maven:
     # Permissions are required for actions that need to do changes on repository
@@ -101,12 +94,6 @@ jobs:
         uses: ./.github/symphony-devops-workflows/actions/setup_jdk
         with:
           distribution: 'custom'
-
-      - name: Setup Maven settings
-        uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
-        with:
-          nexus-user: ${{ secrets.nexusUser }}
-          nexus-password: ${{ secrets.nexusPassword }}
 
       - name: Get project version
         id: get_project_version

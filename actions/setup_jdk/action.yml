@@ -62,6 +62,8 @@ runs:
         jdkFile: ${{ runner.temp }}/java_package.tar.gz
         java-version: ${{ inputs.java-version }}
         architecture: x64
+        # Do NOT overwrite Maven settings.xml with auto-generated one
+        overwrite-settings: false
 
     - name: Print Java Version
       shell: bash
