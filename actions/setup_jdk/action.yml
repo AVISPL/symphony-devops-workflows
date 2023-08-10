@@ -14,7 +14,7 @@ inputs:
     required: false
     default: 'custom' # Adopt OpenJDK
   downloadUrl:
-    description: 'URL to dwonload JDK archive. Should be used if `distribution` is custom.'
+    description: 'URL to download JDK archive. Should be used if `distribution` is custom.'
     required: false
     default: "https://download.java.net/java/GA/jdk20.0.2/6e380f22cbe7469fa75fb448bd903d8e/9/GPL/openjdk-20.0.2_linux-x64_bin.tar.gz"
   checkSum:
@@ -52,7 +52,7 @@ runs:
       run: |
         echo "${{ inputs.checkSum }} $RUNNER_TEMP/java_package.tar.gz" | sha256sum --check --status 
 
-      # TODO: if we would cache downloaded JDK, we can first verify if cached version has correct csum, before downloading
+      # TODO: if we would cache downloaded JDK, we can first verify if cached version has correct checksum, before downloading
 
     - name: Set up JDK
       uses: actions/setup-java@v3.1.1
