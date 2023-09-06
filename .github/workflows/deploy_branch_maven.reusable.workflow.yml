@@ -75,6 +75,11 @@ on:
         required: false
         type: boolean
         default: false
+      dependabot-submit-dependencies:
+        description: 'Whether or not to send project''s Maven dependencies to Dependabot'
+        required: false
+        type: boolean
+        default: false
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -98,6 +103,7 @@ jobs:
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
     permissions:
       # Contents write is required for git tagging
+      # and for calling dependencies Submission API (used by maven-dependency-submission-action)
       contents: write
       # Actions read is required by technote-space/workflow-conclusion-action for accessing
       # actions API for getting actions results
@@ -221,6 +227,11 @@ jobs:
           # Token for checking-out private repository
           # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
           github-token: ${{ secrets.ciToken }}
+
+      # Submit Maven dependencies to Dependabot submission API
+      - name: Submit Maven dependencies
+        if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies }}
+        uses: advanced-security/maven-dependency-submission-action@v3
 
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
