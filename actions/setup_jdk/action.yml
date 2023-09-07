@@ -60,7 +60,7 @@ runs:
       run: |
         echo "${{ inputs.checkSum }} $RUNNER_TEMP/java_package.tar.gz" | sha256sum --check --status 
 
-      # TODO: if we would cache downloaded JDK, we can first verify if cached version has correct checksum, before downloading
+      # If we would cache downloaded JDK, we can first verify if cached version has correct checksum, before downloading
 
     - name: Set up JDK
       uses: actions/setup-java@v3.1.1
