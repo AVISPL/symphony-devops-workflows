@@ -75,4 +75,7 @@ runs:
 
     - name: Print Java Version
       shell: bash
-      run: "java -version"
+      run: |
+        java -version
+        mvn -version
+
