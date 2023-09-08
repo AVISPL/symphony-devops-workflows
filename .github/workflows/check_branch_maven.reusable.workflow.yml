@@ -54,7 +54,7 @@ on:
         type: string
 
 jobs:
-  reusable_job_deploy_branch_maven:
+  reusable_job_check_branch_maven:
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
@@ -93,8 +93,7 @@ jobs:
       - name: Setup JDK
         uses: ./.github/symphony-devops-workflows/actions/setup_jdk
         with:
-          java-version: '17.0.2'
-          distribution: 'adopt' # Adopt OpenJDK
+          distribution: 'custom'
 
       - name: Get project version
         id: get_project_version

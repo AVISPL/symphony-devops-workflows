@@ -8,20 +8,76 @@ inputs:
   java-version:
     description: 'Java version'
     required: false
-    default: '19.0.2'
+    default: '20.0.2'
   distribution:
     description: 'Distribution (e.g. "adopt")'
     required: false
-    default: 'adopt' # Adopt OpenJDK
+    default: 'custom' # Adopt OpenJDK
+  downloadUrl:
+    description: 'URL to download JDK archive. Should be used if `distribution` is custom.'
+    required: false
+    default: "https://download.java.net/java/GA/jdk20.0.2/6e380f22cbe7469fa75fb448bd903d8e/9/GPL/openjdk-20.0.2_linux-x64_bin.tar.gz"
+  checkSum:
+    description: 'SHA256 sum of archive.'
+    required: false
+    default: "beaf61959c2953310595e1162b0c626aef33d58628771033ff2936609661956c"
 
 runs:
   using: "composite"
   steps:
     - name: Set up JDK
       uses: actions/setup-java@v3.1.1
+      # this is needed for backward compatibility, download distributions 
+      # supported by actions/setup-java.
+      # `custom` is used to download actual openjdk
+      if: inputs.distribution != 'custom'
       with:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.distribution }}
         # Do NOT overwrite Maven settings.xml with auto-generated one
         overwrite-settings: false
+      
+    - name: Check Version
+      if: inputs.distribution == 'custom'
+      shell: bash
+      run: |
+        echo -n "Installed java: "
+        javac -version
+        echo "INSTALLED_JAVA_VER=$(javac -version)" >> $GITHUB_ENV        
+
+    - name: Download JDK
+      # `custom` is used to download by URL
+      if: inputs.distribution == 'custom' && !endsWith(env.INSTALLED_JAVA_VER, inputs.java-version)
+      shell: bash
+      run: |
+        download_url="${{ inputs.downloadUrl }}"
+        wget -q -O $RUNNER_TEMP/java_package.tar.gz $download_url     
+      
+    - name: Verify checksum
+      # `custom` is used to download by URL
+      if: inputs.distribution == 'custom' && !endsWith(env.INSTALLED_JAVA_VER, inputs.java-version)
+      shell: bash
+      run: |
+        echo "${{ inputs.checkSum }} $RUNNER_TEMP/java_package.tar.gz" | sha256sum --check --status 
+
+      # If we would cache downloaded JDK, we can first verify if cached version has correct checksum, before downloading
+
+    - name: Set up JDK
+      uses: actions/setup-java@v3.1.1
+      if: inputs.distribution == 'custom'  && !endsWith(env.INSTALLED_JAVA_VER, inputs.java-version)
+      with:
+        distribution: 'jdkfile'
+        jdkFile: ${{ runner.temp }}/java_package.tar.gz
+        java-version: ${{ inputs.java-version }}
+        architecture: x64
+        # Do NOT overwrite Maven settings.xml with auto-generated one
+        overwrite-settings: false
+
+    - name: Print Java Version
+      shell: bash
+      run: |
+        echo java -version
+        java -version
+        echo mvn -version
+        mvn -version
 
