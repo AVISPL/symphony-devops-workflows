@@ -12,6 +12,13 @@ inputs:
   docker-file:
     description: 'The path of the Dockerfile to be built'
     required: true
+  docker-build-other-options:
+    description: |
+      Additional arguments to the docker build command, added as is at the end of command
+      before the path to build directory
+    required: false
+    type: string
+    default: ''
   docker-tag-push:
     description: 'Whether to tag and push docker image'
     required: true
@@ -95,8 +102,8 @@ runs:
           # Build and tag
           echo "Docker build file [${{ inputs.docker-file }}]..."
 
-          echo Running: sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" "${DOCKERFILE_DIR}"
-          sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" "${DOCKERFILE_DIR}"
+          echo Running: sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
+          sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
 
           # Docker push
           sudo docker push "${FIRST_TAG}"
@@ -117,10 +124,9 @@ runs:
           done
         else
           # Build only
-          #
           echo "Docker build file [${{ inputs.docker-file }}]..."
-          echo Running: sudo docker build -f "${{ inputs.docker-file }}" "${DOCKERFILE_DIR}"
-          sudo docker build -f "${{ inputs.docker-file }}" "${DOCKERFILE_DIR}"
+          echo Running: sudo docker build -f "${{ inputs.docker-file }}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
+          sudo docker build -f "${{ inputs.docker-file }}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
           echo "::set-output name=DOCKER_PUSHED::false"
         fi
 

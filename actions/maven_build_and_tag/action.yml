@@ -56,6 +56,9 @@ runs:
       run: mvn -B -U --file ${{ inputs.pom-xml-file }} ${{ inputs.maven_goals }} ${{ inputs.maven_other_options }}
       shell: bash
 
+    # TODO git tagging: use new common action git_tag_create_or_move instead
+    #      only when inputs.git_tag != ''
+
     # Remove existing tag (if tagging is requested and tag exists)
     - name: Git tag delete existing
       id: git_tag_delete_existing

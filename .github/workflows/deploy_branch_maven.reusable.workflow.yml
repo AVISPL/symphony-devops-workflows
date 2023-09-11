@@ -121,6 +121,8 @@ jobs:
         with:
           # Checkout all branches and tags (required to work with tags in git_delete_tag action)
           fetch-depth: '0' # 0 indicates all history for all branches and tags
+          # Force clean to avoid leftover changes from previous runs in workspace in current runner
+          clean: 'true'
 
       # GitHub actions cannot be executed directly from private repository
       # (feature not available yet)
@@ -193,6 +195,7 @@ jobs:
           git_tag: ${{ inputs.git_tag }}
           git_tag_fail_if_exists: 'false'
           git_delete_tag_if_exists: 'true'
+          # TODO check if token used here should be user token or CI token
           github_token: ${{ secrets.userToken }}
 
       # Docker
@@ -218,9 +221,9 @@ jobs:
           fail-if-no-file-change: 'true'
           # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
           workspace-checkout-dir: 'symphony-kubernetes-deployer'
-          # The revision (branch) to be updated
-          # For testing purpose only: use correct ref (develop) when Helm Chart changes
-          # are merged to develop branch
+          # The revision (branch) to be updated in deployer repository
+          # Value should be overridden for testing purpose only.
+          # By default, 'develop' branch should be used
           symphony-kubernetes-deployer-ref: 'develop'
           commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
           # Token for checking-out private repository
