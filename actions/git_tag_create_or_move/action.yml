@@ -1,0 +1,55 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Create a Git tag or move (delete existing tag if exists + recreate)
+# depending on inputs
+# Prerequisites :
+# - Git repository must already be checked out locally with a user which was write permission
+# - GitHub actions from AVI-SPL private repository must be available in local workspace directory
+#
+name: 'Git tag create or move'
+description: 'Git tag create or move'
+inputs:
+  git_tag:
+    description: 'Tag to be created on Git revision, e.g. "snapshot" for daily build'
+    required: true
+  git_tag_fail_if_exists:
+    description: >
+      A security to avoid overwriting tags by mistake
+      If tag exists and value is not 'false', fail the job
+      Otherwise, has no effect
+    required: true
+    default: 'true'
+  git_delete_tag_if_exists:
+    description: >
+      If value is 'true': delete existing Git tag with name $git_tag.
+      If tag does not exist, do nothing
+      If value is different from 'true', do nothing
+    required: false
+    default: 'false'
+  github_token:
+    description: >
+      GitHub secret token to be provided by caller
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    # Remove existing tag (if tagging is requested and tag exists)
+    - name: Git tag delete existing
+      id: git_tag_delete_existing
+      if: "${{ inputs.git_delete_tag_if_exists == 'true' }}"
+      uses: ./.github/symphony-devops-workflows/actions/git_delete_tag
+      with:
+        tag_name: ${{ inputs.git_tag }}
+        git_tag_fail_if_exists: ${{ inputs.git_tag_fail_if_exists }}
+
+    # Create tag on currently checked out Git revision
+    - name: Git tag current commit
+      uses: pkgdeps/git-tag-action@v2
+      with:
+        github_token: ${{ inputs.github_token }}
+        github_repo: ${{ github.repository }}
+        git_commit_sha: ${{ github.sha }}
+        version: ${{ inputs.git_tag }}
+        # no prefix added to tag, use tag as it is provided by caller
+        git_tag_prefix: ''

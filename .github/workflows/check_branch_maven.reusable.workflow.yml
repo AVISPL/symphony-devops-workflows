@@ -60,6 +60,7 @@ jobs:
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
     permissions:
       # Contents write is required for git tagging
+      # TODO check workflow should not need write permission
       contents: write
       # Actions read is required by technote-space/workflow-conclusion-action for accessing
       # actions API for getting actions results
@@ -75,8 +76,12 @@ jobs:
       - name: Git checkout current repository/branch
         uses: actions/checkout@v3.0.1
         with:
+          # TODO HOUSEKEEPING check if fetch-depth 0 is really needed (should not
+          #      as no Git tags are manipulated by this workflow)
           # Checkout all branches and tags (required to work with tags in git_delete_tag action)
           fetch-depth: '0' # 0 indicates all history for all branches and tags
+          # Force clean to avoid leftover changes from previous runs in workspace in current runner
+          clean: 'true'
 
       # GitHub actions cannot be executed directly from private repository
       # (feature not available yet)
