@@ -7,13 +7,14 @@
 # WARNING: only updates descriptor for Dev environment
 # Prerequisites :
 # - GitHub actions from AVI-SPL private repository must be available in local workspace directory
-# TODO Enhancement: parameterize with an "environment" input to allow updating dev/qa/int...
+# TODO ENHANCEMENT: parameterize with an "environment" input to allow updating dev/qa/int...
 name: 'Kubernetes update microservice Docker image (only for Dev environment)'
 description: >
   Set docker image to be used for given microservice with provided one
   by updating adequate Kubernetes file descriptor
 
 inputs:
+  # TODO rename symphony-microservice-name to project-name
   symphony-microservice-name:
     description: >
       Name of the microservice to be updated.
@@ -41,7 +42,7 @@ inputs:
   symphony-kubernetes-deployer-ref:
     description: 'Reference (revision) to Kubernetes deployment repository (branch or tag) to be updated. E.g. ''develop'''
     required: false
-    default: 'dev'
+    default: 'develop'
   commit-message:
     description: 'Git commit message'
     required: true

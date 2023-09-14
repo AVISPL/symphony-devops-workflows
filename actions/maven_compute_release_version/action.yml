@@ -49,6 +49,8 @@ runs:
           const REGEXP_SNAPSHOT = /^[0-9]+\.[0-9]+\.[0-9]+-SNAPSHOT$/;
           // 5.6.1.2208051600
           const REGEXP_WITH_BUILD_NUMBER = /^[0-9]+\.[0-9]+\.[0-9]+\.([0-9]){10}$/;
+          // 5.6.1
+          const REGEXP_MAJOR_MINOR_PATCH = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
           // User version - trim whitespaces (left and right)
           let user_version = "${{ inputs.user-version }}".trim();
@@ -85,6 +87,11 @@ runs:
                 current_version.substring(0, current_version.length - "2208051600".length)
                 + '${{ inputs.build-number }}'
               ;
+            }
+            else if (current_version.match(REGEXP_MAJOR_MINOR_PATCH)) {
+              // Version ajust contains major minor patch -> add build number
+              //   5.6.1 -> 5.6.1.2208052000
+              release_version = current_version + '.' + '${{ inputs.build-number }}';
             }
             else {
               let msg = "[ERROR] Unrecognized version format: [" + current_version + "]";
