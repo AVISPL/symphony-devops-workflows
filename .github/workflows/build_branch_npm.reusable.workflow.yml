@@ -138,19 +138,19 @@ jobs:
         uses: ./.github/symphony-devops-workflows/actions/build_number
 
       - name: Compute build versions
-          id: compute_build_versions
-          run: |
-            projectVersion="${{ steps.get_project_version.outputs.project-version }}"
-            buildNumber="${{ steps.compute_build_number.outputs.build-number }}"
-            longVersion="${projectVersion}.${buildNumber}"
-            shortVersion"${projectVersion}.${buildNumber:0:6}"
-            # Log
-            echo "Project long version : ${longVersion}"
-            echo "Project short version : ${shortVersion}"
-            # Action output
-            echo "::set-output name=long-version::${longVersion}"
-            echo "::set-output name=short-version::${shortVersion}"
-          shell: bash
+        id: compute_build_versions
+        run: |
+          projectVersion="${{ steps.get_project_version.outputs.project-version }}"
+          buildNumber="${{ steps.compute_build_number.outputs.build-number }}"
+          longVersion="${projectVersion}.${buildNumber}"
+          shortVersion"${projectVersion}.${buildNumber:0:6}"
+          # Log
+          echo "Project long version : ${longVersion}"
+          echo "Project short version : ${shortVersion}"
+          # Action output
+          echo "::set-output name=long-version::${longVersion}"
+          echo "::set-output name=short-version::${shortVersion}"
+        shell: bash
 
       # Compute job options depending on which workflow mode (check/deploy/release)
       # is requested by caller
