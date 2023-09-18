@@ -143,7 +143,7 @@ jobs:
           projectVersion="${{ steps.get_project_version.outputs.project-version }}"
           buildNumber="${{ steps.compute_build_number.outputs.build-number }}"
           longVersion="${projectVersion}.${buildNumber}"
-          shortVersion"${projectVersion}.${buildNumber:0:6}"
+          shortVersion="${projectVersion}.${buildNumber:0:6}"
           # Log
           echo "Project long version : ${longVersion}"
           echo "Project short version : ${shortVersion}"
