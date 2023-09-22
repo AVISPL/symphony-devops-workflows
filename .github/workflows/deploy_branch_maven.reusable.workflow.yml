@@ -214,6 +214,8 @@ jobs:
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
+          # Name of Helm subchart (name of directory under "/symphony/charts")
+          # in symphony-kubernetes-deployer repository
           symphony-microservice-name: '${{ inputs.symphony-microservice-name }}'
           # New value for docker image in deployment file
           # Only docker tag name (e.g. 1.6.0-SNAPSHOT.2307251259), not full path to repository

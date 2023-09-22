@@ -137,6 +137,21 @@ jobs:
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
 
+      - name: Compute build versions
+        id: compute_build_versions
+        run: |
+          projectVersion="${{ steps.get_project_version.outputs.project-version }}"
+          buildNumber="${{ steps.compute_build_number.outputs.build-number }}"
+          longVersion="${projectVersion}.${buildNumber}"
+          shortVersion="${projectVersion}.${buildNumber:0:6}"
+          # Log
+          echo "Project long version : ${longVersion}"
+          echo "Project short version : ${shortVersion}"
+          # Action output
+          echo "::set-output name=long-version::${longVersion}"
+          echo "::set-output name=short-version::${shortVersion}"
+        shell: bash
+
       # Compute job options depending on which workflow mode (check/deploy/release)
       # is requested by caller
       - name: Compute job options
@@ -163,7 +178,7 @@ jobs:
             dockerTagPush=true
           elif [[ "release" == "${mode}" ]]; then
             gitTagCreate=true
-            gitTagValue="${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}"
+            gitTagValue="${{ steps.compute_build_versions.outputs.long-version }}"
             gitTagMove=false
             dockerTagPush=true
           else
@@ -188,7 +203,7 @@ jobs:
         id: compute_docker_tags
         run: |
           echo "Compute docker tags"
-          DOCKER_TAG_WITH_VERSION="${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}"
+          DOCKER_TAG_WITH_VERSION="${{ steps.compute_build_versions.outputs.long-version }}"
           DOCKER_TAGS_ALL="snapshot,${DOCKER_TAG_WITH_VERSION}"
           # Full tag with Docker registry address. E.g. "registry.vnocsymphony.com/platform6/ui"
           DOCKER_IMAGE_TAG_PREFIX="registry.vnocsymphony.com/${{ inputs.docker-registry-project-name }}/${{ inputs.project-name }}"
@@ -234,7 +249,7 @@ jobs:
         uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
         with:
           docker-file: ${{ inputs.docker-file }}
-          docker-build-other-options: '--build-arg REACT_APP_VERSION=${{ steps.get_project_version.outputs.project-version }}'
+          docker-build-other-options: '--build-arg REACT_APP_VERSION=${{ steps.compute_build_versions.outputs.short-version }}'
           # Push tags to the Docker registry?
           # WARNING outputs from steps are strings, and action expects boolean type
           # Need to convert string to a boolean
