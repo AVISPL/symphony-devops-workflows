@@ -1,0 +1,283 @@
+# Copyright (c) 2023 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Reusable workflow for building an application with npm
+# Some steps can be enabled/disabled with workflow parameters
+# When deploying application, snapshot tag is moved, no release/timestamp Git tag is created
+#
+name: "Build npm"
+
+on:
+  # Reusable workflow
+  workflow_call:
+    inputs:
+      mode:
+        description: |
+          The workflow mode. Possible values are "check", "deploy" and "release"
+        required: true
+        type: string
+      package-json-file:
+        description: The path to project's package.json
+        required: false
+        default: 'package.json'
+        type: string
+      docker-file:
+        description: |
+          The path of the Dockerfile to be built.
+          Path can be either a relative path, in which case it is relative to the project's
+          workspace directory (e.g. './path/to/Dockerfile'), or an aboslute path
+          (e.g. '${GITHUB_WORKSPACE}/path/to/Dockerfile')
+          Note that there GitHub workflows enforce limitations for accessing files
+          outside of workspace directory
+        required: false
+        type: string
+        default: 'Dockerfile'
+      project-name:
+        description: |
+          Used to build and tag Docker image, and optionally to update Kubernetes deployment
+          on DEV environment (see 'kubernetes-update-deployment-descriptor' input)
+        required: true
+        type: string
+      docker-registry-project-name:
+        description: |
+          Name of project in Docker registry under which the Docker images repository
+          is located and where Docker images must be pushed
+          E.g. project name is "platform6" (and repository name is "ui")
+        required: false
+        type: string
+        # All UIs under platform6/something
+        default: 'platform-6'
+      kubernetes-update-deployment-descriptor:
+        description: |
+          Whether or not to update Kubernetes deployment so service is automatically
+          deployed to DEV environment
+          This allows caller to enable/disable this option depending whether
+          project is running under Kubernetes or not
+        required: false
+        type: boolean
+        default: false
+      symphony-devops-workflows-ref:
+        description: |
+          symphony-devops-workflows reference branch (or tag) to be used. E.g. ''develop''
+        required: false
+        type: string
+        default: 'develop'
+      runs-on-labels:
+        description: |
+          List of labels for the job runs-on clause (in JSON string array form,
+          can use either single or double quotes around values)
+          E.g. '[ "ubuntu-latest" ]' for using GitHub runners
+          E.g. '[ "self-hosted", "linux" ]' for using AVI-SPLI self-hosted runner
+        required: false
+        type: string
+        default: '[ "self-hosted", "linux" ]'
+    #
+    secrets:
+      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
+      ciToken:
+        description: |
+          GitHub token to be used for updating AVI-SPL private repositories. In this workflow,
+          it is used only for updating Kubernetes deployment files
+          This token should belong to the CI user, although workflow would work with any token
+          with correct permissions
+          It must be a GitHub PAT (Personal Access Token) with read and write authorizations
+          on the GitHub repositories to be read/updated
+        required: false
+
+jobs:
+  build:
+    # Use runner which has requested labels
+    # Note: GitHub does not allow to pass an object as job input (such as an array),
+    # so need this trick to convert text input to an array
+    runs-on: ${{ fromJSON(inputs.runs-on-labels) }}
+
+    steps:
+      # WARNING checkout repository first because this action resets the checkout directory
+      # (so other files written into it will be removed)
+      # Checkout current branch
+      - name: Checkout
+        uses: actions/checkout@v3.6.0
+        with:
+          # Checkout all branches and tags (required to work with tags)
+          fetch-depth: '0' # 0 indicates all history for all branches and tags
+          # Force clean to avoid leftover changes from previous runs in workspace in current runner
+          clean: 'true'
+
+      # GitHub actions cannot be executed directly from private repository
+      # (feature not available yet)
+      # So checkout the actions into local workspace directory and run them from there
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v3.6.0
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          # Select revision
+          ref: '${{ inputs.symphony-devops-workflows-ref }}'
+          # Indicate where to check out project to
+          path: ./.github/symphony-devops-workflows
+          # Force clean to avoid leftover changes from previous runs in workspace in current runner
+          clean: 'true'
+
+      - name: Install jq
+        uses: ./.github/symphony-devops-workflows/actions/install_jq
+
+      - name: Get project version
+        id: get_project_version
+        run: |
+          projectVersion=$(jq -r .version '${{ inputs.package-json-file }}')
+          # Log and check not empty
+          echo "Project version : ${projectVersion:?Project version must be set and non-empty.}"
+          echo "::set-output name=project-version::${projectVersion}"
+        shell: bash
+
+      # Build number always reflects actual date & time when build was produced
+      # It is sent to Docker command, so it can be used by build process,
+      # for example for using its value inside built artifact
+      # It is also used as part of the new project version
+      - name: Compute build number
+        id: compute_build_number
+        uses: ./.github/symphony-devops-workflows/actions/build_number
+
+      - name: Compute build versions
+        id: compute_build_versions
+        run: |
+          projectVersion="${{ steps.get_project_version.outputs.project-version }}"
+          buildNumber="${{ steps.compute_build_number.outputs.build-number }}"
+          longVersion="${projectVersion}.${buildNumber}"
+          shortVersion="${projectVersion}.${buildNumber:0:6}"
+          # Log
+          echo "Project long version : ${longVersion}"
+          echo "Project short version : ${shortVersion}"
+          # Action output
+          echo "::set-output name=long-version::${longVersion}"
+          echo "::set-output name=short-version::${shortVersion}"
+        shell: bash
+
+      # Compute job options depending on which workflow mode (check/deploy/release)
+      # is requested by caller
+      - name: Compute job options
+        id: compute_job_options
+        run: |
+          mode='${{ inputs.mode }}'
+
+          # Computed variables
+          declare gitTagCreate
+          declare gitTagValue
+          declare gitTagMove
+          declare dockerTagPush
+
+          if [[ "check" == "${mode}" ]]; then
+            gitTagCreate=false
+            # Other variables should not be used, put sensible values just in case
+            gitTagValue=""
+            gitTagMove=false
+            dockerTagPush=false
+          elif [[ "deploy" == "${mode}" ]]; then
+            gitTagCreate=true
+            gitTagValue="snapshot"
+            gitTagMove=true
+            dockerTagPush=true
+          elif [[ "release" == "${mode}" ]]; then
+            gitTagCreate=true
+            gitTagValue="${{ steps.compute_build_versions.outputs.long-version }}"
+            gitTagMove=false
+            dockerTagPush=true
+          else
+            echo "ERROR unexpected mode [${mode}] (expected 'check' or 'deploy' or 'release')"
+            exit 1
+          fi
+
+          # Log
+          echo "gitTagCreate: [${gitTagCreate}]"
+          echo "gitTagValue: [${gitTagValue}]"
+          echo "gitTagMove: [${gitTagMove}]"
+          echo "dockerTagPush: [${dockerTagPush}]"
+
+          # Outputs
+          echo "::set-output name=git-tag-create::${gitTagCreate}"
+          echo "::set-output name=git-tag-value::${gitTagValue}"
+          echo "::set-output name=git-tag-move::${gitTagMove}"
+          echo "::set-output name=docker-tag-push::${dockerTagPush}"
+        shell: bash
+
+      - name: Compute docker tags
+        id: compute_docker_tags
+        run: |
+          echo "Compute docker tags"
+          DOCKER_TAG_WITH_VERSION="${{ steps.compute_build_versions.outputs.long-version }}"
+          DOCKER_TAGS_ALL="snapshot,${DOCKER_TAG_WITH_VERSION}"
+          # Full tag with Docker registry address. E.g. "registry.vnocsymphony.com/platform6/ui"
+          DOCKER_IMAGE_TAG_PREFIX="registry.vnocsymphony.com/${{ inputs.docker-registry-project-name }}/${{ inputs.project-name }}"
+          #
+          echo "DOCKER_TAG_WITH_VERSION: [${DOCKER_TAG_WITH_VERSION}]"
+          echo "DOCKER_TAGS_ALL: [${DOCKER_TAGS_ALL}]"
+          echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
+          #
+          echo "::set-output name=DOCKER_TAG_WITH_VERSION::${DOCKER_TAG_WITH_VERSION}"
+          echo "::set-output name=DOCKER_TAGS_ALL::${DOCKER_TAGS_ALL}"
+          echo "::set-output name=DOCKER_IMAGE_TAG_PREFIX::${DOCKER_IMAGE_TAG_PREFIX}"
+        shell: bash
+
+      # Validate Docker tags
+      # Always use the common action for Docker tags validation. Docker image tags
+      # could have additional or different rules, and rules could change in time.
+      # This way we enforce that all docker tags pushed to the Docker registry follow
+      # same rules whatever the workflow which created them, whatever way tags were
+      # provided or computed
+      - name: Validate docker tags
+        id: validate_docker_tags
+        uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
+        with:
+          tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
+          allowEmpty: 'false'
+
+      # Git tag
+      - name: Git tag
+        id: git_tag
+        if: ${{ !cancelled() && !failure() && steps.compute_job_options.outputs.git-tag-create == 'true' }}
+        uses: ./.github/symphony-devops-workflows/actions/git_tag_create_or_move
+        with:
+          git_tag: '${{ steps.compute_job_options.outputs.git-tag-value }}'
+          # WARNING outputs from steps are strings, and action expects boolean type
+          # Need to convert string to a boolean
+          git_tag_fail_if_exists: ${{ 'false' == steps.compute_job_options.outputs.git-tag-move }}
+          git_delete_tag_if_exists: ${{ 'true' == steps.compute_job_options.outputs.git-tag-move }}
+          github_token: '${{ secrets.ciToken }}'
+
+      # Docker build
+      - name: Docker build
+        id: docker_build_tag_push
+        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
+        with:
+          docker-file: ${{ inputs.docker-file }}
+          docker-build-other-options: '--build-arg REACT_APP_VERSION=${{ steps.compute_build_versions.outputs.short-version }}'
+          # Push tags to the Docker registry?
+          # WARNING outputs from steps are strings, and action expects boolean type
+          # Need to convert string to a boolean
+          docker-tag-push: ${{ 'true' == steps.compute_job_options.outputs.docker-tag-push }}
+          # Tag(s) for Docker image. Used only when docker-tag-push is true
+          docker-tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
+          docker-image-prefix: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}'
+
+      # Update Kubernetes deployment on Dev environment
+      # (only when docker image was actually pushed to the Docker registry)
+      - name: Kubernetes update deployment
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        with:
+          # Name of Helm subchart (name of directory under "/symphony/charts")
+          # in symphony-kubernetes-deployer repository
+          symphony-microservice-name: ${{ inputs.project-name }}
+          # New value for docker image in deployment file
+          # Only docker tag name (e.g. 6.4.0.2308281259), not full path to repository
+          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
+          fail-if-no-file-change: 'true'
+          # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
+          workspace-checkout-dir: 'symphony-kubernetes-deployer'
+          # The revision (branch) to be updated in deployer repository
+          # Value should be overridden for testing purpose only.
+          # By default, 'develop' branch should be used
+          symphony-kubernetes-deployer-ref: 'develop'
+          commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
+          # Token for checking-out private repository
+          # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
+          github-token: ${{ secrets.ciToken }}

@@ -1,7 +1,7 @@
 # Copyright (c) 2022 AVI-SPL Inc.
 # All Rights Reserved.
 #
-# Release workflow for Maven projects
+# Reusable release workflow for Maven projects
 # Update project version, full project build (Maven, docker), Git tagging, deploy to Kubernetes
 # See design document : https://avi-spl.atlassian.net/wiki/spaces/SYM/pages/3011969048/Versioning+strategy
 name: reusable_workflow_release_branch_maven
@@ -74,8 +74,8 @@ on:
         description: |
           List of labels for the job runs-on clause (in JSON string array form,
           can use either single or double quotes around values)
-          E.g. [ "ubuntu-latest" ] for using GitHub runners
-          E.g. [ "self-hosted", "linux" ] for using AVI-SPLI self-hosted runner
+          E.g. '[ "ubuntu-latest" ]' for using GitHub runners
+          E.g. '[ "self-hosted", "linux" ]' for using AVI-SPLI self-hosted runner
         required: false
         type: string
         default: '[ "self-hosted", "linux" ]'
@@ -154,10 +154,9 @@ jobs:
       - name: Setup JDK
         uses: ./.github/symphony-devops-workflows/actions/setup_jdk
         with:
-          java-version: '17.0.2'
-          distribution: 'adopt' # Adopt OpenJDK
+          distribution: 'custom'
 
-      # Build number always reflects actual date/time when build was produced
+      # Build number always reflects actual date & time when build was produced
       # It is sent to Maven command, so it can be used by build process, for example
       # for adding value inside built artifact
       # It is also used as new project version, when version is not provided by workflow input
@@ -235,9 +234,8 @@ jobs:
       # Always use the common action for Docker tags validation. Docker image tags
       # could have additional or different rules, and rules could change in time.
       # This way we enforce that all docker tags pushed to the Docker registry follow
-      # same rules whatever the workflow which created them,
-      # even though the Maven version provided as workflow input has already been checked,
-      # or the workflow itself computes the version
+      # same rules whatever the workflow which created them, whatever way tags were
+      # provided or computed
       - name: Validate docker tags
         uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
         with:
@@ -252,7 +250,7 @@ jobs:
           pom-xml-file: ${{ inputs.pom-xml-file }}
           maven_goals: ${{ inputs.maven-goals }}
           maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven-other-options }}
-          # Disable Git tagging (already done when updating pom.xml version)
+          # Disable Git tagging (already done when pushing pom.xml with updated version)
           git_tag: ''
 
       # Docker
@@ -267,19 +265,25 @@ jobs:
           docker-tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
           docker-image-prefix: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}'
 
+      # Update Kubernetes deployment on Dev environment
+      # (only when docker image was actually pushed to the Docker registry)
       - name: Kubernetes update deployment
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
-          # Path is relative to deployer project root
-          deployment-file: '${{ inputs.symphony-microservice-name }}-deploy/deployment.yaml'
+          # Name of Helm subchart (name of directory under "/symphony/charts")
+          # in symphony-kubernetes-deployer repository
+          symphony-microservice-name: '${{ inputs.symphony-microservice-name }}'
           # New value for docker image in deployment file
-          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}:${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
+          # Only docker tag name (e.g. 6.4.0.2308281259), not full path to repository
+          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
           fail-if-no-file-change: 'true'
           # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
           workspace-checkout-dir: 'symphony-kubernetes-deployer'
-          # The revision (branch) to be updated
-          symphony-kubernetes-deployer-ref: 'dev'
+          # The revision (branch) to be updated in deployer repository
+          # Value should be overridden for testing purpose only.
+          # By default, 'develop' branch should be used
+          symphony-kubernetes-deployer-ref: 'develop'
           commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
           # Token for checking-out private repository
           # Use a PAT (Personal Access Token) from a user who has write permission on specified repository

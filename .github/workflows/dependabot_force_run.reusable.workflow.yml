@@ -34,8 +34,8 @@ on:
         description: |
           List of labels for the job runs-on clause (in JSON string array form,
           can use either single or double quotes around values)
-          E.g. [ "ubuntu-latest" ]' for using GitHub runners
-          E.g. [ "self-hosted", "linux" ] for using AVI-SPLI self-hosted runner
+          E.g. '[ "ubuntu-latest" ]' for using GitHub runners
+          E.g. '[ "self-hosted", "linux" ]' for using AVI-SPLI self-hosted runner
         required: false
         type: string
         default: '[ "ubuntu-latest" ]'
