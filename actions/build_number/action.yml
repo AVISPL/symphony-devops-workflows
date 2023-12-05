@@ -18,5 +18,5 @@ runs:
       run: |
         BUILD_NUMBER=$( date -u +%y%m%d%H%M | cut -c 1-11)
         echo "BUILD_NUMBER [${BUILD_NUMBER}]"
-        echo "::set-output name=BUILD_NUMBER::${BUILD_NUMBER}"
+        echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
       shell: bash
