@@ -34,5 +34,5 @@ runs:
         # Cleanup temporary file
         rm -rf "${TMP_FILE}"
 
-        echo "::set-output name=PROJECT_VERSION::${PROJECT_VERSION}"
+        echo "PROJECT_VERSION=${PROJECT_VERSION}" >> $GITHUB_OUTPUT
       shell: bash

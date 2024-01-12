@@ -111,8 +111,10 @@ runs:
             release_version = user_version;
           }
 
+          console.log("Release version: [" + release_version + "]");
+          
           // Output
-          console.log("Project version: [" + release_version + "]");
-          console.log(`::set-output name=release-version::${release_version}`);
+          core.setOutput('release-version', release_version);
           return release_version;
+        # Return result string as-is (not JSON encoded)
         result-encoding: string

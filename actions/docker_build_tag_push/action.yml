@@ -107,7 +107,7 @@ runs:
 
           # Docker push
           sudo docker push "${FIRST_TAG}"
-          echo "::set-output name=DOCKER_PUSHED::true"
+          echo "DOCKER_PUSHED=true" >> $GITHUB_OUTPUT
 
           # Re-tag and push other tags
           for (( i=1; i<${#TAGS_ARRAY[@]}; i++ )); do
@@ -127,7 +127,7 @@ runs:
           echo "Docker build file [${{ inputs.docker-file }}]..."
           echo Running: sudo docker build -f "${{ inputs.docker-file }}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
           sudo docker build -f "${{ inputs.docker-file }}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
-          echo "::set-output name=DOCKER_PUSHED::false"
+          echo "DOCKER_PUSHED=false" >> $GITHUB_OUTPUT
         fi
 
         echo
