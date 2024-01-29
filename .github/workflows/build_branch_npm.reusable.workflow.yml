@@ -96,7 +96,7 @@ jobs:
       # (so other files written into it will be removed)
       # Checkout current branch
       - name: Checkout
-        uses: actions/checkout@v3.6.0
+        uses: actions/checkout@v4.1.1
         with:
           # Checkout all branches and tags (required to work with tags)
           fetch-depth: '0' # 0 indicates all history for all branches and tags
@@ -107,7 +107,7 @@ jobs:
       # (feature not available yet)
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
-        uses: actions/checkout@v3.6.0
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision

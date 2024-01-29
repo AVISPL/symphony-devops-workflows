@@ -78,7 +78,7 @@ jobs:
       # (feature not available yet)
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
