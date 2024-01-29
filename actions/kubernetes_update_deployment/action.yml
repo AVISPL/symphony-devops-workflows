@@ -80,7 +80,7 @@ runs:
     # Checkout the Git repository with Kubernetes deployment descriptors
     # into local workspace directory
     - name: Checkout Kubernetes deployer repository
-      uses: actions/checkout@v3.0.1
+      uses: actions/checkout@v4.1.1
       with:
         # Repository to be checked out
         repository: 'AVISPL/symphony-kubernetes-deployer'

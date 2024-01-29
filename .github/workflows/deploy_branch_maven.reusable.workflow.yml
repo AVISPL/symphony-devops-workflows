@@ -117,7 +117,7 @@ jobs:
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
       - name: Git checkout current repository/branch
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4.1.1
         with:
           # Checkout all branches and tags (required to work with tags in git_delete_tag action)
           fetch-depth: '0' # 0 indicates all history for all branches and tags
@@ -128,7 +128,7 @@ jobs:
       # (feature not available yet)
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
@@ -251,7 +251,7 @@ jobs:
       # match labels), in which case workspace will be empty,
       # so need to checkout again required actions from dedicated repository
       - name: Checkout actions from private repository
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
