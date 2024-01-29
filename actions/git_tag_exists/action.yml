@@ -79,6 +79,6 @@ runs:
         fi
 
         # Output
-        echo "::set-output name=tag-exists::${tag_exists}"
+        echo "tag-exists=${tag_exists}" >> $GITHUB_OUTPUT
 
       shell: bash

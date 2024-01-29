@@ -71,10 +71,10 @@ runs:
         echo "FILENAME_RELATIVE_PATH: [${FILENAME_RELATIVE_PATH}]"
         echo "FILENAME_ABSOLUTE_PATH: [${FILENAME_ABSOLUTE_PATH}]"
         #
-        echo "::set-output name=CHECKOUT_DIR::${CHECKOUT_DIR}"
-        echo "::set-output name=DESCRIPTOR_FILE_NAME::${DESCRIPTOR_FILE_NAME}"
-        echo "::set-output name=FILENAME_RELATIVE_PATH::${FILENAME_RELATIVE_PATH}"
-        echo "::set-output name=FILENAME_ABSOLUTE_PATH::${FILENAME_ABSOLUTE_PATH}"
+        echo "CHECKOUT_DIR=${CHECKOUT_DIR}" >> $GITHUB_OUTPUT
+        echo "DESCRIPTOR_FILE_NAME=${DESCRIPTOR_FILE_NAME}" >> $GITHUB_OUTPUT
+        echo "FILENAME_RELATIVE_PATH=${FILENAME_RELATIVE_PATH}" >> $GITHUB_OUTPUT
+        echo "FILENAME_ABSOLUTE_PATH=${FILENAME_ABSOLUTE_PATH}" >> $GITHUB_OUTPUT
       shell: bash
 
     # Checkout the Git repository with Kubernetes deployment descriptors

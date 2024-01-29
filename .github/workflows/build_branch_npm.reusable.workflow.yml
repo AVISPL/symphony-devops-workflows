@@ -126,7 +126,7 @@ jobs:
           projectVersion=$(jq -r .version '${{ inputs.package-json-file }}')
           # Log and check not empty
           echo "Project version : ${projectVersion:?Project version must be set and non-empty.}"
-          echo "::set-output name=project-version::${projectVersion}"
+          echo "project-version=${projectVersion}" >> $GITHUB_OUTPUT
         shell: bash
 
       # Build number always reflects actual date & time when build was produced
@@ -148,8 +148,8 @@ jobs:
           echo "Project long version : ${longVersion}"
           echo "Project short version : ${shortVersion}"
           # Action output
-          echo "::set-output name=long-version::${longVersion}"
-          echo "::set-output name=short-version::${shortVersion}"
+          echo "long-version=${longVersion}" >> $GITHUB_OUTPUT
+          echo "short-version=${shortVersion}" >> $GITHUB_OUTPUT
         shell: bash
 
       # Compute job options depending on which workflow mode (check/deploy/release)
@@ -193,10 +193,10 @@ jobs:
           echo "dockerTagPush: [${dockerTagPush}]"
 
           # Outputs
-          echo "::set-output name=git-tag-create::${gitTagCreate}"
-          echo "::set-output name=git-tag-value::${gitTagValue}"
-          echo "::set-output name=git-tag-move::${gitTagMove}"
-          echo "::set-output name=docker-tag-push::${dockerTagPush}"
+          echo "git-tag-create=${gitTagCreate}" >> $GITHUB_OUTPUT
+          echo "git-tag-value=${gitTagValue}" >> $GITHUB_OUTPUT
+          echo "git-tag-move=${gitTagMove}" >> $GITHUB_OUTPUT
+          echo "docker-tag-push=${dockerTagPush}" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Compute docker tags
@@ -212,9 +212,9 @@ jobs:
           echo "DOCKER_TAGS_ALL: [${DOCKER_TAGS_ALL}]"
           echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
           #
-          echo "::set-output name=DOCKER_TAG_WITH_VERSION::${DOCKER_TAG_WITH_VERSION}"
-          echo "::set-output name=DOCKER_TAGS_ALL::${DOCKER_TAGS_ALL}"
-          echo "::set-output name=DOCKER_IMAGE_TAG_PREFIX::${DOCKER_IMAGE_TAG_PREFIX}"
+          echo "DOCKER_TAG_WITH_VERSION=${DOCKER_TAG_WITH_VERSION}" >> $GITHUB_OUTPUT
+          echo "DOCKER_TAGS_ALL=${DOCKER_TAGS_ALL}" >> $GITHUB_OUTPUT
+          echo "DOCKER_IMAGE_TAG_PREFIX=${DOCKER_IMAGE_TAG_PREFIX}" >> $GITHUB_OUTPUT
         shell: bash
 
       # Validate Docker tags
