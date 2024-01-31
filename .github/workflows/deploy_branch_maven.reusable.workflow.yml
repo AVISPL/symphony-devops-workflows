@@ -84,7 +84,7 @@ on:
         description: 'The directory in which the project pom.xml resides is needed to submit to Dependabot'
         required: false
         type: string
-        default: 'github.workspace'
+        default: 'GITHUB_WORKSPACE'
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
