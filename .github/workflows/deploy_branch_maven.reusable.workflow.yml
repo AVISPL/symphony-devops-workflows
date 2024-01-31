@@ -82,9 +82,8 @@ on:
         default: false
       dependabot-submit-dependencies-directory:
         description: 'The directory in which the project pom.xml resides is needed to submit to Dependabot'
-        required: false
+        required: true
         type: string
-        default: 'github.workspace'
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
