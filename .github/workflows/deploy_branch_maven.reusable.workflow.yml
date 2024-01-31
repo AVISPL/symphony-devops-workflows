@@ -80,6 +80,11 @@ on:
         required: false
         type: boolean
         default: false
+      dependabot-submit-dependencies-directory:
+        description: 'The directory in which the project pom.xml resides is needed to submit to Dependabot'
+        required: false
+        type: string
+        default: 'github.workspace'
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -237,6 +242,8 @@ jobs:
       - name: Submit Maven dependencies
         if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies }}
         uses: advanced-security/maven-dependency-submission-action@v3
+        with:
+          directory: '${{ inputs.dependabot-submit-dependencies-directory }}'
 
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
