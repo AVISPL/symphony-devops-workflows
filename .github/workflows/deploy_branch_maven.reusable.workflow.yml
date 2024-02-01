@@ -82,7 +82,7 @@ on:
         default: false
       dependabot-submit-dependencies-directory:
         description: 'The directory in which the project pom.xml resides is needed to submit to Dependabot'
-        required: true
+        required: false
         type: string
     #
     secrets:
