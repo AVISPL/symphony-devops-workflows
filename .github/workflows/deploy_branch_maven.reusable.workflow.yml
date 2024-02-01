@@ -238,11 +238,14 @@ jobs:
           github-token: ${{ secrets.ciToken }}
 
       # Submit Maven dependencies to Dependabot submission API
-      - name: Submit Maven dependencies
-        if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies }}
+      - name: Submit Maven dependencies with directory specified
+        if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies && inputs.dependabot-submit-dependencies-directory != '' }}
         uses: advanced-security/maven-dependency-submission-action@v4.0.0
         with:
           directory: '${{ inputs.dependabot-submit-dependencies-directory }}'
+      - name: Submit Maven dependencies without directory not specified
+        if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies && inputs.dependabot-submit-dependencies-directory == '' }}
+        uses: advanced-security/maven-dependency-submission-action@v4.0.0
 
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
