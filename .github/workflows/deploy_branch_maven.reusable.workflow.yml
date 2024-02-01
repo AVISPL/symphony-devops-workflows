@@ -243,7 +243,7 @@ jobs:
         uses: advanced-security/maven-dependency-submission-action@v4.0.0
         with:
           directory: '${{ inputs.dependabot-submit-dependencies-directory }}'
-      - name: Submit Maven dependencies without directory not specified
+      - name: Submit Maven dependencies without directory specified
         if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies && inputs.dependabot-submit-dependencies-directory == '' }}
         uses: advanced-security/maven-dependency-submission-action@v4.0.0
 
