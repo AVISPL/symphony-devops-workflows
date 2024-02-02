@@ -43,7 +43,7 @@ runs:
       run: |
         echo -n "Installed java: "
         javac -version
-        echo "INSTALLED_JAVA_VER=$(javac -version)" >> $GITHUB_ENV        
+        echo "INSTALLED_JAVA_VER=$(javac -version)" >> $GITHUB_ENV
 
     - name: Download JDK
       # `custom` is used to download by URL
@@ -51,14 +51,14 @@ runs:
       shell: bash
       run: |
         download_url="${{ inputs.downloadUrl }}"
-        wget -q -O $RUNNER_TEMP/java_package.tar.gz $download_url     
+        wget -q -O $RUNNER_TEMP/java_package.tar.gz $download_url
       
     - name: Verify checksum
       # `custom` is used to download by URL
       if: inputs.distribution == 'custom' && !endsWith(env.INSTALLED_JAVA_VER, inputs.java-version)
       shell: bash
       run: |
-        echo "${{ inputs.checkSum }} $RUNNER_TEMP/java_package.tar.gz" | sha256sum --check --status 
+        echo "${{ inputs.checkSum }} $RUNNER_TEMP/java_package.tar.gz" | sha256sum --check --status
 
       # If we would cache downloaded JDK, we can first verify if cached version has correct checksum, before downloading
 
