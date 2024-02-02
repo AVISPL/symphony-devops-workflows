@@ -80,4 +80,3 @@ runs:
         java -version
         echo mvn -version
         mvn -version
-
