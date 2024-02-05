@@ -20,7 +20,7 @@ inputs:
   checkSum:
     description: 'SHA256 sum of archive.'
     required: false
-    default: "beaf61959c2953310595e1162b0c626aef33d58628771033ff2936609661956c"
+    default: "a2def047a73941e01a73739f92755f86b895811afb1f91243db214cff5bdac3f"
 
 runs:
   using: "composite"
