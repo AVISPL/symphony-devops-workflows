@@ -131,7 +131,7 @@ runs:
         echo "Email subject: [${email_subject}]"
         echo "Email body:" && cat ${body_file}
         echo "SUBJECT=$(echo $email_subject)" >> $GITHUB_ENV
-        echo "BODY=$(echo $body_file)" >> $GITHUB_ENV
+        echo "BODY=$(echo cat $body_file)" >> $GITHUB_ENV
         #echo ""
 
         #echo "Send email..."
