@@ -82,14 +82,14 @@ runs:
 
           # Write body file
           echo "Repository url: ${repo_url}" > ${body_file}
-          echo "PR: ${pr_url}" >> ${body_file}
-          echo "PR title: ${pr_title}" >> ${body_file}
-          echo "PR from branch [${branch_source}] into [${branch_dest}]" >> ${body_file}
-          echo "PR updated at [${pr_updated_at}]" >> ${body_file}
+          echo "PR: ${pr_url}<br>" >> ${body_file}
+          echo "PR title: ${pr_title}<br>" >> ${body_file}
+          echo "PR from branch [${branch_source}] into [${branch_dest}]<br>" >> ${body_file}
+          echo "PR updated at [${pr_updated_at}]<br>" >> ${body_file}
 
-          echo "Git merge commit being built: ${git_sha_merge}" >> ${body_file}
-          echo "Git commit SHA from source branch: ${git_sha_source}" >> ${body_file}
-          echo "Workflow run url: ${run_url}" >> ${body_file}
+          echo "Git merge commit being built: ${git_sha_merge}<br>" >> ${body_file}
+          echo "Git commit SHA from source branch: ${git_sha_source}<br>" >> ${body_file}
+          echo "Workflow run url: ${run_url}<br>" >> ${body_file}
           #
         elif [[ "push" == "${event_name}" ]]; then
           echo "This is a push event"
@@ -113,14 +113,14 @@ runs:
 
           # Write body file
           echo "Repository url: ${repo_url}" > ${body_file}
-          echo "Branch: ${branch_name}" >> ${body_file}
-          echo "Workflow run url: ${run_url}" >> ${body_file}
-          echo "Latest Git commit SHA: ${git_head_sha}" >> ${body_file}
-          echo "Latest Git commit message: ${git_head_message}" >> ${body_file}
-          echo "Latest Git commit author: ${git_head_author}" >> ${body_file}
-          echo "Latest Git commit timestamp: ${git_head_timestamp}" >> ${body_file}
-          echo "Latest Git commit url: ${git_head_url}" >> ${body_file}
-          echo "Pushed by : ${git_pusher}" >> ${body_file}
+          echo "Branch: ${branch_name}<br>" >> ${body_file}
+          echo "Workflow run url: ${run_url}<br>" >> ${body_file}
+          echo "Latest Git commit SHA: ${git_head_sha}<br>" >> ${body_file}
+          echo "Latest Git commit message: ${git_head_message}<br>" >> ${body_file}
+          echo "Latest Git commit author: ${git_head_author}<br>" >> ${body_file}
+          echo "Latest Git commit timestamp: ${git_head_timestamp}<br>" >> ${body_file}
+          echo "Latest Git commit url: ${git_head_url}<br>" >> ${body_file}
+          echo "Pushed by : ${git_pusher}<br>" >> ${body_file}
 
         else # just in case the workflow was triggered by unexpected event
           echo "ERROR unexpected event name [${event_name}] (expected 'pull_request' or 'push')"
@@ -131,18 +131,8 @@ runs:
         echo "Email subject: [${email_subject}]"
         echo "Email body:" && cat ${body_file}
         echo ""
-        # create environment variables from body and subject to pass to next step
-        email_body=$(cat ${body_file})
-        echo $email_body
+        # create environment variables from subject to pass to next step
         echo "SUBJECT=$(echo $email_subject)" >> $GITHUB_ENV
-        echo "BODY=$(echo $email_body)" >> $GITHUB_ENV
-        #echo ""
-
-        #echo "Send email..."
-        #echo "TODO IMPLEMENT Actual send email"
-        #echo "Send email DONE"
-        echo "ls -al"
-        ls -al
       shell: bash
     - name: Send mail
       uses: dawidd6/action-send-mail@v3.11.0
