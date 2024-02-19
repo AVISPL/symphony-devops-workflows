@@ -132,10 +132,10 @@ runs:
         echo "Email body:" && cat ${body_file}
         echo ""
         # create environment variables from body and subject to pass to next step
-        email_body="$(<body.txt)"
+        email_body="$(cat body.txt)"
         echo $email_body
         echo "SUBJECT=$(echo $email_subject)" >> $GITHUB_ENV
-        echo "BODY=$(echo "$email_body")" >> $GITHUB_ENV
+        echo "BODY=$(echo $email_body)" >> $GITHUB_ENV
         #echo ""
 
         #echo "Send email..."
