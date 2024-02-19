@@ -134,7 +134,7 @@ runs:
         # create environment variables from body and subject to pass to next step
         email_body="$(<body.txt)"
         echo "SUBJECT=$(echo $email_subject)" >> $GITHUB_ENV
-        echo "BODY=$(echo $email_body)" >> $GITHUB_ENV
+        echo "BODY=$(echo $email_body) | base64 -d" >> $GITHUB_ENV
         #echo ""
 
         #echo "Send email..."
