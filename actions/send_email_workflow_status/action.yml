@@ -11,6 +11,9 @@ inputs:
     description: 'Send email only when current workflow status is not success'
     required: false
     default: 'false'
+  builderSmtpConnectionUrl:
+    description: 'The SMTP connection URL in smtp://user:password@server:port format. This is the value of BUILDER_SMTP_CONNECTION_URL secret'
+    required: true
 
 runs:
   using: "composite"
@@ -136,7 +139,7 @@ runs:
     - name: Send mail
       uses: dawidd6/action-send-mail@v3.11.0
       with:
-       connection_url: ${{secrets.BUIDLER_SMTP_ADDRESS}}
+       connection_url: ${{inputs.builderSmtpConnectionUrl}}
        subject: ${email_subject}
        # Required recipients' addresses:
        to: shervin.mostashfi@avispl.com
