@@ -141,6 +141,8 @@ runs:
         #echo "Send email..."
         #echo "TODO IMPLEMENT Actual send email"
         #echo "Send email DONE"
+        echo "ls -al"
+        ls -al
       shell: bash
     - name: Send mail
       uses: dawidd6/action-send-mail@v3.11.0
@@ -151,4 +153,4 @@ runs:
        subject: ${{ env.SUBJECT }}
        to: shervin.mostashfi@avispl.com
        from: builder@github
-       html_body: ./body.txt
+       html_body: file://body.txt
