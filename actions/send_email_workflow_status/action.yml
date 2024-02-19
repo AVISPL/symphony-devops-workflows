@@ -129,8 +129,10 @@ runs:
 
         # Print email contents
         echo "Email subject: [${email_subject}]"
+        echo "Email body:" && cat ${body_file}
+        echo ""
+        # create environment variables from body and subject to pass to next step
         email_body="$(<body.txt)"
-        echo "Email body: ${email_body}"
         echo "SUBJECT=$(echo $email_subject)" >> $GITHUB_ENV
         echo "BODY=$(echo $email_body)" >> $GITHUB_ENV
         #echo ""
@@ -143,10 +145,9 @@ runs:
       uses: dawidd6/action-send-mail@v3.11.0
       with:
        server_address: ${{inputs.builderSmtpUrl}}
+       ignore_cert: true
+       secure: false
        subject: ${{ env.SUBJECT }}
-       # Required recipients' addresses:
        to: shervin.mostashfi@avispl.com
-       # Required sender full name (address can be skipped):
        from: builder@github
-       # Optional plain body:
        body: ${{ env.BODY }}
