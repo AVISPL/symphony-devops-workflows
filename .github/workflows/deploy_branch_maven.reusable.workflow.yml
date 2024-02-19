@@ -99,6 +99,9 @@ on:
           It must be a GitHub PAT (Personal Access Token) with read and write authorizations
           on the GitHub repositories to be read/updated
         required: false
+      builderSmtpHost:
+        description: 'The SMTP server host'
+        required: false
 
 jobs:
   reusable_job_deploy_branch_maven:
@@ -270,3 +273,5 @@ jobs:
 
       - name: Send email workflow status
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
+        with:
+          builderSmtpHost: ${{ secrets.builderSmtpHost }}
