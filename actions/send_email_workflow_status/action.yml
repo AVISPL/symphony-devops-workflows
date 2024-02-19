@@ -129,7 +129,7 @@ runs:
 
         # Print email contents
         echo "Email subject: [${email_subject}]"
-        email_body="$(cat body_file)"
+        email_body="$(<body_file)"
         echo "Email body: ${email_body}"
         echo "SUBJECT=$(echo $email_subject)" >> $GITHUB_ENV
         echo "BODY=$(echo $email_body)" >> $GITHUB_ENV
