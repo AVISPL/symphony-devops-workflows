@@ -81,7 +81,7 @@ runs:
           email_subject="[${repo_name}] PR branch [${branch_source}] [${status}]"
 
           # Write body file
-          echo "Repository url: ${repo_url}" > ${body_file}
+          echo "Repository url: ${repo_url}<br>" > ${body_file}
           echo "PR: ${pr_url}<br>" >> ${body_file}
           echo "PR title: ${pr_title}<br>" >> ${body_file}
           echo "PR from branch [${branch_source}] into [${branch_dest}]<br>" >> ${body_file}
@@ -112,7 +112,7 @@ runs:
           email_subject="[${repo_name}] Push on branch [${branch_name}] [${status}]"
 
           # Write body file
-          echo "Repository url: ${repo_url}" > ${body_file}
+          echo "Repository url: ${repo_url}<br>" > ${body_file}
           echo "Branch: ${branch_name}<br>" >> ${body_file}
           echo "Workflow run url: ${run_url}<br>" >> ${body_file}
           echo "Latest Git commit SHA: ${git_head_sha}<br>" >> ${body_file}
@@ -141,6 +141,7 @@ runs:
        ignore_cert: true
        secure: false
        subject: ${{ env.SUBJECT }}
-       to: shervin.mostashfi@avispl.com
+       # TODO - replace with development@avispl.com
+       to: shervin.mostashfi@avispl.com,volodymyr.kasyanenko@avispl.com
        from: builder@github
        html_body: file://body.txt
