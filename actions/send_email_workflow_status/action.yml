@@ -127,9 +127,20 @@ runs:
         # Print email contents
         echo "Email subject: [${email_subject}]"
         echo "Email body:" && cat ${body_file}
-        echo ""
+        #echo ""
 
-        echo "Send email..."
-        echo "TODO IMPLEMENT Actual send email"
-        echo "Send email DONE"
+        #echo "Send email..."
+        #echo "TODO IMPLEMENT Actual send email"
+        #echo "Send email DONE"
       shell: bash
+    - name: Send mail
+      uses: dawidd6/action-send-mail@v3.11.0
+      with:
+       connection_url: ${{secrets.BUIDLER_SMTP_ADDRESS}}
+       subject: ${email_subject}
+       # Required recipients' addresses:
+       to: shervin.mostashfi@avispl.com
+       # Required sender full name (address can be skipped):
+       from: builder@github
+       # Optional plain body:
+       body: ${body_file}
