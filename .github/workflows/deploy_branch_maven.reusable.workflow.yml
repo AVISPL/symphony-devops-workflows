@@ -271,4 +271,4 @@ jobs:
       - name: Send email workflow status
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
         with:
-          builderSmtpConnectionUrl: ${{ secrets.BUILDER_SMTP_CONNECTION_URL }}
+          builderSmtpUrl: ${{ secrets.BUILDER_SMTP_URL }}
