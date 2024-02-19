@@ -32,9 +32,9 @@ runs:
       # Get workflow conclusion (sets env variable WORKFLOW_CONCLUSION)
       uses: technote-space/workflow-conclusion-action@v2
 
-    - name: Send email
+    - name: Prepare email
       run: |
-        # Send email
+        # Prepare email
 
         # Status uppercase : SUCCESS / FAILURE (other value is unexpected)
         status="${WORKFLOW_CONCLUSION}"
@@ -136,10 +136,16 @@ runs:
         #echo "TODO IMPLEMENT Actual send email"
         #echo "Send email DONE"
       shell: bash
+    - name: Prepare email
+      run: |
+        echo "server url passed to this workflow is ${{inputs.builderSmtpUrl}}"
+        echo "email subject being sent is ${email_subject}"
+        echo "email body being sent is ${body_file}"
+      shell: bash
     - name: Send mail
       uses: dawidd6/action-send-mail@v3.11.0
       with:
-       server_address: ${{inputs.builderSmtpUrl}}
+       server_address: '${{inputs.builderSmtpUrl}}'
        subject: ${email_subject}
        # Required recipients' addresses:
        to: shervin.mostashfi@avispl.com
