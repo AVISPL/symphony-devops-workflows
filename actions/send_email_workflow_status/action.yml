@@ -151,4 +151,4 @@ runs:
        subject: ${{ env.SUBJECT }}
        to: shervin.mostashfi@avispl.com
        from: builder@github
-       html_body: ${{ env.BODY }}
+       html_body: ./body.txt
