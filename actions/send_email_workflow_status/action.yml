@@ -98,8 +98,8 @@ runs:
           if [[ -n "${DOCKER_IMAGE_TAG_PREFIX}" &&  -n "${DOCKER_TAGS_ALL}" ]]; then
             echo "Docker registry and tags: $DOCKER_IMAGE_TAG_PREFIX:$DOCKER_TAGS_ALL<br>" >> ${body_file}
           fi
-          echo "<br>"
-          echo "<br>"
+          echo "<br>" >> ${body_file}
+          echo "<br>" >> ${body_file}
           # replace all /n with <br>
           sed -i '{:q;N;s/\n/<br>/g;t q}' ./mvn_results.txt
           # append mvn_results.txt, which is the mvn command output to body_file
@@ -143,8 +143,8 @@ runs:
           if [[ -n "${DOCKER_IMAGE_TAG_PREFIX}" &&  -n "${DOCKER_TAGS_ALL}" ]]; then
             echo "Docker registry and tags: $DOCKER_IMAGE_TAG_PREFIX:$DOCKER_TAGS_ALL<br>" >> ${body_file}
           fi
-          echo "<br>"
-          echo "<br>"
+          echo "<br>" >> ${body_file}
+          echo "<br>" >> ${body_file}
           # replace all /n with <br>
           sed -i '{:q;N;s/\n/<br>/g;t q}' ./mvn_results.txt
           # append mvn_results.txt, which is the mvn command output to body_file
