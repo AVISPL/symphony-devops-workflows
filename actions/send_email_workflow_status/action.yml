@@ -122,7 +122,7 @@ runs:
           echo "Latest Git commit url: ${git_head_url}<br>" >> ${body_file}
           echo "Pushed by : ${git_pusher}<br>" >> ${body_file}
           #tr '\r\n' '<br>' < mvn_results.txt
-          sed  's!\r!<br \/>! ./mvn_results.txt
+          sed -i '{:q;N;s/\n/<br>/g;t q}' ./mvn_results.txt
           cat mvn_results.txt >> ${body_file} 
 
         else # just in case the workflow was triggered by unexpected event
