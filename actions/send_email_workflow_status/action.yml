@@ -90,6 +90,20 @@ runs:
           echo "Git merge commit being built: ${git_sha_merge}<br>" >> ${body_file}
           echo "Git commit SHA from source branch: ${git_sha_source}<br>" >> ${body_file}
           echo "Workflow run url: ${run_url}<br>" >> ${body_file}
+          # if PROJECT_VERSION and BUILD_NUMBER environment variables are available, build version of module and include in email
+          if [[ -n "${PROJECT_VERSION}" &&  -n "${BUILD_NUMBER}" ]]; then
+            echo "Build version: $PROJECT_VERSION.$BUILD_NUMBER<br>" >> ${body_file}
+          fi
+          # if DOCKER_IMAGE_TAG_PREFIX and DOCKER_TAGS_ALL environment variables are available, build docker registry url and tags of module and include in email
+          if [[ -n "${DOCKER_IMAGE_TAG_PREFIX}" &&  -n "${DOCKER_TAGS_ALL}" ]]; then
+            echo "Docker registry and tags: $DOCKER_IMAGE_TAG_PREFIX:$DOCKER_TAGS_ALL<br>" >> ${body_file}
+          fi
+          echo "<br>"
+          echo "<br>"
+          # replace all /n with <br>
+          sed -i '{:q;N;s/\n/<br>/g;t q}' ./mvn_results.txt
+          # append mvn_results.txt, which is the mvn command output to body_file
+          cat mvn_results.txt >> ${body_file} 
           #
         elif [[ "push" == "${event_name}" ]]; then
           echo "This is a push event"
@@ -121,8 +135,19 @@ runs:
           echo "Latest Git commit timestamp: ${git_head_timestamp}<br>" >> ${body_file}
           echo "Latest Git commit url: ${git_head_url}<br>" >> ${body_file}
           echo "Pushed by : ${git_pusher}<br>" >> ${body_file}
-          #tr '\r\n' '<br>' < mvn_results.txt
+          # if PROJECT_VERSION and BUILD_NUMBER environment variables are available, build version of module and include in email
+          if [[ -n "${PROJECT_VERSION}" &&  -n "${BUILD_NUMBER}" ]]; then
+            echo "Build version: $PROJECT_VERSION.$BUILD_NUMBER<br>" >> ${body_file}
+          fi
+          # if DOCKER_IMAGE_TAG_PREFIX and DOCKER_TAGS_ALL environment variables are available, build docker registry url and tags of module and include in email
+          if [[ -n "${DOCKER_IMAGE_TAG_PREFIX}" &&  -n "${DOCKER_TAGS_ALL}" ]]; then
+            echo "Docker registry and tags: $DOCKER_IMAGE_TAG_PREFIX:$DOCKER_TAGS_ALL<br>" >> ${body_file}
+          fi
+          echo "<br>"
+          echo "<br>"
+          # replace all /n with <br>
           sed -i '{:q;N;s/\n/<br>/g;t q}' ./mvn_results.txt
+          # append mvn_results.txt, which is the mvn command output to body_file
           cat mvn_results.txt >> ${body_file} 
 
         else # just in case the workflow was triggered by unexpected event
