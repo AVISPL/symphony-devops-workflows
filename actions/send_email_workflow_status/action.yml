@@ -121,6 +121,7 @@ runs:
           echo "Latest Git commit timestamp: ${git_head_timestamp}<br>" >> ${body_file}
           echo "Latest Git commit url: ${git_head_url}<br>" >> ${body_file}
           echo "Pushed by : ${git_pusher}<br>" >> ${body_file}
+          tr '\n' '<br>' < mvn_results.txt
           cat mvn_results.txt >> ${body_file} 
 
         else # just in case the workflow was triggered by unexpected event
