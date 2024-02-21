@@ -261,8 +261,8 @@ jobs:
     steps:
       - name: Temp step to see if env vars are available
         run: |
-          echo "shervin wants this in this job" 
-          echo ${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}
+          echo "all environment variables"
+          printenv
       # Job might not be executed on same runner than first job (if several candidates
       # match labels), in which case workspace will be empty,
       # so need to checkout again required actions from dedicated repository
