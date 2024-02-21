@@ -150,10 +150,9 @@ runs:
           echo "<br>" >> ${body_file}
           echo "<br>" >> ${body_file}
           echo "<hr>" >> ${body_file}
-          echo "<br>" >> ${body_file}
-          echo "<u>MAVEN OUTPUT</u><br>" >> ${body_file}
-          echo "<br>" >> ${body_file}
+          echo "<b><center>MAVEN OUTPUT</center><\b><br>" >> ${body_file}
           echo "<hr>" >> ${body_file}
+          echo "<br>" >> ${body_file}
 
           # replace all /n with <br>
           sed -i '{:q;N;s/\n/<br>/g;t q}' ./mvn_results.txt
@@ -257,10 +256,9 @@ runs:
           echo "<br>" >> ${body_file}
           echo "<br>" >> ${body_file}
           echo "<hr>" >> ${body_file}
-          echo "<br>" >> ${body_file}
-          echo "<u>MAVEN OUTPUT</u><br>" >> ${body_file}
-          echo "<br>" >> ${body_file}
+          echo "<b><center>MAVEN OUTPUT</center><\b><br>" >> ${body_file}
           echo "<hr>" >> ${body_file}
+          echo "<br>" >> ${body_file}
 
           # replace all /n with <br>
           sed -i '{:q;N;s/\n/<br>/g;t q}' ./mvn_results.txt
