@@ -81,7 +81,7 @@ runs:
           email_subject="[${repo_name}] PR branch [${branch_source}] [${status}]"
 
           # Write body file
-          echo "<table border='1' style='border-collapse:collapse>" >> ${body_file}
+          echo "<table border='2' style='border-collapse:collapse>; border-spacing: 30px;'" >> ${body_file}
 
           echo "<tr>" >> ${body_file}
           echo "<td>Repository url</td>" >> ${body_file}
@@ -147,27 +147,6 @@ runs:
           fi
           echo "</table>" >> ${body_file}
 
-          #echo "Repository url: ${repo_url}<br>" > ${body_file}
-          #echo "PR: ${pr_url}<br>" >> ${body_file}
-          #echo "PR title: ${pr_title}<br>" >> ${body_file}
-          #echo "PR from branch [${branch_source}] into [${branch_dest}]<br>" >> ${body_file}
-          #echo "PR updated at [${pr_updated_at}]<br>" >> ${body_file}
-
-          #echo "Git merge commit being built: ${git_sha_merge}<br>" >> ${body_file}
-          #echo "Git commit SHA from source branch: ${git_sha_source}<br>" >> ${body_file}
-          #echo "Workflow run url: ${run_url}<br>" >> ${body_file}
-
-          ## if version.txt exists, grab name and version of module and include in email
-          #if [ -f ./version.txt ]; then
-          #  echo "Built module / version: $(sed -n '1p' < ./version.txt) / $(sed -n '2p' < ./version.txt)<br>" >> ${body_file}
-          #fi
-
-          ## if docker.txt exists, grab docker registry / tags of module and include in email
-          #if [ -f ./docker.txt ]; then
-          #  echo "Docker registry project: $(sed -n '1p' < ./docker.txt)<br>" >> ${body_file}
-          #  echo "Docker registry tags: $(sed -n '2p' < ./docker.txt)<br>" >> ${body_file}
-          #fi
-
           echo "<br>" >> ${body_file}
           echo "<br>" >> ${body_file}
 
@@ -198,7 +177,7 @@ runs:
           email_subject="[${repo_name}] Push on branch [${branch_name}] [${status}]"
 
           # Write body file
-          echo "<table border='1' style='border-collapse:collapse'>" >> ${body_file}
+          echo "<table border='2' style='border-collapse:collapse>; border-spacing: 30px;'" >> ${body_file}
 
           echo "<tr>" >> ${body_file}
           echo "<td>Repository url</td>" >> ${body_file}
@@ -269,28 +248,6 @@ runs:
           echo "</tr>" >> ${body_file}
 
           echo "</table>" >> ${body_file}
-
-          #echo "Repository url: ${repo_url}<br>" > ${body_file}
-          #echo "Branch: ${branch_name}<br>" >> ${body_file}
-          #echo "Workflow run url: ${run_url}<br>" >> ${body_file}
-          #echo "Latest Git commit SHA: ${git_head_sha}<br>" >> ${body_file}
-          #echo "Latest Git commit message: ${git_head_message}<br>" >> ${body_file}
-          #echo "Latest Git commit author: ${git_head_author}<br>" >> ${body_file}
-          #echo "Latest Git commit timestamp: ${git_head_timestamp}<br>" >> ${body_file}
-          #echo "Latest Git commit url: ${git_head_url}<br>" >> ${body_file}
-
-          ## if version.txt exists, grab name and version of module and include in email
-          #if [ -f ./version.txt ]; then
-          #  echo "Built module / version: $(sed -n '1p' < ./version.txt) / $(sed -n '2p' < ./version.txt)<br>" >> ${body_file}
-          #fi
-
-          ## if docker.txt exists, grab docker registry / tags of module and include in email
-          #if [ -f ./docker.txt ]; then
-          #  echo "Docker registry project: $(sed -n '1p' < ./docker.txt)<br>" >> ${body_file}
-          #  echo "Docker registry tags: $(sed -n '2p' < ./docker.txt)<br>" >> ${body_file}
-          #fi
-
-          #echo "Pushed by : ${git_pusher}<br>" >> ${body_file}
 
           echo "<br>" >> ${body_file}
           echo "<br>" >> ${body_file}
