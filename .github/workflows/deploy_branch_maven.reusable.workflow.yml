@@ -179,18 +179,24 @@ jobs:
 
       - name: Create docker_information.txt and version_information.txt files to send to email sender job
         run: |
-          echo "all env vars"
-          printenv
-          #if [[! -n "${{ inputs.docker-file }}"]]; then
-            # strip AVISPL from GITHUB_REPOSITORY environment variable
-            repository=${GITHUB_REPOSITORY}
-            repository=${repository//"AVISPL"/}
-            # Add DOCKER_IMAGE_TAG_PREFIX:DOCKER_TAGS_ALL to docker_information.txt
-            echo "${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}$repository:${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}" > docker_information.txt
-          #fi
+          REPOSITORY=${GITHUB_REPOSITORY}
+          # Strip /AVISPL from GITHUB_REPOSITORY environment variable
+          REPOSITORY=${REPOSITORY//"AVISPL//"/}
 
-          # Add DOCKER_TAG_WITH_VERSION to version_information.txt
-          echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}" > version_information.txt
+          # Add name of repository to first line of version.txt
+          echo "$REPOSITORY" > version.txt
+
+          # Add DOCKER_TAG_WITH_VERSION to second line of version.txt
+          echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}" > version.txt
+
+          # Next section should only be executed if there is non-empty docker-file input
+          #if [[! -n "${{ inputs.docker-file }}"]]; then
+            # Add DOCKER_IMAGE_TAG_PREFIX:REPOSITORY to first line of docker.txt
+            echo "${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}$REPOSITORY" > docker.txt
+
+            # Add DOCKER_TAGS_ALL to second line of docker.txt
+            echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}" > docker.txt
+          #fi
 
       - # Git tag is mandatory for this workflow
         name: Validate git tags

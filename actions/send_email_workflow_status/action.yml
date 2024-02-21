@@ -91,14 +91,15 @@ runs:
           echo "Git commit SHA from source branch: ${git_sha_source}<br>" >> ${body_file}
           echo "Workflow run url: ${run_url}<br>" >> ${body_file}
 
-          # if version_information.txt exists, grab version of module and include in email
-          if [ -f ./version_information.txt ]; then
-            echo "Build version: $(head -n 1 ./version_information.txt)<br>" >> ${body_file}
+          # if version.txt exists, grab name and version of module and include in email
+          if [ -f ./version.txt ]; then
+            echo "Built module / version: $(head -n 1 ./version.txt) / $(head -n 2 ./version.txt)<br>" >> ${body_file}
           fi
 
-          # if docker_information.txt exists, grab docker registry / tags of module and include in email
-          if [ -f ./docker_information.txt ]; then
-            echo "Docker registry and tags: $(head -n 1 ./docker_information.txt)<br>" >> ${body_file}
+          # if docker.txt exists, grab docker registry / tags of module and include in email
+          if [ -f ./docker.txt ]; then
+            echo "Docker registry project: $(head -n 1 ./docker.txt)<br>" >> ${body_file}
+            echo "Docker registry tags: $(head -n 2 ./docker.txt)<br>" >> ${body_file}
           fi
 
           echo "<br>" >> ${body_file}
@@ -139,17 +140,19 @@ runs:
           echo "Latest Git commit author: ${git_head_author}<br>" >> ${body_file}
           echo "Latest Git commit timestamp: ${git_head_timestamp}<br>" >> ${body_file}
           echo "Latest Git commit url: ${git_head_url}<br>" >> ${body_file}
+
+           # if version.txt exists, grab name and version of module and include in email
+          if [ -f ./version.txt ]; then
+            echo "Built module / version: $(head -n 1 ./version.txt) / $(head -n 2 ./version.txt)<br>" >> ${body_file}
+          fi
+
+          # if docker.txt exists, grab docker registry / tags of module and include in email
+          if [ -f ./docker.txt ]; then
+            echo "Docker registry project: $(head -n 1 ./docker.txt)<br>" >> ${body_file}
+            echo "Docker registry tags: $(head -n 2 ./docker.txt)<br>" >> ${body_file}
+          fi
+
           echo "Pushed by : ${git_pusher}<br>" >> ${body_file}
-
-          # if version_information.txt exists, grab version of module and include in email
-          if [ -f ./version_information.txt ]; then
-            echo "Build version: $(head -n 1 ./version_information.txt)<br>" >> ${body_file}
-          fi
-
-          # if docker_information.txt exists, grab docker registry / tags of module and include in email
-          if [ -f ./docker_information.txt ]; then
-            echo "Docker registry and tags: $(head -n 1 ./docker_information.txt)<br>" >> ${body_file}
-          fi
 
           echo "<br>" >> ${body_file}
           echo "<br>" >> ${body_file}
