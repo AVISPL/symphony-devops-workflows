@@ -280,6 +280,6 @@ runs:
        secure: false
        subject: ${{ env.SUBJECT }}
        # TODO - replace with development@avispl.com
-       to: shervin.mostashfi@avispl.com
+       to: development@avispl.com
        from: builder@github
        html_body: file://body.txt
