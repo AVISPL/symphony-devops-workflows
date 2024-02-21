@@ -259,6 +259,10 @@ jobs:
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
     needs: reusable_job_deploy_branch_maven
     steps:
+      - name: Temp step to see if env vars are available
+        run: |
+          echo "shervin wants this in this job" 
+          echo ${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}
       # Job might not be executed on same runner than first job (if several candidates
       # match labels), in which case workspace will be empty,
       # so need to checkout again required actions from dedicated repository
