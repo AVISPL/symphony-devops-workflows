@@ -11,6 +11,18 @@ inputs:
     description: 'Send email only when current workflow status is not success'
     required: false
     default: 'false'
+  dockerImageTagPrefix:
+    description: 'Docker harbor registry URL, to be used to provide this information in email being sent'
+    required: false
+  dockerTagsAll:
+    description: 'Docker tags that were pushed to harbor registry, to be used to provide this information in email being sent'
+    required: false
+  projectVersion:
+    description: 'Version of module that was just updated, to be used to provide this information in email being sent'
+    required: false
+  buildNumber:
+    description: 'Build number of module that was just updated, to be used to provide this information in email being sent'
+    required: false
   builderSmtpHost:
     description: 'The SMTP server host'
     required: true
@@ -90,13 +102,13 @@ runs:
           echo "Git merge commit being built: ${git_sha_merge}<br>" >> ${body_file}
           echo "Git commit SHA from source branch: ${git_sha_source}<br>" >> ${body_file}
           echo "Workflow run url: ${run_url}<br>" >> ${body_file}
-          # if PROJECT_VERSION and BUILD_NUMBER environment variables are available, build version of module and include in email
-          if [[ -n "${PROJECT_VERSION}" &&  -n "${BUILD_NUMBER}" ]]; then
-            echo "Build version: $PROJECT_VERSION.$BUILD_NUMBER<br>" >> ${body_file}
+          # if projectVersion and buildNumber environment variables are available, build version of module and include in email
+          if [[ -n "${{inputs.projectVersion}}" &&  -n "${{inputs.buildNumber}}" ]]; then
+            echo "Build version: ${{inputs.projectVersion}}.${{inputs.buildNumber}}<br>" >> ${body_file}
           fi
-          # if DOCKER_IMAGE_TAG_PREFIX and DOCKER_TAGS_ALL environment variables are available, build docker registry url and tags of module and include in email
-          if [[ -n "${DOCKER_IMAGE_TAG_PREFIX}" &&  -n "${DOCKER_TAGS_ALL}" ]]; then
-            echo "Docker registry and tags: $DOCKER_IMAGE_TAG_PREFIX:$DOCKER_TAGS_ALL<br>" >> ${body_file}
+          # if dockerImageTagPrefix and dockerTagsAll environment variables are available, build docker registry url and tags of module and include in email
+          if [[ -n "${{inputs.dockerImageTagPrefix}}" &&  -n "${{inputs.dockerTagsAll}}" ]]; then
+            echo "Docker registry and tags: ${{inputs.dockerImageTagPrefix}}:${{inputs.dockerTagsAll}}<br>" >> ${body_file}
           fi
           echo "<br>" >> ${body_file}
           echo "<br>" >> ${body_file}
@@ -135,13 +147,13 @@ runs:
           echo "Latest Git commit timestamp: ${git_head_timestamp}<br>" >> ${body_file}
           echo "Latest Git commit url: ${git_head_url}<br>" >> ${body_file}
           echo "Pushed by : ${git_pusher}<br>" >> ${body_file}
-          # if PROJECT_VERSION and BUILD_NUMBER environment variables are available, build version of module and include in email
-          if [[ -n "${PROJECT_VERSION}" &&  -n "${BUILD_NUMBER}" ]]; then
-            echo "Build version: $PROJECT_VERSION.$BUILD_NUMBER<br>" >> ${body_file}
+          # if projectVersion and buildNumber environment variables are available, build version of module and include in email
+          if [[ -n "${{inputs.projectVersion}}" &&  -n "${{inputs.buildNumber}}" ]]; then
+            echo "Build version: ${{inputs.projectVersion}}.${{inputs.buildNumber}}<br>" >> ${body_file}
           fi
-          # if DOCKER_IMAGE_TAG_PREFIX and DOCKER_TAGS_ALL environment variables are available, build docker registry url and tags of module and include in email
-          if [[ -n "${DOCKER_IMAGE_TAG_PREFIX}" &&  -n "${DOCKER_TAGS_ALL}" ]]; then
-            echo "Docker registry and tags: $DOCKER_IMAGE_TAG_PREFIX:$DOCKER_TAGS_ALL<br>" >> ${body_file}
+          # if dockerImageTagPrefix and dockerTagsAll environment variables are available, build docker registry url and tags of module and include in email
+          if [[ -n "${{inputs.dockerImageTagPrefix}}" &&  -n "${{inputs.dockerTagsAll}}" ]]; then
+            echo "Docker registry and tags: ${{inputs.dockerImageTagPrefix}}:${{inputs.dockerTagsAll}}<br>" >> ${body_file}
           fi
           echo "<br>" >> ${body_file}
           echo "<br>" >> ${body_file}

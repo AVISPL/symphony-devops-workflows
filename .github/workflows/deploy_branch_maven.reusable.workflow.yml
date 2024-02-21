@@ -277,10 +277,9 @@ jobs:
 
       - name: Send email workflow status
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
-        env:
-          DOCKER_IMAGE_TAG_PREFIX: ${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}
-          DOCKER_TAGS_ALL: ${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}
-          PROJECT_VERSION: ${{ steps.get_project_version.outputs.PROJECT_VERSION }}
-          BUILD_NUMBER: ${{ steps.compute_build_number.outputs.BUILD_NUMBER }}
         with:
           builderSmtpHost: ${{ secrets.builderSmtpHost }}
+          dockerImageTagPrefix: ${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}
+          dockerTagsAll: ${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}
+          projectVersion: ${{ steps.get_project_version.outputs.PROJECT_VERSION }}
+          buildNumber: ${{ steps.compute_build_number.outputs.BUILD_NUMBER }}
