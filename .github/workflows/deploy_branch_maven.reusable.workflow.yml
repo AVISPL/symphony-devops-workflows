@@ -187,7 +187,7 @@ jobs:
           echo "$REPOSITORY" > version.txt
 
           # Add DOCKER_TAG_WITH_VERSION to second line of version.txt
-          echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}" > version.txt
+          echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}" >> version.txt
 
           # Next section should only be executed if there is non-empty docker-file input
           #if [[! -n "${{ inputs.docker-file }}"]]; then
@@ -195,7 +195,7 @@ jobs:
             echo "${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}$REPOSITORY" > docker.txt
 
             # Add DOCKER_TAGS_ALL to second line of docker.txt
-            echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}" > docker.txt
+            echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}" >> docker.txt
           #fi
 
       - # Git tag is mandatory for this workflow
