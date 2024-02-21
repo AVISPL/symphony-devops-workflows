@@ -179,9 +179,14 @@ jobs:
 
       - name: Create docker_information.txt and version_information.txt files to send to email sender job
         run: |
-          # Add DOCKER_IMAGE_TAG_PREFIX:DOCKER_IMAGE_TAG_PREFIX to docker_information.txt
-          echo "${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}:${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}" > docker_information.txt
-          # Add DOCKER_IMAGE_TAG_PREFIX:DOCKER_IMAGE_TAG_PREFIX to version_information.txt
+          echo "all env vars"
+          printenv
+          if [[! -n "${{ inputs.docker-file }}"]]; then
+            # Add DOCKER_IMAGE_TAG_PREFIX:DOCKER_TAGS_ALL to docker_information.txt
+            echo "${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}:${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}" > docker_information.txt
+          fi
+
+          # Add DOCKER_TAG_WITH_VERSION to version_information.txt
           echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}" > version_information.txt
 
       - # Git tag is mandatory for this workflow
