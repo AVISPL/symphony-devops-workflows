@@ -177,7 +177,7 @@ runs:
           email_subject="[${repo_name}] Push on branch [${branch_name}] [${status}]"
 
           # Write body file
-          echo "<table border='2' style='border-collapse:collapse>; border-spacing: 30px;'" >> ${body_file}
+          echo "<table border='2' style='border-collapse:collapse>; padding: 10px;'" >> ${body_file}
 
           echo "<tr>" >> ${body_file}
           echo "<td>Repository url</td>" >> ${body_file}
