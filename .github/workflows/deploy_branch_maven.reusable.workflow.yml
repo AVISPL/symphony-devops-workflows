@@ -181,7 +181,7 @@ jobs:
         run: |
           REPOSITORY=${GITHUB_REPOSITORY}
           # Strip /AVISPL from GITHUB_REPOSITORY environment variable
-          REPOSITORY=${REPOSITORY//"AVISPL//"/}
+          REPOSITORY=${REPOSITORY//AVISPL\/}
 
           # Add name of repository to first line of version.txt
           echo "$REPOSITORY" > version.txt

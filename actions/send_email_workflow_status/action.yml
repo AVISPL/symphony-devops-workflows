@@ -93,13 +93,13 @@ runs:
 
           # if version.txt exists, grab name and version of module and include in email
           if [ -f ./version.txt ]; then
-            echo "Built module / version: $(head -n 1 ./version.txt) / $(head -n 2 ./version.txt)<br>" >> ${body_file}
+            echo "Built module / version: $(sed -n '1p' < ./version.txt) / $(sed -n '2p' < ./version.txt)<br>" >> ${body_file}
           fi
 
           # if docker.txt exists, grab docker registry / tags of module and include in email
           if [ -f ./docker.txt ]; then
-            echo "Docker registry project: $(head -n 1 ./docker.txt)<br>" >> ${body_file}
-            echo "Docker registry tags: $(head -n 2 ./docker.txt)<br>" >> ${body_file}
+            echo "Docker registry project: $(sed -n '1p' < ./docker.txt)<br>" >> ${body_file}
+            echo "Docker registry tags: $(sed -n '2p' < ./docker.txt)<br>" >> ${body_file}
           fi
 
           echo "<br>" >> ${body_file}
@@ -141,15 +141,15 @@ runs:
           echo "Latest Git commit timestamp: ${git_head_timestamp}<br>" >> ${body_file}
           echo "Latest Git commit url: ${git_head_url}<br>" >> ${body_file}
 
-           # if version.txt exists, grab name and version of module and include in email
+          # if version.txt exists, grab name and version of module and include in email
           if [ -f ./version.txt ]; then
-            echo "Built module / version: $(head -n 1 ./version.txt) / $(head -n 2 ./version.txt)<br>" >> ${body_file}
+            echo "Built module / version: $(sed -n '1p' < ./version.txt) / $(sed -n '2p' < ./version.txt)<br>" >> ${body_file}
           fi
 
           # if docker.txt exists, grab docker registry / tags of module and include in email
           if [ -f ./docker.txt ]; then
-            echo "Docker registry project: $(head -n 1 ./docker.txt)<br>" >> ${body_file}
-            echo "Docker registry tags: $(head -n 2 ./docker.txt)<br>" >> ${body_file}
+            echo "Docker registry project: $(sed -n '1p' < ./docker.txt)<br>" >> ${body_file}
+            echo "Docker registry tags: $(sed -n '2p' < ./docker.txt)<br>" >> ${body_file}
           fi
 
           echo "Pushed by : ${git_pusher}<br>" >> ${body_file}
