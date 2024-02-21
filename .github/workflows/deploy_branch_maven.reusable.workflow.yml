@@ -264,6 +264,11 @@ jobs:
       # so need to checkout again required actions from dedicated repository
       - name: Checkout actions from private repository
         uses: actions/checkout@v4.1.1
+        env:
+          DOCKER_IMAGE_TAG_PREFIX: ${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}
+          DOCKER_TAGS_ALL: ${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}
+          PROJECT_VERSION: ${{ steps.get_project_version.outputs.PROJECT_VERSION }}
+          BUILD_NUMBER: ${{ steps.compute_build_number.outputs.BUILD_NUMBER }}
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
