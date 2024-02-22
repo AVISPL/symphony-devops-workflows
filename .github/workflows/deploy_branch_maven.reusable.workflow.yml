@@ -308,6 +308,6 @@ jobs:
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
         with:
           builderSmtpHost: ${{ secrets.builderSmtpHost }}
-          mvnResultsFile: $github_workspace/mvn_results.txt
+          mvnResultsFile: ${{ inputs.mvnResultsFile }}
           emailTo: ${{ secrets.emailTo }}
           emailFrom: ${{ secrets.emailFrom }}
