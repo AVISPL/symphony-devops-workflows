@@ -99,8 +99,8 @@ runs:
           echo "</tr>" >> ${body_file}
 
           echo "<tr>" >> ${body_file}
-          echo "<td>PR from branch [${branch_source}]</td>" >> ${body_file}
-          echo "<td>PR to branch [${branch_dest}]</td>" >> ${body_file}
+          echo "<td>PR FROM branch [${branch_source}]</td>" >> ${body_file}
+          echo "<td>PR TO branch [${branch_dest}]</td>" >> ${body_file}
           echo "</tr>" >> ${body_file}
 
           echo "<tr>" >> ${body_file}
