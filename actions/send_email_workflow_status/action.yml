@@ -14,6 +14,18 @@ inputs:
   builderSmtpHost:
     description: 'The SMTP server host address'
     required: true
+  emailTo:
+    description: 'The To email address'
+    required: true
+  emailFrom:
+    description: 'The From email display name'
+    required: true
+  mvnResultsFile:
+    description: >
+      Path and name of file maven command results are being saved to
+      Conents of this file will be appended by email sender action to email body it generates
+    required: false
+    default: '$github_workspace/mvn_results.txt'
 
 runs:
   using: "composite"
@@ -70,8 +82,6 @@ runs:
           # Commit information
           git_sha_merge="${{ github.event.after }}"
           git_sha_source="${{ github.event.pull_request.head.sha }}"
-          git_head_message=$(jq -r .head_commit.message "${GITHUB_EVENT_PATH}")
-          git_head_author="${{ github.event.head_commit.author.email }}"
           # PR information
           pr_url="${{ github.event.pull_request.html.href }}"
           pr_title=$(jq -r .pull_request.title "${GITHUB_EVENT_PATH}")
@@ -122,39 +132,6 @@ runs:
           echo "<td>Workflow run url</td>" >> ${body_file}
           echo "<td>${run_url}</td>" >> ${body_file}
           echo "</tr>" >> ${body_file}
-
-          echo "<tr>" >> ${body_file}
-          echo "<td>Build module</td>" >> ${body_file}
-          echo "<td>$(sed -n '1p' < ./version.txt)</td>" >> ${body_file}
-          echo "</tr>" >> ${body_file}
-
-          echo "<tr>" >> ${body_file}
-          echo "<td>Build version</td>" >> ${body_file}
-          echo "<td>$(sed -n '2p' < ./version.txt)</td>" >> ${body_file}
-          echo "</tr>" >> ${body_file}
-
-           # if docker.txt exists, grab docker registry / tags of module and include in email
-          if [ -f ./docker.txt ]; then
-            echo "<tr>" >> ${body_file}
-            echo "<td>Docker registry project</td>" >> ${body_file}
-            echo "<td>$(sed -n '1p' < ./docker.txt)</td>" >> ${body_file}
-            echo "</tr>" >> ${body_file}
-
-            echo "<tr>" >> ${body_file}
-            echo "<td>Docker registry tags</td>" >> ${body_file}
-            echo "<td>$(sed -n '2p' < ./docker.txt)</td>" >> ${body_file}
-            echo "</tr>" >> ${body_file}
-          fi
-          echo "</table>" >> ${body_file}
-
-          echo "<br>" >> ${body_file}
-          echo "<br>" >> ${body_file}
-
-          # replace all /n with <br>
-          sed -i '{:q;N;s/\n/<br>/g;t q}' ./mvn_results.txt
-
-          # append mvn_results.txt, which is the mvn command output to body_file
-          cat mvn_results.txt >> ${body_file} 
 
         elif [[ "push" == "${event_name}" ]]; then
           echo "This is a push event"
@@ -220,55 +197,55 @@ runs:
           echo "</tr>" >> ${body_file}
 
           echo "<tr>" >> ${body_file}
-          echo "<td>Build module</td>" >> ${body_file}
-          echo "<td>$(sed -n '1p' < ./version.txt)</td>" >> ${body_file}
-          echo "</tr>" >> ${body_file}
-
-          echo "<tr>" >> ${body_file}
-          echo "<td>Build version</td>" >> ${body_file}
-          echo "<td>$(sed -n '2p' < ./version.txt)</td>" >> ${body_file}
-          echo "</tr>" >> ${body_file}
-
-           # if docker.txt exists, grab docker registry / tags of module and include in email
-          if [ -f ./docker.txt ]; then
-            echo "<tr>" >> ${body_file}
-            echo "<td>Docker registry project</td>" >> ${body_file}
-            echo "<td>$(sed -n '1p' < ./docker.txt)</td>" >> ${body_file}
-            echo "</tr>" >> ${body_file}
-
-            echo "<tr>" >> ${body_file}
-            echo "<td>Docker registry tags</td>" >> ${body_file}
-            echo "<td>$(sed -n '2p' < ./docker.txt)</td>" >> ${body_file}
-            echo "</tr>" >> ${body_file}
-          fi
-
-          echo "<tr>" >> ${body_file}
           echo "<td>Pushed by</td>" >> ${body_file}
           echo "<td>${git_pusher}</td>" >> ${body_file}
           echo "</tr>" >> ${body_file}
-
-          echo "</table>" >> ${body_file}
-
-          echo "<br>" >> ${body_file}
-          echo "<br>" >> ${body_file}
-
-          # replace all /n with <br>
-          sed -i '{:q;N;s/\n/<br>/g;t q}' ./mvn_results.txt
-
-          # append mvn_results.txt, which is the mvn command output to body_file
-          cat mvn_results.txt >> ${body_file} 
 
         else # just in case the workflow was triggered by unexpected event
           echo "ERROR unexpected event name [${event_name}] (expected 'pull_request' or 'push')"
           exit 1
         fi
 
+        echo "<tr>" >> ${body_file}
+        echo "<td>Build module</td>" >> ${body_file}
+        echo "<td>$(sed -n '1p' < ./version.txt)</td>" >> ${body_file}
+        echo "</tr>" >> ${body_file}
+
+        echo "<tr>" >> ${body_file}
+        echo "<td>Build version</td>" >> ${body_file}
+        echo "<td>$(sed -n '2p' < ./version.txt)</td>" >> ${body_file}
+        echo "</tr>" >> ${body_file}
+
+        # if docker.txt exists, grab docker registry / tags of module and include in email
+        if [ -f ./docker.txt ]; then
+          echo "<tr>" >> ${body_file}
+          echo "<td>Docker registry project</td>" >> ${body_file}
+          echo "<td>$(sed -n '1p' < ./docker.txt)</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Docker registry tags</td>" >> ${body_file}
+          echo "<td>$(sed -n '2p' < ./docker.txt)</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+        fi
+
+        echo "</table>" >> ${body_file}
+
+        echo "<br>" >> ${body_file}
+        echo "<br>" >> ${body_file}
+
+        # replace all /n with <br>
+        sed -i '{:q;N;s/\n/<br>/g;t q}' ${{ inputs.mvnResultsFile }}
+
+        # append mvn_results.txt, which is the mvn command output to body_file
+        cat ${{ inputs.mvnResultsFile }} >> ${body_file}
+
         # Print email contents
         echo "Email subject: [${email_subject}]"
         echo "Email body:" && cat ${body_file}
         echo ""
         # create environment variables from subject to pass to next step
-        echo "SUBJECT=$(echo $email_subject)" >> $GITHUB_ENV
+        echo "SUBJECT=$email_subject" >> $GITHUB_ENV
         echo ""
         echo ""
       shell: bash
@@ -279,6 +256,6 @@ runs:
        ignore_cert: true
        secure: false
        subject: ${{ env.SUBJECT }}
-       to: development@avispl.com
-       from: builder@github
+       to: ${{inputs.emailTo}}
+       from: ${{inputs.emailFrom}}
        html_body: file://body.txt

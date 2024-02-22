@@ -101,7 +101,13 @@ on:
         required: false
       builderSmtpHost:
         description: 'The SMTP server host address'
-        required: false
+        required: true
+      emailTo:
+        description: 'The To email address'
+        required: true
+      emailFrom:
+        description: 'The From email display name'
+        required: true
 
 jobs:
   reusable_job_deploy_branch_maven:
@@ -296,3 +302,6 @@ jobs:
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
         with:
           builderSmtpHost: ${{ secrets.builderSmtpHost }}
+          mvnResultsFile: $github_workspace/mvn_results.txt
+          emailTo: ${{ secrets.emailTo }}
+          emailFrom: ${{ secrets.emailFrom }}
