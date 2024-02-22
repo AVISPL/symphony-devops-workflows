@@ -143,8 +143,6 @@ runs:
           # Latest commit information
           git_head_sha="${{ github.event.head_commit.id }}"
           git_head_message=$(jq -r .head_commit.message "${GITHUB_EVENT_PATH}")
-          # In case there are new line characters in message, replace them with <br>
-          #git_head_message="${git_head_message//'\n'/<br>}"
           git_head_author="${{ github.event.head_commit.author.email }}"
           git_head_url="${{ github.event.head_commit.url }}"
           git_head_timestamp="${{ github.event.head_commit.timestamp }}"
