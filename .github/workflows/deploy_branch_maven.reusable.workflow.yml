@@ -84,6 +84,12 @@ on:
         description: 'The directory in which the project''s pom.xml resides is needed to submit to Dependabot'
         required: false
         type: string
+      mvnResultsFile:
+        description: >
+          Path and name of file maven command results are being saved to
+          Conents of this file will be appended by email sender action to email body it generates
+        required: true
+        type: string
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
