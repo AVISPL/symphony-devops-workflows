@@ -238,6 +238,7 @@ jobs:
           git_delete_tag_if_exists: 'true'
           # TODO check if token used here should be user token or CI token
           github_token: ${{ secrets.userToken }}
+          mvnResultsFile: ${{ inputs.mvnResultsFile }}
 
       # Docker
       - name: Docker build
