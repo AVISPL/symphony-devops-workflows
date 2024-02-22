@@ -12,7 +12,7 @@ inputs:
     required: false
     default: 'false'
   builderSmtpHost:
-    description: 'The SMTP server host'
+    description: 'The SMTP server host address'
     required: true
 
 runs:
@@ -279,7 +279,6 @@ runs:
        ignore_cert: true
        secure: false
        subject: ${{ env.SUBJECT }}
-       # TODO - replace with development@avispl.com
        to: development@avispl.com
        from: builder@github
        html_body: file://body.txt
