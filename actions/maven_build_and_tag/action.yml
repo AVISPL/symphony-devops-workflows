@@ -50,8 +50,7 @@ inputs:
     description: >
       Path and name of file maven command results are being saved to
       Conents of this file will be appended by email sender action to email body it generates
-    required: false
-    default: '$github_workspace/mvn_results.txt'
+    required: true
 runs:
   using: 'composite'
   steps:
