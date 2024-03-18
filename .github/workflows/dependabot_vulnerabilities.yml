@@ -96,6 +96,11 @@ jobs:
           if [ "$PAUSED" == "[]" ]; then
             echo "paused_modules.txt file does not contains any Symphony modules that are currently paused...NOTHING TO UNPAUSE!!"
           fi
+      - name: Upload vulnerabilities.json
+        uses: actions/upload-artifact@v3
+        with:
+          name: vulnerabilities.json
+          path: vulnerabilities.json
       - name: Upload dependabot_status.txt
         uses: actions/upload-artifact@v3
         with:
