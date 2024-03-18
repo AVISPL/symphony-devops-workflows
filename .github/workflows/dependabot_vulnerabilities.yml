@@ -130,6 +130,12 @@ jobs:
           # Indicate where to check out project to
           path: ./.github/symphony-devops-workflows
           clean: 'true'
+      - name: prepare email version of vulnerabilities html file
+        shell: bash
+        run: |
+          # generate html file for email sender
+          cp vulnerabilities.html email_vulnerabilities.html
+          sed -ie '/<head>/,/<\/head>/d' email_vulnerabilities.html
       - name: Send mail
         uses: dawidd6/action-send-mail@v3.11.0
         with:
