@@ -1,4 +1,4 @@
-# Copyright (c) 2022 AVI-SPL Inc.
+# Copyright (c) 2022-2024 AVI-SPL Inc.
 # All Rights Reserved.
 # Prerequisites :
 # - GitHub actions from AVI-SPL private repository must be available in local workspace directory
@@ -11,6 +11,20 @@ inputs:
     description: 'Send email only when current workflow status is not success'
     required: false
     default: 'false'
+  builderSmtpHost:
+    description: 'The SMTP server host address'
+    required: true
+  emailTo:
+    description: 'The To email address'
+    required: true
+  emailFrom:
+    description: 'The From email display name'
+    required: true
+  mvnResultsFile:
+    description: >
+      Path and name of file maven command results are being saved to
+      Conents of this file will be appended by email sender action to email body it generates
+    required: true
 
 runs:
   using: "composite"
@@ -29,9 +43,9 @@ runs:
       # Get workflow conclusion (sets env variable WORKFLOW_CONCLUSION)
       uses: technote-space/workflow-conclusion-action@v2
 
-    - name: Send email
+    - name: Prepare email
       run: |
-        # Send email
+        # Prepare email
 
         # Status uppercase : SUCCESS / FAILURE (other value is unexpected)
         status="${WORKFLOW_CONCLUSION}"
@@ -67,8 +81,6 @@ runs:
           # Commit information
           git_sha_merge="${{ github.event.after }}"
           git_sha_source="${{ github.event.pull_request.head.sha }}"
-          git_head_message=$(jq -r .head_commit.message "${GITHUB_EVENT_PATH}")
-          git_head_author="${{ github.event.head_commit.author.email }}"
           # PR information
           pr_url="${{ github.event.pull_request.html.href }}"
           pr_title=$(jq -r .pull_request.title "${GITHUB_EVENT_PATH}")
@@ -78,16 +90,48 @@ runs:
           email_subject="[${repo_name}] PR branch [${branch_source}] [${status}]"
 
           # Write body file
-          echo "Repository url: ${repo_url}" > ${body_file}
-          echo "PR: ${pr_url}" >> ${body_file}
-          echo "PR title: ${pr_title}" >> ${body_file}
-          echo "PR from branch [${branch_source}] into [${branch_dest}]" >> ${body_file}
-          echo "PR updated at [${pr_updated_at}]" >> ${body_file}
+          echo "<table border='2' style='border-collapse:collapse>; padding: 2px;'" >> ${body_file}
 
-          echo "Git merge commit being built: ${git_sha_merge}" >> ${body_file}
-          echo "Git commit SHA from source branch: ${git_sha_source}" >> ${body_file}
-          echo "Workflow run url: ${run_url}" >> ${body_file}
-          #
+          echo "<tr>" >> ${body_file}
+          echo "<td>Repository url</td>" >> ${body_file}
+          echo "<td>${repo_url}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>PR</td>" >> ${body_file}
+          echo "<td>${pr_url}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>PR title</td>" >> ${body_file}
+          echo "<td>${pr_title}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>PR FROM branch [${branch_source}]</td>" >> ${body_file}
+          echo "<td>PR TO branch [${branch_dest}]</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>PR updated at</td>" >> ${body_file}
+          echo "<td>[${pr_updated_at}]</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Git merge commit being built</td>" >> ${body_file}
+          echo "<td>${git_sha_merge}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Git commit SHA from source branch</td>" >> ${body_file}
+          echo "<td>${git_sha_source}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Workflow run url</td>" >> ${body_file}
+          echo "<td>${run_url}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
         elif [[ "push" == "${event_name}" ]]; then
           echo "This is a push event"
 
@@ -109,27 +153,108 @@ runs:
           email_subject="[${repo_name}] Push on branch [${branch_name}] [${status}]"
 
           # Write body file
-          echo "Repository url: ${repo_url}" > ${body_file}
-          echo "Branch: ${branch_name}" >> ${body_file}
-          echo "Workflow run url: ${run_url}" >> ${body_file}
-          echo "Latest Git commit SHA: ${git_head_sha}" >> ${body_file}
-          echo "Latest Git commit message: ${git_head_message}" >> ${body_file}
-          echo "Latest Git commit author: ${git_head_author}" >> ${body_file}
-          echo "Latest Git commit timestamp: ${git_head_timestamp}" >> ${body_file}
-          echo "Latest Git commit url: ${git_head_url}" >> ${body_file}
-          echo "Pushed by : ${git_pusher}" >> ${body_file}
+          echo "<table border='2' style='border-collapse:collapse>; padding: 2px;'" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Repository url</td>" >> ${body_file}
+          echo "<td>${repo_url}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Branch</td>" >> ${body_file}
+          echo "<td>${branch_name}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Workflow run url</td>" >> ${body_file}
+          echo "<td>${run_url}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Latest Git commit SHA</td>" >> ${body_file}
+          echo "<td>${git_head_sha}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Latest Git commit message</td>" >> ${body_file}
+          echo "<td><pre>${git_head_message}</pre></td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Latest Git commit author</td>" >> ${body_file}
+          echo "<td>${git_head_author}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Latest Git commit timestamp</td>" >> ${body_file}
+          echo "<td>${git_head_timestamp}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Latest Git commit url</td>" >> ${body_file}
+          echo "<td>${git_head_url}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Pushed by</td>" >> ${body_file}
+          echo "<td>${git_pusher}</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
 
         else # just in case the workflow was triggered by unexpected event
           echo "ERROR unexpected event name [${event_name}] (expected 'pull_request' or 'push')"
           exit 1
         fi
 
+        echo "<tr>" >> ${body_file}
+        echo "<td>Build module</td>" >> ${body_file}
+        echo "<td>$(sed -n '1p' < ./version.txt)</td>" >> ${body_file}
+        echo "</tr>" >> ${body_file}
+
+        echo "<tr>" >> ${body_file}
+        echo "<td>Build version</td>" >> ${body_file}
+        echo "<td>$(sed -n '2p' < ./version.txt)</td>" >> ${body_file}
+        echo "</tr>" >> ${body_file}
+
+        # if docker.txt exists, grab docker registry / tags of module and include in email
+        if [ -f ./docker.txt ]; then
+          echo "<tr>" >> ${body_file}
+          echo "<td>Docker registry project</td>" >> ${body_file}
+          echo "<td>$(sed -n '1p' < ./docker.txt)</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+
+          echo "<tr>" >> ${body_file}
+          echo "<td>Docker registry tags</td>" >> ${body_file}
+          echo "<td>$(sed -n '2p' < ./docker.txt)</td>" >> ${body_file}
+          echo "</tr>" >> ${body_file}
+        fi
+
+        echo "</table>" >> ${body_file}
+
+        echo "<br>" >> ${body_file}
+        echo "<br>" >> ${body_file}
+
+        # replace all /n with <br>
+        sed -i '{:q;N;s/\n/<br>/g;t q}' ${{ inputs.mvnResultsFile }}
+
+        # append mvn_results.txt, which is the mvn command output to body_file
+        cat ${{ inputs.mvnResultsFile }} >> ${body_file}
+
         # Print email contents
         echo "Email subject: [${email_subject}]"
         echo "Email body:" && cat ${body_file}
         echo ""
-
-        echo "Send email..."
-        echo "TODO IMPLEMENT Actual send email"
-        echo "Send email DONE"
+        # create environment variables from subject to pass to next step
+        echo "SUBJECT=$email_subject" >> $GITHUB_ENV
+        echo ""
+        echo ""
       shell: bash
+    - name: Send mail
+      uses: dawidd6/action-send-mail@v3.11.0
+      with:
+       server_address: ${{inputs.builderSmtpHost}}
+       ignore_cert: true
+       secure: false
+       subject: ${{ env.SUBJECT }}
+       to: ${{inputs.emailTo}}
+       from: ${{inputs.emailFrom}}
+       html_body: file://body.txt

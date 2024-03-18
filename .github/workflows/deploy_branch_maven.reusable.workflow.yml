@@ -1,4 +1,4 @@
-# Copyright (c) 2022 AVI-SPL Inc.
+# Copyright (c) 2022-2024 AVI-SPL Inc.
 # All Rights Reserved.
 #
 # Builds, runs tests and deploys a Maven project
@@ -84,6 +84,12 @@ on:
         description: 'The directory in which the project''s pom.xml resides is needed to submit to Dependabot'
         required: false
         type: string
+      mvnResultsFile:
+        description: >
+          Path and name of file maven command results are being saved to
+          Conents of this file will be appended by email sender action to email body it generates
+        required: true
+        type: string
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -99,6 +105,15 @@ on:
           It must be a GitHub PAT (Personal Access Token) with read and write authorizations
           on the GitHub repositories to be read/updated
         required: false
+      builderSmtpHost:
+        description: 'The SMTP server host address'
+        required: true
+      emailTo:
+        description: 'The To email address'
+        required: true
+      emailFrom:
+        description: 'The From email display name'
+        required: true
 
 jobs:
   reusable_job_deploy_branch_maven:
@@ -174,6 +189,27 @@ jobs:
 
         shell: bash
 
+      - name: Create version and docker information files to send to email sender job
+        run: |
+          REPOSITORY=${GITHUB_REPOSITORY}
+          # Strip "AVISPL/ from GITHUB_REPOSITORY environment variable
+          REPOSITORY=${REPOSITORY//AVISPL\/}
+
+          # Add name of repository to first line of version.txt
+          echo "$REPOSITORY" > version.txt
+
+          # Add DOCKER_TAG_WITH_VERSION to second line of version.txt
+          echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}" >> version.txt
+
+          # Next section should only be executed if there is non-empty docker-file input
+          if [[! -n "${{ inputs.docker-file }}"]]; then
+            # Add "DOCKER_IMAGE_TAG_PREFIX(ends with /)REPOSITORY" to first line of docker.txt
+            echo "${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}$REPOSITORY" > docker.txt
+
+            # Add DOCKER_TAGS_ALL to second line of docker.txt
+            echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}" >> docker.txt
+          fi
+
       - # Git tag is mandatory for this workflow
         name: Validate git tags
         id: validate_git_tags
@@ -202,6 +238,7 @@ jobs:
           git_delete_tag_if_exists: 'true'
           # TODO check if token used here should be user token or CI token
           github_token: ${{ secrets.userToken }}
+          mvnResultsFile: ${{ inputs.mvnResultsFile }}
 
       # Docker
       - name: Docker build
@@ -270,3 +307,8 @@ jobs:
 
       - name: Send email workflow status
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
+        with:
+          builderSmtpHost: ${{ secrets.builderSmtpHost }}
+          mvnResultsFile: ${{ inputs.mvnResultsFile }}
+          emailTo: ${{ secrets.emailTo }}
+          emailFrom: ${{ secrets.emailFrom }}
