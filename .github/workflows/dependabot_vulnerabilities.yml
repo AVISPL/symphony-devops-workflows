@@ -45,13 +45,13 @@ jobs:
         with:
           fetch-depth: "0"
           clean: "true"
-      - name: Git checkout symphony-devops-workflows
-        uses: actions/checkout@v4.1.1
-        with:
-          repository: AVISPL/symphony-devops-workflows
-          ref: develop
-          path: ./symphony-devops-workflows
-          token: ${{ secrets.AVI_SYMPHONY_DEV_CI_TOKEN }}
+      #- name: Git checkout symphony-devops-workflows
+      #  uses: actions/checkout@v4.1.1
+      #  with:
+      #    repository: AVISPL/symphony-devops-workflows
+      #    ref: develop
+      #    path: ./symphony-devops-workflows
+      #    token: ${{ secrets.AVI_SYMPHONY_DEV_CI_TOKEN }}
       - name: Run shell commands to generate vulnerabilities.json
         shell: bash
         run: |
