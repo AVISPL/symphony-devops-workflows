@@ -102,7 +102,7 @@ jobs:
           name: dependabot_status.txt
           path: dependabot_status.txt
       - name: Install groovy binary (https://groovy.apache.org/)
-        uses: ./symphony-devops-workflows/actions/install_groovy
+        uses: ./actions/install_groovy
       - name: Run shell commands to generate vulnerabilities.html
         shell: bash
         run: |
