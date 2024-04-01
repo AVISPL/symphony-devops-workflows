@@ -48,7 +48,9 @@ runs:
           // Build matrix as a string with expected format for a job strategy
           let matrixStr = `[${cleanedArr.join(",")}]`;
           console.log("Final matrix (without additional surrounding brackets): " + matrixStr);
-          console.log(`::set-output name=matrix::${matrixStr}`);
+          
+          // Output
+          core.setOutput('matrix', matrixStr);
           return matrixStr;
         # Return result string as-is (not JSON encoded)
         result-encoding: string

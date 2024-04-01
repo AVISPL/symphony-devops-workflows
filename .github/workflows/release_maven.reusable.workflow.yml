@@ -128,7 +128,7 @@ jobs:
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
       - name: Git checkout
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4.1.1
         with:
           # Select revision
           ref: '${{ inputs.git-ref }}'
@@ -143,7 +143,7 @@ jobs:
       # (feature not available yet)
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
@@ -226,8 +226,9 @@ jobs:
           echo "DOCKER_TAG_WITH_VERSION: [${DOCKER_TAG_WITH_VERSION}]"
           echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
           #
-          echo "::set-output name=DOCKER_TAG_WITH_VERSION::${DOCKER_TAG_WITH_VERSION}"
-          echo "::set-output name=DOCKER_IMAGE_TAG_PREFIX::${DOCKER_IMAGE_TAG_PREFIX}"
+          echo "DOCKER_TAG_WITH_VERSION=${DOCKER_TAG_WITH_VERSION}" >> $GITHUB_OUTPUT
+          echo "DOCKER_IMAGE_TAG_PREFIX=${DOCKER_IMAGE_TAG_PREFIX}" >> $GITHUB_OUTPUT
+
         shell: bash
 
       # Validate Docker tags

@@ -80,6 +80,10 @@ on:
         required: false
         type: boolean
         default: false
+      dependabot-submit-dependencies-directory:
+        description: 'The directory in which the project''s pom.xml resides is needed to submit to Dependabot'
+        required: false
+        type: string
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -117,7 +121,7 @@ jobs:
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
       - name: Git checkout current repository/branch
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4.1.1
         with:
           # Checkout all branches and tags (required to work with tags in git_delete_tag action)
           fetch-depth: '0' # 0 indicates all history for all branches and tags
@@ -128,7 +132,7 @@ jobs:
       # (feature not available yet)
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
@@ -164,9 +168,10 @@ jobs:
           echo "DOCKER_TAGS_ALL: [${DOCKER_TAGS_ALL}]"
           echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
           #
-          echo "::set-output name=DOCKER_TAG_WITH_VERSION::${DOCKER_TAG_WITH_VERSION}"
-          echo "::set-output name=DOCKER_TAGS_ALL::${DOCKER_TAGS_ALL}"
-          echo "::set-output name=DOCKER_IMAGE_TAG_PREFIX::${DOCKER_IMAGE_TAG_PREFIX}"
+          echo "DOCKER_TAG_WITH_VERSION=${DOCKER_TAG_WITH_VERSION}" >> $GITHUB_OUTPUT
+          echo "DOCKER_TAGS_ALL=${DOCKER_TAGS_ALL}" >> $GITHUB_OUTPUT
+          echo "DOCKER_IMAGE_TAG_PREFIX=${DOCKER_IMAGE_TAG_PREFIX}" >> $GITHUB_OUTPUT
+
         shell: bash
 
       - # Git tag is mandatory for this workflow
@@ -233,9 +238,14 @@ jobs:
           github-token: ${{ secrets.ciToken }}
 
       # Submit Maven dependencies to Dependabot submission API
-      - name: Submit Maven dependencies
-        if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies }}
-        uses: advanced-security/maven-dependency-submission-action@v3
+      - name: Submit Maven dependencies with directory specified
+        if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies && inputs.dependabot-submit-dependencies-directory != '' }}
+        uses: advanced-security/maven-dependency-submission-action@v4.0.0
+        with:
+          directory: '${{ inputs.dependabot-submit-dependencies-directory }}'
+      - name: Submit Maven dependencies without directory specified
+        if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies && inputs.dependabot-submit-dependencies-directory == '' }}
+        uses: advanced-security/maven-dependency-submission-action@v4.0.0
 
   # Job to send email - execute event when previous job(s) in workflow have failed
   job_send_mail:
@@ -250,7 +260,7 @@ jobs:
       # match labels), in which case workspace will be empty,
       # so need to checkout again required actions from dedicated repository
       - name: Checkout actions from private repository
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision

@@ -64,21 +64,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout AVISPL/${{ env.BASE_REPOSITORY }} (contains modules.txt)
-        uses: actions/checkout@v2.5.0
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/${{ env.BASE_REPOSITORY }}
           ref: 'develop'
           path: ./${{ env.BASE_REPOSITORY }}
           token: ${{ secrets.ciToken }}
       - name: Checkout AVISPL/${{ inputs.symphony-module-name }}
-        uses: actions/checkout@v2.5.0
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/${{ inputs.symphony-module-name }}
           ref: '${{ inputs.branch }}'
           path: ./${{ inputs.symphony-module-name }}
           token: ${{ secrets.ciToken }}
       - name: Checkout AVISPL/symphony-devops-workflows
-        uses: actions/checkout@v2.5.0
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
           ref: 'develop'
@@ -153,7 +153,7 @@ jobs:
           wait-for-completion-timeout: 10m
       # checking out the module again in order to get latest updated version from previous release step
       - name: Checkout AVISPL/${{ inputs.symphony-module-name }}
-        uses: actions/checkout@v2.5.0
+        uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/${{ inputs.symphony-module-name }}
           ref: '${{ inputs.branch }}'

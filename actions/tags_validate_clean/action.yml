@@ -90,5 +90,5 @@ runs:
         printf "Tags after cleaning: CLEAN_TAGS_STR: [%s]\n" "${CLEAN_TAGS_STR}"
 
         # Action output
-        printf "::set-output name=CLEAN_TAGS_STR::%s\n" "${CLEAN_TAGS_STR}"
+        echo "CLEAN_TAGS_STR=${CLEAN_TAGS_STR}" >> $GITHUB_OUTPUT
       shell: bash

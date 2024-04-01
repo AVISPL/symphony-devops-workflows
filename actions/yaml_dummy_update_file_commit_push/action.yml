@@ -30,7 +30,7 @@ inputs:
   workspace-checkout-dir-git-clean:
     description: >
       Whether to execute `git clean -ffdx && git reset --hard HEAD` before fetching
-      See actions/checkout@v3.0.1 "clean" option for details
+      See actions/checkout@v4.1.1 "clean" option for details
       Should be true when caller assumes that some contents might already exist
       in temporary checkout dir, which needs to be updated to get latest repository contents,
       to avoid issues with unexpected local changes
@@ -52,7 +52,7 @@ runs:
   steps:
       # Checkout specified repository/ref
       - name: Git checkout repository/branch
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4.1.1
         with:
           # Repository to be checked out
           repository: ${{ inputs.repository }}
