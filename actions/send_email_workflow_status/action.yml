@@ -249,7 +249,7 @@ runs:
         echo ""
       shell: bash
     - name: Send mail
-      uses: dawidd6/action-send-mail@v3.11.0
+      uses: dawidd6/action-send-mail@v3.12.0
       with:
        server_address: ${{inputs.builderSmtpHost}}
        ignore_cert: true
