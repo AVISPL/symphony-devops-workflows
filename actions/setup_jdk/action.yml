@@ -41,8 +41,7 @@ runs:
       if: inputs.distribution == 'custom'
       shell: bash
       run: |
-        export JAVA_HOME=/symphony/jdk-21.0.2
-        echo $JAVA_HOME
+        ls -al /symphony/
         echo -n "Installed java: "
         javac -version
         echo "INSTALLED_JAVA_VER=$(javac -version)" >> $GITHUB_ENV
