@@ -76,7 +76,7 @@ runs:
     - name: Print Java Version
       shell: bash
       run: |
-        ll /home
+        ls -al /home
         echo $JAVA_HOME
         echo java -version
         java -version
