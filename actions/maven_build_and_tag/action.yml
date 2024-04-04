@@ -59,8 +59,7 @@ runs:
       #   Forces a check for missing releases and updated snapshots on remote repositories
       #   Required because using caching of Maven dependencies
       run: |
-        java -version
-        mvn -v
+        source /etc/profile
         mvn -B -U --file ${{ inputs.pom-xml-file }} ${{ inputs.maven_goals }} ${{ inputs.maven_other_options }} | tee ${{ inputs.mvnResultsFile }}
       shell: bash
 

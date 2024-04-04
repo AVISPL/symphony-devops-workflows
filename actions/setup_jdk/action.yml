@@ -76,7 +76,6 @@ runs:
     - name: Print Java Version
       shell: bash
       run: |
-        source /etc/profile
         echo java -version
         java -version
         echo mvn -version
