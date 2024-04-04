@@ -41,7 +41,6 @@ runs:
       if: inputs.distribution == 'custom'
       shell: bash
       run: |
-        ls -al /symphony/
         echo -n "Installed java: "
         javac -version
         echo "INSTALLED_JAVA_VER=$(javac -version)" >> $GITHUB_ENV
