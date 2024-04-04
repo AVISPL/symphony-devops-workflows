@@ -76,8 +76,7 @@ runs:
     - name: Print Java Version
       shell: bash
       run: |
-        users
-        which mvn
+        echo $JAVA_HOME
         echo java -version
         java -version
         echo mvn -version
