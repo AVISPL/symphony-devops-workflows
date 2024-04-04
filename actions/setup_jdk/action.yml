@@ -41,9 +41,7 @@ runs:
       if: inputs.distribution == 'custom'
       shell: bash
       run: |
-        echo -n "Set JAVA_HOME to /symphony/jdk-21.0.2"
         export JAVA_HOME=/symphony/jdk-21.0.2
-        echo -n "JAVA_HOME"
         echo $JAVA_HOME
         echo -n "Installed java: "
         javac -version
