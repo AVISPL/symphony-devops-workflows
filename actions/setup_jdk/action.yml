@@ -77,7 +77,6 @@ runs:
       shell: bash
       run: |
         source /etc/profile
-        echo $JAVA_HOME
         echo java -version
         java -version
         echo mvn -version
