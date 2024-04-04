@@ -41,7 +41,9 @@ runs:
       if: inputs.distribution == 'custom'
       shell: bash
       run: |
-        cat /etc/profile
+        echo $JAVA_HOME
+        source /etc/profile
+        echo $JAVA_HOME
         echo -n "Installed java: "
         javac -version
         echo "INSTALLED_JAVA_VER=$(javac -version)" >> $GITHUB_ENV
