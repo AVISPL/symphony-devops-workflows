@@ -73,6 +73,10 @@ runs:
         # Do NOT overwrite Maven settings.xml with auto-generated one
         overwrite-settings: false
 
+    - name: Set JAVA_HOME
+      shell: bash
+      run: echo "JAVA_HOME=$(echo ::$(pwd)::$(find $RUNNER_TOOL_CACHE -name "java" -type d | grep "jdk")/bin)" >> $GITHUB_ENV
+
     - name: Print Java Version
       shell: bash
       run: |
