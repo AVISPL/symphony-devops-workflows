@@ -75,7 +75,7 @@ runs:
 
     - name: Set JAVA_HOME
       shell: bash
-      run: echo "JAVA_HOME=$(echo ::$(pwd)::$(find $RUNNER_TOOL_CACHE -name "java" -type d | grep "jdk")/bin)" >> $GITHUB_ENV
+      run: echo "JAVA_HOME=${{ inputs.java-version }} >> $GITHUB_ENV
 
     - name: Print Java Version
       shell: bash
