@@ -75,7 +75,7 @@ runs:
 
     - name: Set JAVA_HOME
       shell: bash
-      run: echo "JAVA_HOME=${{ inputs.java-version }}" >> $GITHUB_ENV
+      run: echo "JAVA_HOME=/symphony/${{ inputs.java-version }}" >> $GITHUB_ENV
 
     - name: Print Java Version
       shell: bash
