@@ -252,7 +252,9 @@ jobs:
           ls -al
           unzip -q -d symphony-commproxy ./target/symphony-commproxy.war
           sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' ./symphony-commproxy/WEB-INF/classes/version.txt
+          ls -al
           rm -f symphony-commproxy.war
+          cat version.txt
 
       # Docker
       - name: Docker build
