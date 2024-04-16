@@ -175,13 +175,6 @@ jobs:
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
 
-      # Update version.txt (only applies to modules that contain this file within their src/main/resources directory)
-      - name: Update pom.xml version
-        if: ${{ inputs.update-version }}
-        run: |
-          ls -al
-          #sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' /classes/version.txt
-
       # Compute docker tags to be reused as "global variables"
       - name: Compute docker tags
         id: compute_docker_tags
@@ -251,6 +244,15 @@ jobs:
           # TODO check if token used here should be user token or CI token
           github_token: ${{ secrets.userToken }}
           mvnResultsFile: ${{ inputs.mvnResultsFile }}
+
+      # Update version.txt (only applies to modules that contain this file within their src/main/resources directory)
+      - name: Update Update version.txt
+        if: ${{ inputs.update-version }}
+        run: |
+          ls -al
+          unzip -q -d symphony-commproxy symphony-commproxy.war
+          sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' ./symphony-commproxy/WEB-INF/classes/version.txt
+          rm -f symphony-commproxy.war
 
       # Docker
       - name: Docker build
