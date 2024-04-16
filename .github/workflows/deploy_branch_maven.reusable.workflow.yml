@@ -175,6 +175,11 @@ jobs:
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
 
+      - name: unzip war file only when update-version is true
+        if: ${{ inputs.update-version }}
+        run: |
+          ls -al
+          unzip -q -d symphony-commproxy symphony-commproxy.war
       # Update pom.xml locally
       - name: Update pom.xml version
         if: ${{ inputs.update-version }}
