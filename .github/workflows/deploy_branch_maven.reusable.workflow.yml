@@ -175,13 +175,12 @@ jobs:
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
 
-      # Update pom.xml locally
+      # Update version.txt (only applies to modules that contain this file within their src/main/resources directory)
       - name: Update pom.xml version
         if: ${{ inputs.update-version }}
-        uses: ./.github/symphony-devops-workflows/actions/maven_update_project_version
-        with:
-          pom-xml-file: ${{ inputs.pom-xml-file }}
-          new-project-version: "${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}"
+        run: |
+          ls -al
+          #sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' /classes/version.txt
 
       # Compute docker tags to be reused as "global variables"
       - name: Compute docker tags
