@@ -245,12 +245,12 @@ jobs:
           github_token: ${{ secrets.userToken }}
           mvnResultsFile: ${{ inputs.mvnResultsFile }}
 
-      # Update version.txt (only applies to modules that contain this file within their src/main/resources directory)
-      - name: Update Update version.txt
+      # Update version.txt (custom step that only applies to symphony-commproxy module)
+      - name: Update version.txt
         if: ${{ inputs.update-version }}
         run: |
           ls -al
-          unzip -q -d symphony-commproxy symphony-commproxy.war
+          unzip -q -d symphony-commproxy ./target/symphony-commproxy.war
           sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' ./symphony-commproxy/WEB-INF/classes/version.txt
           rm -f symphony-commproxy.war
 
