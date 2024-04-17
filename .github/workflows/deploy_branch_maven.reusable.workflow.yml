@@ -90,11 +90,11 @@ on:
           Conents of this file will be appended by email sender action to email body it generates
         required: true
         type: string
-      update-version:
-        description: 'Specifies if version within pom file should be updated to Compute build number step''s output'
+      module-name:
+        description: 'The name of module being deployed'
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: ''
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -245,15 +245,16 @@ jobs:
           github_token: ${{ secrets.userToken }}
           mvnResultsFile: ${{ inputs.mvnResultsFile }}
 
-      # Update version.txt (custom step that only applies to symphony-commproxy module)
-      - name: Update version.txt
-        if: ${{ inputs.update-version }}
+      # Update version.txt (custom step that only applies to modules such as symphony-commproxy)
+      - name: Update version.txt if exists
+        if: ${{ inputs.module-name != '' }}
         run: |
-          ls -al
-          unzip -q -d symphony-commproxy ./target/symphony-commproxy.war
-          sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' ./symphony-commproxy/WEB-INF/classes/version.txt
-          ls -al
-          cat ./symphony-commproxy/WEB-INF/classes/version.txt
+          unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
+          # if module contains version.txt, append build-number to version specified in this file
+          if [ -f ./${{ inputs.module-name }}/WEB-INF/classes/version.txt ]; then
+            echo "version.txt exists, appending build-number to end of version specified in this file"
+            sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' ./${{ inputs.module-name }}/WEB-INF/classes/version.txt
+          fi
 
       # Docker
       - name: Docker build
