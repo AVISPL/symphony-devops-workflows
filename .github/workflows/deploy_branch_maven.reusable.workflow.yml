@@ -328,3 +328,4 @@ jobs:
           mvnResultsFile: ${{ inputs.mvnResultsFile }}
           emailTo: ${{ secrets.emailTo }}
           emailFrom: ${{ secrets.emailFrom }}
+          aviSymphonyDevCiToken: ${{ secrets.AVI_SYMPHONY_DEV_CI_TOKEN }}
