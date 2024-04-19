@@ -242,6 +242,9 @@ runs:
 
         # append mvn_results.txt, which is the mvn command output to body_file
         cat ${{ inputs.mvnResultsFile }} >> ${body_file}
+        
+        echo "<br>" >> ${body_file}
+        echo "<br>" >> ${body_file}
 
         # Print email contents
         echo "Email subject: [${email_subject}]"
