@@ -277,12 +277,12 @@ runs:
     - name: Append workflow logs to email body
       shell: bash
       run: |
-        echo "<br>" >> ${body_file}
-        echo "<br>" >> ${body_file}
-        echo "-------------------------------------------------------------------------------<br>"
-        echo "-------------------DETAILED WORKFLOW LOGS ARE LISTED BELOW---------------------<br>"
-        echo "-------------------------------------------------------------------------------<br>"
-        cat workflow_logs.txt >> ${body_file}
+        echo "<br>" >> body.txt
+        echo "<br>" >> body.txt
+        echo "-------------------------------------------------------------------------------<br>" >> body.txt
+        echo "-------------------DETAILED WORKFLOW LOGS ARE LISTED BELOW---------------------<br>" >> body.txt
+        echo "-------------------------------------------------------------------------------<br>" >> body.txt
+        cat workflow_logs.txt >> body.txt
 
     - name: Send mail
       uses: dawidd6/action-send-mail@v3.12.0
