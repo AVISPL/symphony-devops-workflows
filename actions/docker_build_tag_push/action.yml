@@ -43,7 +43,6 @@ runs:
     - name: Docker build tag push
       id: docker_build_tag_push
       run: |
-        ls -al
         echo "Docker build tag push"
         # WARNING need to use sudo to run docker commands
 
