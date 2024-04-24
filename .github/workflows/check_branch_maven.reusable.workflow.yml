@@ -137,7 +137,7 @@ jobs:
       - name: Update version.txt if exists
         if: ${{ inputs.module-name != '' }}
         run: |
-          echo ${{ github.workflow }}
+          echo ${{ github.event.head_commit.message }}
           unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
       # Docker
