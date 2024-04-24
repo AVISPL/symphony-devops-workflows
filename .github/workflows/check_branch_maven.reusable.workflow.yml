@@ -60,7 +60,7 @@ on:
 
 jobs:
   reusable_job_check_branch_maven:
-    #if: ${{ ! startsWith(github.event.head_commit.message, '[AUTO] Release') }} 
+    if: ${{ github.actor != secrets.AVI_SYMPHONY_DEV_USER_NAME }} 
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
@@ -137,7 +137,6 @@ jobs:
       - name: Update version.txt if exists
         if: ${{ inputs.module-name != '' }}
         run: |
-          echo ${{ github.actor }}
           unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
       # Docker
