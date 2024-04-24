@@ -79,6 +79,11 @@ on:
         required: false
         type: string
         default: '[ "self-hosted", "linux" ]'
+      module-name:
+        description: 'The name of module being deployed'
+        required: false
+        type: string
+        default: ''
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -253,6 +258,17 @@ jobs:
           maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven-other-options }}
           # Disable Git tagging (already done when pushing pom.xml with updated version)
           git_tag: ''
+
+      # Update version.txt (custom step that only applies to modules such as symphony-commproxy)
+      - name: Update version.txt if exists
+        if: ${{ inputs.module-name != '' }}
+        run: |
+          unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
+          # if module contains version.txt, append build-number to version specified in this file
+          if [ -f ./${{ inputs.module-name }}/WEB-INF/classes/version.txt ]; then
+            echo "version.txt exists, appending build-number to end of version specified in this file"
+            sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' ./${{ inputs.module-name }}/WEB-INF/classes/version.txt
+          fi
 
       # Docker
       - name: Docker build
