@@ -57,23 +57,10 @@ on:
         required: false
         type: string
         default: ''
-    #
-    secrets:
-      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
-      commitUserName:
-        description: |
-          User name used as Git committer. This is NOT the user name of the person who
-          ran the workflow.
-          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
-          the commit will look like:
-            Author: John <John@users.noreply.github.com>
-            Committer: MyCIUser
-            Signed-off-by: MyCIUser <MyCIUser@...com>
-        required: true
 
 jobs:
   reusable_job_check_branch_maven:
-    if: (github.actor != ${{ secrets.commitUserName }})
+    if: ${{ github.actor != 'AVISymphonyDev' }}
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
