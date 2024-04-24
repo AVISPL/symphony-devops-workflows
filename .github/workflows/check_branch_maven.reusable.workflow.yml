@@ -60,6 +60,7 @@ on:
 
 jobs:
   reusable_job_check_branch_maven:
+    if: ${{ !startsWith(github.workflow, '[AUTO] Release') }} 
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
