@@ -60,7 +60,9 @@ on:
 
 jobs:
   reusable_job_check_branch_maven:
-    if: ${{ github.actor != 'AVISymphonyDev' }}
+    # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
+    # TODO - review this with Sebastien!
+    if: ${{ github.actor != 'AVISymphonyDev' && !startsWith(github.event.head_commit.message, '[AUTO] Release')}}
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
