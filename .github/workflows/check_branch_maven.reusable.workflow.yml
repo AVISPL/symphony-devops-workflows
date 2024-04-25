@@ -102,7 +102,7 @@ jobs:
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
     # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
     # TODO - review this with Sebastien!
-    if: ${{ echo -n ${{needs.setup_auto_release_actor.outputs.auto_release_actor}} | base64 --decode != github.actor }}
+    if: ${{ (echo -n ${{needs.setup_auto_release_actor.outputs.auto_release_actor}} | base64 --decode) != github.actor }}
 
     steps:
       # WARNING checkout repository first because this action resets the checkout directory
