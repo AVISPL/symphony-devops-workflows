@@ -78,7 +78,7 @@ jobs:
   reusable_job_check_branch_maven:
     # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
     # TODO - review this with Sebastien!
-    if: ${{ github.actor != $AUTO_RELEASE_COMMIT_ACTOR }}
+    if: github.actor != ${AUTO_RELEASE_COMMIT_ACTOR}
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
@@ -155,7 +155,7 @@ jobs:
       - name: Update version.txt if exists
         if: ${{ inputs.module-name != '' }}
         run: |
-          echo $AUTO_RELEASE_COMMIT_ACTOR
+          echo ${AUTO_RELEASE_COMMIT_ACTOR}
           unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
       # Docker
