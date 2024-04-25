@@ -57,10 +57,7 @@ on:
         required: false
         type: string
         default: ''
-    #
-    secrets:
-      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
-      commitUserName:
+      commit-user-name:
         description: |
           User name to be used as Git committer. This is NOT the user name of the person who
           ran the workflow.
@@ -70,19 +67,9 @@ on:
             Committer: MyCIUser
             Signed-off-by: MyCIUser <MyCIUser@...com>
         required: false
+        type: string
 
 jobs:
-  setup_auto_release_actor:
-    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
-    outputs:
-      auto_release_actor: ${{ steps.actor.outputs.auto_release_actor }}
-    steps:
-      - name: Create environment variable from secret
-        id: actor
-        run: |
-          commitUserNameBase64=`echo -n ${{ secrets.commitUserName }} | base64 -w 0`
-          echo "auto_release_actor=$commitUserNameBase64" >> $GITHUB_OUTPUT
-
   reusable_job_check_branch_maven:
     needs: setup_auto_release_actor
     # Permissions are required for actions that need to do changes on repository
@@ -101,8 +88,7 @@ jobs:
     # so need this trick with multiple variables
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
     # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
-    # TODO - review this with Sebastien!
-    if: ${{ (echo -n ${{needs.setup_auto_release_actor.outputs.auto_release_actor}} | base64 --decode) != github.actor }}
+    if: ${{ github.actor != inputs.commit-user-name && !startsWith(github.event.head_commit.message, '[AUTO] Release')}}
 
     steps:
       # WARNING checkout repository first because this action resets the checkout directory
@@ -164,7 +150,9 @@ jobs:
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Update version.txt if exists
         if: ${{ inputs.module-name != '' }}
-        run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
+        run: |
+          echo ${{ inputs.commit-user-name}}
+          unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
       # Docker
       - name: Docker build tag push
