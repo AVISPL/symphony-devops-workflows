@@ -80,7 +80,7 @@ jobs:
       - name: Create environment variable from secret
         id: actor
         run: |
-          echo "Github actor is ${{ github.actor }}""
+          echo "Github actor is ${{ github.actor }}"
           echo "AUTO_RELEASE_COMMITTER=${{ secrets.commitUserName }}" >> $GITHUB_OUTPUT
 
   reusable_job_check_branch_maven:
