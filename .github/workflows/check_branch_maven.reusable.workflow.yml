@@ -71,8 +71,15 @@ on:
             Signed-off-by: MyCIUser <MyCIUser@...com>
         required: false
 
+env:
+  AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName }}
+
 jobs:
   reusable_job_check_branch_maven:
+    # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
+    # TODO - review this with Sebastien!
+    #if: github.actor != ${AUTO_RELEASE_COMMIT_ACTOR}
+
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
@@ -89,12 +96,6 @@ jobs:
     # so need this trick with multiple variables
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
 
-    env:
-      AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName }}
-
-    # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
-    # TODO - review this with Sebastien!
-    if: github.actor != ${AUTO_RELEASE_COMMIT_ACTOR}
     steps:
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
