@@ -72,16 +72,17 @@ on:
         required: false
 
 jobs:
-  setup_environment_variables:
+  setup_environment_variable:
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
     steps:
-      - name: Update version.txt if exists
+      - name: Create environment variable from secret
         run: |
           echo "AUTO_RELEASE_COMMIT_ACTOR=${{ secrets.commitUserName }}" >> $GITHUB_ENV
+          echo ${{ env.AUTO_RELEASE_COMMIT_ACTOR }}
   reusable_job_check_branch_maven:
     # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
     # TODO - review this with Sebastien!
-    if: github.actor != vars.AUTO_RELEASE_COMMIT_ACTOR
+    if: ${{ github.actor != vars.AUTO_RELEASE_COMMIT_ACTOR }}
 
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
@@ -159,9 +160,7 @@ jobs:
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Update version.txt if exists
         if: ${{ inputs.module-name != '' }}
-        run: |
-          echo $AUTO_RELEASE_COMMIT_ACTOR
-          unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
+        run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
       # Docker
       - name: Docker build tag push
