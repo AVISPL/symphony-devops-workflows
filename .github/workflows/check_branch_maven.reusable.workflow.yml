@@ -57,21 +57,9 @@ on:
         required: false
         type: string
         default: ''
-      commit-user-name:
-        description: |
-          User name to be used as Git committer. This is NOT the user name of the person who
-          ran the workflow.
-          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
-          the commit will look like:
-            Author: John <John@users.noreply.github.com>
-            Committer: MyCIUser
-            Signed-off-by: MyCIUser <MyCIUser@...com>
-        required: false
-        type: string
 
 jobs:
   reusable_job_check_branch_maven:
-    needs: setup_auto_release_actor
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
@@ -87,8 +75,6 @@ jobs:
     # Note: GitHub does not allow to pass an object as job input (such as an array)
     # so need this trick with multiple variables
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
-    # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
-    if: ${{ github.actor != inputs.commit-user-name && !startsWith(github.event.head_commit.message, '[AUTO] Release')}}
 
     steps:
       # WARNING checkout repository first because this action resets the checkout directory
@@ -150,9 +136,7 @@ jobs:
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Update version.txt if exists
         if: ${{ inputs.module-name != '' }}
-        run: |
-          echo ${{ inputs.commit-user-name}}
-          unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
+        run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
       # Docker
       - name: Docker build tag push
