@@ -84,10 +84,6 @@ jobs:
 
   reusable_job_check_branch_maven:
     needs: setup_auto_release_actor
-    # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
-    # TODO - review this with Sebastien!
-    if: needs.setup_auto_release_actor.outputs.auto_release_actor != github.actor
-
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
     # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
@@ -103,6 +99,9 @@ jobs:
     # Note: GitHub does not allow to pass an object as job input (such as an array)
     # so need this trick with multiple variables
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
+    # TODO - review this with Sebastien!
+    if: needs.setup_auto_release_actor.outputs.auto_release_actor != ${{ github.actor }}
 
     steps:
       # WARNING checkout repository first because this action resets the checkout directory
