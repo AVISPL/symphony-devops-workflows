@@ -75,12 +75,12 @@ jobs:
   setup_auto_release_actor:
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
     outputs:
-      auto_release_actor: ${{ steps.actor.outputs.AUTO_RELEASE_COMMITTER }}
+      auto_release_actor: ${{ steps.actor.outputs.auto_release_actor }}
     steps:
       - name: Create environment variable from secret
         id: actor
         run: |
-          echo "AUTO_RELEASE_COMMITTER=${{ secrets.commitUserName }}" >> $GITHUB_OUTPUT
+          echo "auto_release_actor=${{ secrets.commitUserName }}" >> $GITHUB_OUTPUT
 
   reusable_job_check_branch_maven:
     needs: setup_auto_release_actor
@@ -101,7 +101,7 @@ jobs:
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
     # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
     # TODO - review this with Sebastien!
-    if: ${{ needs.setup_auto_release_actor.outputs.auto_release_actor != 'AVISymphonyDev' }}
+    if: ${{ needs.setup_auto_release_actor.outputs.auto_release_actor != github.actor }}
 
     steps:
       # WARNING checkout repository first because this action resets the checkout directory
