@@ -81,7 +81,7 @@ jobs:
         id: actor
         run: |
           echo "AUTO_RELEASE_COMMITTER=${{ secrets.commitUserName }}" >> $GITHUB_ENV
-          echo ${{ githb.actor }}
+          echo ${{ github.actor }}
 
   reusable_job_check_branch_maven:
     needs: setup_auto_release_actor
