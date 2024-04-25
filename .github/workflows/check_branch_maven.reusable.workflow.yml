@@ -81,8 +81,10 @@ jobs:
         id: actor
         run: |
           echo "AUTO_RELEASE_COMMITTER=${{ secrets.commitUserName }}" >> $GITHUB_ENV
+          echo ${{ githb.actor }}
 
   reusable_job_check_branch_maven:
+    needs: setup_auto_release_actor
     # Do not execute this workflow when version in pom.xml was modified by automated user and commit message starts with '[AUTO] Release'
     # TODO - review this with Sebastien!
     if: ${{ github.actor != needs.setup_auto_release_actor.outputs.auto_release_actor }}
