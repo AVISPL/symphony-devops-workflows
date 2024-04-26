@@ -84,14 +84,19 @@ on:
         description: 'The directory in which the project''s pom.xml resides is needed to submit to Dependabot'
         required: false
         type: string
-      mvnResultsFile:
-        description: >
+      mvn-output-file:
+        description: |
           Path and name of file maven command results are being saved to
           Conents of this file will be appended by email sender action to email body it generates
         required: true
         type: string
       module-name:
-        description: 'The name of module being deployed'
+        description: |
+          This optional input is reserved for modules that are packaged as war file (i.e. symphony-commproxy). 
+          The reason this input is required is because symphony-commproxy is not the name of the project within the Symphony harbor
+          registry (hence, symphony-microservice-name cannot be used). If specified, a step in this workflow will unzip the war file
+          and update the version.txt of the module to make sure correct version gets displayed in Symphony UI. Furthermore, 
+          respective Dockerfile needs the expanded war file (with updated version) to be copied to the tomcat webapps directory.
         required: false
         type: string
         default: ''
@@ -243,7 +248,7 @@ jobs:
           git_delete_tag_if_exists: 'true'
           # TODO check if token used here should be user token or CI token
           github_token: ${{ secrets.userToken }}
-          mvnResultsFile: ${{ inputs.mvnResultsFile }}
+          mvn-output-file: ${{ inputs.mvn-output-file }}
 
       # Update version.txt (custom step that only applies to modules such as symphony-commproxy)
       - name: Update version.txt if exists
@@ -325,7 +330,7 @@ jobs:
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
         with:
           builderSmtpHost: ${{ secrets.builderSmtpHost }}
-          mvnResultsFile: ${{ inputs.mvnResultsFile }}
+          mvn-output-file: ${{ inputs.mvn-output-file }}
           emailTo: ${{ secrets.emailTo }}
           emailFrom: ${{ secrets.emailFrom }}
           ciToken: ${{ secrets.ciToken }}

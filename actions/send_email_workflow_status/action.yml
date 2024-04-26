@@ -20,7 +20,7 @@ inputs:
   emailFrom:
     description: 'The From email display name'
     required: true
-  mvnResultsFile:
+  mvn-output-file:
     description: >
       Path and name of file maven command results are being saved to
       Conents of this file will be appended by email sender action to email body it generates
@@ -238,10 +238,10 @@ runs:
         echo "<br>" >> ${body_file}
 
         # replace all /n with <br>
-        sed -i '{:q;N;s/\n/<br>/g;t q}' ${{ inputs.mvnResultsFile }}
+        sed -i '{:q;N;s/\n/<br>/g;t q}' ${{ inputs.mvn-output-file }}
 
         # append mvn_results.txt, which is the mvn command output to body_file
-        cat ${{ inputs.mvnResultsFile }} >> ${body_file}
+        cat ${{ inputs.mvn-output-file }} >> ${body_file}
 
         # Print email contents
         echo "Email subject: [${email_subject}]"

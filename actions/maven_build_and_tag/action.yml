@@ -46,7 +46,7 @@ inputs:
       Used only when a Git tag name is provided by parameter git_tag
       GitHub secret token to be provided by caller
     required: false
-  mvnResultsFile:
+  mvn-output-file:
     description: >
       Path and name of file maven command results are being saved to
       Conents of this file will be appended by email sender action to email body it generates
@@ -58,7 +58,7 @@ runs:
       # Option -U (or --update-snapshots)
       #   Forces a check for missing releases and updated snapshots on remote repositories
       #   Required because using caching of Maven dependencies
-      run: mvn -B -U --file ${{ inputs.pom-xml-file }} ${{ inputs.maven_goals }} ${{ inputs.maven_other_options }} | tee ${{ inputs.mvnResultsFile }}
+      run: mvn -B -U --file ${{ inputs.pom-xml-file }} ${{ inputs.maven_goals }} ${{ inputs.maven_other_options }} | tee ${{ inputs.mvn-output-file }}
       shell: bash
 
     # TODO git tagging: use new common action git_tag_create_or_move instead
