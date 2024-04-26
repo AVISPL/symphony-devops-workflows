@@ -53,7 +53,11 @@ on:
         required: false
         type: string
       module-name:
-        description: 'The name of module being deployed'
+        description: |
+          This optional input is reserved for modules that are packaged as war file (i.e. symphony-commproxy). 
+          If this input is specified the value will be used within a step in this workflow to unzip it. 
+          The respective Dockerfile for such modules does not accept the war file and require expanded war file
+          to be copied to the tomcat webapps directory.
         required: false
         type: string
         default: ''
@@ -134,7 +138,7 @@ jobs:
           git_tag: ''
 
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
-      - name: Update version.txt if exists
+      - name: Unzip war file if module-name is specified
         if: ${{ inputs.module-name != '' }}
         run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
