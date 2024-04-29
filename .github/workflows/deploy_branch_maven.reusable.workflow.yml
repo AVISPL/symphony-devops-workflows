@@ -254,7 +254,6 @@ jobs:
       - name: Update version.txt if exists
         if: ${{ inputs.module-name != '' }}
         run: |
-          ls -al
           unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
           # if module contains version.txt, append build-number to version specified in this file
           if [ -f ./${{ inputs.module-name }}/WEB-INF/classes/version.txt ]; then
