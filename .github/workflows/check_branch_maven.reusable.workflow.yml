@@ -61,8 +61,41 @@ on:
         required: false
         type: string
         default: ''
+    #
+    secrets:
+      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
+      commitUserName:
+        description: |
+          User name to be used as Git committer. This is NOT the user name of the person who
+          ran the workflow.
+          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
+          the commit will look like:
+            Author: John <John@users.noreply.github.com>
+            Committer: MyCIUser
+            Signed-off-by: MyCIUser <MyCIUser@...com>
+        required: false
 
 jobs:
+  run_workflow_decision:
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    outputs:
+      CONTINUE: ${{ steps.continue.outputs.continue }}
+    steps:
+      - name: Should woriflow be executed
+        id: continue
+        shell: bash
+        env:
+          AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          echo $commit_message
+          if [[ "$AUTO_RELEASE_COMMIT_ACTOR" = "${{ github.actor }}" ]] && [[ $commit_message == "[AUTO] Release"* ]]; then
+            echo "Aborting workflow...pom.xml was modified by automated actor with [AUTO] Release in commit message."
+            echo "continue=false" >> $GITHUB_OUTPUT
+          else
+            echo "Executing workflow"
+            echo "continue=true" >> $GITHUB_OUTPUT
+          fi
   reusable_job_check_branch_maven:
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
@@ -80,6 +113,8 @@ jobs:
     # so need this trick with multiple variables
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
 
+    needs: [run_workflow_decision]
+    if: ${{ needs.run_workflow_decision.outputs.continue == 'true' }}
     steps:
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
