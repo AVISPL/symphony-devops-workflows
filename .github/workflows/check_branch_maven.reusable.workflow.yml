@@ -81,7 +81,7 @@ jobs:
     outputs:
       CONTINUE: ${{ steps.continue.outputs.continue }}
     steps:
-      - name: Should woriflow be executed
+      - name: Should workflow be executed
         id: continue
         shell: bash
         env:
