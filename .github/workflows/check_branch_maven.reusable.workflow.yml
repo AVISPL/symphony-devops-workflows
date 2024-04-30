@@ -73,7 +73,7 @@ on:
             Author: John <John@users.noreply.github.com>
             Committer: MyCIUser
             Signed-off-by: MyCIUser <MyCIUser@...com>
-        required: false
+        required: true
 
 jobs:
   run_workflow_decision:
