@@ -265,7 +265,7 @@ runs:
         echo $JOBS_JSON > jobs_response.json
         echo "List of Jobs are: $JOBS_JSON"
         
-        # extract "deploy_branch_on_push_maven / reusable_job_deploy_branch_maven" job ID 
+        # extract "reusable_job_deploy_branch_maven" job ID 
         JOB_IDs=($(cat jobs_response.json | jq '.jobs[] | select(.name | endswith("reusable_job_deploy_branch_maven")).id'))
         LENGTH=${#JOB_IDs[@]}
         JOB_ID=${JOB_IDs[$LENGTH-1]}
