@@ -266,7 +266,7 @@ runs:
         echo "List of Jobs are: $JOBS_JSON"
         
         # extract "deploy_branch_on_push_maven / reusable_job_deploy_branch_maven" job ID 
-        JOB_ID=$(cat jobs_response.json | jq '.jobs[] | select(.name | startswith("deploy_branch_on_push_maven / reusable_job_deploy_branch_maven")).id')
+        JOB_ID=$(cat jobs_response.json | jq '.jobs[] | select(.name | endswith("reusable_job_deploy_branch_maven")).id')
         echo "Job ID of deploy_branch_on_push_maven / reusable_job_deploy_branch_maven: $JOB_ID"
         
         # get logs for JOB_ID and push it to file
