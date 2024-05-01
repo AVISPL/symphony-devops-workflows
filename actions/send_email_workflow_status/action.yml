@@ -270,7 +270,10 @@ runs:
         LENGTH=${#JOB_IDs[@]}
         echo "length of job IDs array is: $LENGTH"
         echo "Job IDs of reusable_job_deploy_branch_maven: $JOB_IDs"
-        JOB_ID=${JOB_IDs[-1]}
+        LAST_INDEX=$(( LENGTH-1 ))
+        echo "Last index of array is: $LAST_INDEX"
+        JOB_ID=${JOB_IDs[$LAST_INDEX]}
+        echo "Job ID to make Github API call is: $JOB_ID"
         
         # get logs for JOB_ID and push it to file
         curl -L \
