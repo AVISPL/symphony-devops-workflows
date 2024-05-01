@@ -265,16 +265,10 @@ runs:
         echo $JOBS_JSON > jobs_response.json
         echo "List of Jobs are: $JOBS_JSON"
         
-        cat jobs_response.json
-        
         # extract "deploy_branch_on_push_maven / reusable_job_deploy_branch_maven" job ID 
-        JOB_IDs=$(cat jobs_response.json | jq '[.jobs[] | select(.name | endswith("reusable_job_deploy_branch_maven")).id'])
+        JOB_IDs=($(cat jobs_response.json | jq '.jobs[] | select(.name | endswith("reusable_job_deploy_branch_maven")).id'))
         LENGTH=${#JOB_IDs[@]}
-        echo "length of job IDs array is: $LENGTH"
-        echo "Job IDs of reusable_job_deploy_branch_maven: $JOB_IDs"
-        LAST_INDEX=$(( LENGTH-1 ))
-        echo "Last index of array is: $LAST_INDEX"
-        JOB_ID=${JOB_IDs[$LAST_INDEX]}
+        JOB_ID=${JOB_IDs[$LENGTH-1]}
         echo "Job ID to make Github API call is: $JOB_ID"
         
         # get logs for JOB_ID and push it to file
