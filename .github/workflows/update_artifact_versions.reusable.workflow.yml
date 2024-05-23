@@ -33,8 +33,9 @@ on:
         required: true
       commitUserName:
         description: |
-          User name to be used as Git committer. This is NOT the user name of the person who
-          ran the workflow.
+          User name to be used as Git committer by the workflow, when the workflow issues new 
+          Git commits (for example when updating deployment files). It is unrelated to the person 
+          who ran the workflow. It is recommended to use a technical user dedicated to the CI system.
           For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
           the commit will look like:
             Author: John <John@users.noreply.github.com>

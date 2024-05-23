@@ -83,6 +83,22 @@ on:
           It must be a GitHub PAT (Personal Access Token) with read and write authorizations
           on the GitHub repositories to be read/updated
         required: false
+      commitUserName:
+        description: |
+          User name to be used as Git committer by the workflow, when the workflow issues new 
+          Git commits (for example when updating deployment files). It is unrelated to the person 
+          who ran the workflow. It is recommended to use a technical user dedicated to the CI system.
+          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
+          the commit will look like:
+            Author: John <John@users.noreply.github.com>
+            Committer: MyCIUser
+            Signed-off-by: MyCIUser <MyCIUser@...com>
+        required: true
+      commitUserEmail:
+        description: |
+          User email to be used as Git committer. This is NOT the user email
+          of the person who ran the workflow, see commit user name.
+        required: true
 
 jobs:
   build:
@@ -281,3 +297,5 @@ jobs:
           # Token for checking-out private repository
           # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
           github-token: ${{ secrets.ciToken }}
+          commit-user-name: ${{ secrets.commitUserName }}
+          commit-user-email: ${{ secrets.commitUserEmail }}
