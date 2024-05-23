@@ -29,10 +29,10 @@ inputs:
       e.g. '5.6.1.2208051600'
     required: false
   commit-user-name:
-    description: User to be used as committer
+    description: User to be used as Git committer
     required: true
   commit-user-email:
-    description: User email to be used as committer
+    description: User email to be used as Git committer
     required: true
   github-token:
     description: >

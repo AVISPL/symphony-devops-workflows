@@ -47,10 +47,10 @@ inputs:
     required: false
     default: 'true'
   commit-user-name:
-    description: User to be used as committer
+    description: User to be used as Git committer
     required: true
   commit-user-email:
-    description: User email to be used as committer
+    description: User email to be used as Git committer
     required: true
 
 runs:
@@ -89,8 +89,6 @@ runs:
 
           # Git commit message
           commit_message: 'AUTO Update ${{ inputs.yaml-file  }}'
-          # TODO Git commit user and author - use secrets instead of hardcoded value
-          # Git commit user and author
           commit_user_name: ${{ inputs.commit-user-name }}
           commit_user_email: ${{ inputs.commit-user-email }}
           # commit_author - Do NOT specify value and use default action behaviour
