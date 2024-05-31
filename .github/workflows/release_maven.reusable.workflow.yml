@@ -260,6 +260,12 @@ jobs:
           # Disable Git tagging (already done when pushing pom.xml with updated version)
           git_tag: ''
 
+      # Update version.txt (custom step that only applies to modules such as symphony-commproxy)
+      - name: Update version.txt if exists
+        if: ${{ inputs.module-name != '' }}
+        run: |
+          unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
+
       # Docker
       - name: Docker build
         id: docker_build_tag_push
