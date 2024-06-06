@@ -114,8 +114,8 @@ jobs:
         run: |
           COMMIT_AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
           COMMIT_AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
-          echo "::set-output name=author_name::$COMMIT_AUTHOR_NAME"
-          echo "::set-output name=author_email::$COMMIT_AUTHOR_EMAIL"
+          echo "author_name=${COMMIT_AUTHOR_NAME}" >> $GITHUB_OUTPUT
+          echo "author_email=${COMMIT_AUTHOR_EMAIL}" >> $GITHUB_OUTPUT
 
       - name: Git commit push
         uses: AVISPL/symphony-devops-workflows/actions/git_add_commit_push@develop
