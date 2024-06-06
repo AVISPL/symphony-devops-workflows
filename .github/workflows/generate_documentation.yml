@@ -1,0 +1,127 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Perform checks on pull request before pull request is merged
+# Builds maven project and executes tests, but
+# does NOT deploy to Nexus, nor changes Git , not pushes/tags to Docker registry
+# See discussions here about push event VS pull_request event
+# https://github.community/t/trigger-workflow-only-on-pull-request-merge/17359
+name: generate_documentation
+
+on:
+  workflow_call:
+    inputs:
+      pom-xml-file:
+        description: 'The path of the project pom.xml'
+        required: false
+        default: 'pom.xml'
+        type: string
+      maven_goals:
+        description: 'The goals for the mvn command (optional)'
+        required: false
+        type: string
+        default: 'clean install'
+      runs-on_label_1:
+        description: 'The job runner first label (optional)'
+        required: false
+        type: string
+        default: 'self-hosted'
+      runs-on_label_2:
+        description: 'The job runner second label (optional)'
+        required: false
+        type: string
+        default: 'linux'
+      symphony-devops-workflows_ref:
+        description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''develop'''
+        required: false
+        type: string
+        default: 'develop'
+      source-pdf-filename:
+        description: 'source generated pdf file name under target/generated-docs/'
+        required: true
+        type: string
+      destination-pdf-filename:
+        description: 'destination REST API doc pdf file name in root'
+        required: true
+        type: string
+
+jobs:
+  generate_documentation:
+    # Permissions are required for actions that need to do changes on repository
+    # (change files or git operations) or which require access to some GitHub APIs
+    # Permissions documentation : https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idpermissions
+    permissions:
+      contents: write
+      # Actions read is required by technote-space/workflow-conclusion-action for accessing
+      # actions API for getting actions results
+      actions: read
+
+    # Use runner which has requested labels
+    # Note: GitHub does not allow to pass an object as job input (such as an array)
+    # so need this trick with multiple variables
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    steps:
+      # WARNING checkout repository first because this action resets the checkout directory
+      # (so other files written into it will be removed)
+      - name: Git checkout current repository/branch
+        uses: actions/checkout@v4.1.1
+        with:
+          # TODO HOUSEKEEPING check if fetch-depth 0 is really needed (should not
+          #      as no Git tags are manipulated by this workflow)
+          # Checkout all branches and tags (required to work with tags in git_delete_tag action)
+          fetch-depth: '0' # 0 indicates all history for all branches and tags
+          # Force clean to avoid leftover changes from previous runs in workspace in current runner
+          clean: 'true'
+
+      # GitHub actions cannot be executed directly from private repository
+      # (feature not available yet)
+      # So checkout the actions into local workspace directory and run them from there
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          # Select revision
+          ref: '${{ inputs.symphony-devops-workflows_ref }}'
+          # Indicate where to check out project to
+          path: ./.github/symphony-devops-workflows
+
+      - name: Setup JDK
+        uses: ./.github/symphony-devops-workflows/actions/setup_jdk
+        with:
+          distribution: 'custom'
+
+      - name: Get project version
+        id: get_project_version
+        uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
+        with:
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+
+      - name: Maven build
+        uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
+        with:
+          # Maven options
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+          maven_goals: ${{ inputs.maven_goals }}
+          maven_other_options: '-DskipTests=false -DskipITs=false'
+          # Git options
+          git_tag: ''
+
+      - name: Move generated PDF to root directory
+        run: mv target/generated-docs/${{source-pdf-filename}} ./${{ inputs.destination-pdf-filename }}
+
+      - name: Extract commit author information
+        id: get_author_info
+        run: |
+          COMMIT_AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
+          COMMIT_AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
+          echo "::set-output name=author_name::$COMMIT_AUTHOR_NAME"
+          echo "::set-output name=author_email::$COMMIT_AUTHOR_EMAIL"
+
+      - name: Git commit push
+        uses: AVISPL/symphony-devops-workflows/actions/git_add_commit_push@develop
+        with:
+          repository-dir: '.'
+          file-pattern: ${{inputs.destination-pdf-filename}}
+          commit-message: '[AUTO] PDF Documentation'
+          commit-user-name: ${{ steps.get_author_info.outputs.author_name }}
+          commit-user-email: ${{ steps.get_author_info.outputs.author_email }}
