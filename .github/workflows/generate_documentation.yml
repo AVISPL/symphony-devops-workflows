@@ -40,6 +40,32 @@ on:
         description: 'destination REST API doc pdf file name in root'
         required: true
         type: string
+    secrets:
+      ciToken:
+        description: |
+          GitHub token to be used for updating AVI-SPL private repositories. In this workflow,
+          it is used only for updating Kubernetes deployment files
+          This token should belong to the CI user, although workflow would work with any token
+          with correct permissions
+          It must be a GitHub PAT (Personal Access Token) with read and write authorizations
+          on the GitHub repositories to be read/updated
+        required: true
+      commitUserName:
+        description: |
+          User name to be used as Git committer by the workflow, when the workflow issues new 
+          Git commits (for example when updating deployment files). It is unrelated to the person 
+          who ran the workflow. It is recommended to use a technical user dedicated to the CI system.
+          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
+          the commit will look like:
+            Author: John <John@users.noreply.github.com>
+            Committer: MyCIUser
+            Signed-off-by: MyCIUser <MyCIUser@...com>
+        required: true
+      commitUserEmail:
+        description: |
+          User email to be used as Git committer. This is NOT the user email
+          of the person who ran the workflow, see commit user name.
+        required: true
 
 jobs:
   generate_documentation:
@@ -92,21 +118,17 @@ jobs:
         run: |
           COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
           COMMIT_HASH=$(git rev-parse --short HEAD)
-          COMMIT_AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
-          COMMIT_AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
           echo "commit_message=${COMMIT_MESSAGE}" >> $GITHUB_OUTPUT
           echo "commit_hash=${COMMIT_HASH}" >> $GITHUB_OUTPUT
-          echo "author_name=${COMMIT_AUTHOR_NAME}" >> $GITHUB_OUTPUT
-          echo "author_email=${COMMIT_AUTHOR_EMAIL}" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.AVI_SYMPHONY_DEV_CI_TOKEN }}
+          token: ${{ secrets.ciToken }}
           commit-message: '${{ steps.get_commit_info.outputs.commit_message }}'
           branch: 'rest-api-docs-${{ steps.get_commit_info.outputs.commit_hash }}'
           title: '[AUTO] REST API PDF Documentation ${{ steps.get_commit_info.outputs.commit_message }}'
           body: 'This PR contains the updated REST API PDF documentation.'
-          author: '${{ steps.get_commit_info.outputs.author_name }} <${{ steps.get_commit_info.outputs.author_email }}>'
-          committer: '${{ steps.get_commit_info.outputs.author_name }} <${{ steps.get_commit_info.outputs.author_email }}>'
+          author: '${{ secrets.commitUserName }} <${{ secrets.commitUserEmail }}>'
+          committer: '${{ secrets.commitUserName }} <${{ secrets.commitUserEmail }}>'
           path: './'
