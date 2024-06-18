@@ -108,4 +108,5 @@ jobs:
           body: 'This PR contains the updated REST API PDF documentation.'
           labels: ''
           author: '${{ steps.get_commit_info.outputs.author_name }} <${{ steps.get_commit_info.outputs.author_email }}>'
+          committer: '${{ steps.get_commit_info.outputs.author_name }} <${{ steps.get_commit_info.outputs.author_email }}>'
           path: ./
