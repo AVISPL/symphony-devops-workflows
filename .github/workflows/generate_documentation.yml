@@ -102,11 +102,11 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ secrets.AVI_SYMPHONY_DEV_CI_TOKEN }}
           commit-message: '${{ steps.get_commit_info.outputs.commit_message }}'
           branch: 'rest-api-docs-${{ steps.get_commit_info.outputs.commit_hash }}'
           title: '[AUTO] REST API PDF Documentation ${{ steps.get_commit_info.outputs.commit_message }}'
           body: 'This PR contains the updated REST API PDF documentation.'
-          labels: ''
           author: '${{ steps.get_commit_info.outputs.author_name }} <${{ steps.get_commit_info.outputs.author_email }}>'
           committer: '${{ steps.get_commit_info.outputs.author_name }} <${{ steps.get_commit_info.outputs.author_email }}>'
-          path: ./
+          path: './'
