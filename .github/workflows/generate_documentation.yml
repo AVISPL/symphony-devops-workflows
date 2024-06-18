@@ -84,19 +84,25 @@ jobs:
       - name: Move generated PDF to root directory
         run: mv target/generated-docs/${{ inputs.source-pdf-filename }} ./${{ inputs.destination-pdf-filename }}
 
-      - name: Extract commit author information
-        id: get_author_info
+      - name: Extract commit information
+        id: get_commit_info
         run: |
+          COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
+          COMMIT_HASH=$(git rev-parse --short HEAD)
           COMMIT_AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
           COMMIT_AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
+          echo "commit_message=${COMMIT_MESSAGE}" >> $GITHUB_OUTPUT
+          echo "commit_hash=${COMMIT_HASH}" >> $GITHUB_OUTPUT
           echo "author_name=${COMMIT_AUTHOR_NAME}" >> $GITHUB_OUTPUT
           echo "author_email=${COMMIT_AUTHOR_EMAIL}" >> $GITHUB_OUTPUT
 
-      - name: Git commit push
-        uses: AVISPL/symphony-devops-workflows/actions/git_add_commit_push@develop
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
         with:
-          repository-dir: '.'
-          file-pattern: ${{ inputs.destination-pdf-filename }}
-          commit-message: '[AUTO] PDF Documentation'
-          commit-user-name: ${{ steps.get_author_info.outputs.author_name }}
-          commit-user-email: ${{ steps.get_author_info.outputs.author_email }}
+          commit-message: '${{ steps.get_commit_info.outputs.commit_message }}'
+          branch: 'rest-api-docs-${{ steps.get_commit_info.outputs.commit_hash }}'
+          title: '[AUTO] REST API PDF Documentation ${{ steps.get_commit_info.outputs.commit_message }}'
+          body: 'This PR contains the updated REST API PDF documentation.'
+          labels: ''
+          author: '${{ steps.get_commit_info.outputs.author_name }} <${{ steps.get_commit_info.outputs.author_email }}>'
+          path: ${{ inputs.destination-pdf-filename }}
