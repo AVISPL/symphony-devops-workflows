@@ -80,6 +80,7 @@ jobs:
         with:
           fetch-depth: '0'
           clean: 'true'
+          token: ${{secrets.ciToken}}
 
       - name: Checkout actions from private repository
         uses: actions/checkout@v4.1.1
@@ -87,6 +88,7 @@ jobs:
           repository: AVISPL/symphony-devops-workflows
           ref: '${{ inputs.symphony-devops-workflows_ref }}'
           path: ./.github/symphony-devops-workflows
+          token: ${{ secrets.ciToken }}
 
       - name: Setup JDK
         uses: ./.github/symphony-devops-workflows/actions/setup_jdk
@@ -104,7 +106,7 @@ jobs:
         with:
           pom-xml-file: ${{ inputs.pom-xml-file }}
           maven_goals: ${{ inputs.maven_goals }}
-          maven_other_options: '-DskipTests=false -DskipITs=false'
+          maven_other_options: '-DskipTests=false -DskipITs=false -DskipDocGeneration=false'
           git_tag: ''
 
       - name: Move generated PDF to root directory
