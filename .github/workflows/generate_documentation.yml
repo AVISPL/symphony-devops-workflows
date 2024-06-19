@@ -106,7 +106,7 @@ jobs:
         with:
           pom-xml-file: ${{ inputs.pom-xml-file }}
           maven_goals: ${{ inputs.maven_goals }}
-          maven_other_options: '-DskipTests=false -DskipITs=false'
+          maven_other_options: '-DskipTests=false -DskipITs=false -DskipDocGeneration=false'
           git_tag: ''
 
       - name: Move generated PDF to root directory
