@@ -48,7 +48,7 @@ runs:
       # Note: many options are possible, see action documentation
       #   https://github.com/marketplace/actions/git-auto-commit
       #   https://github.com/stefanzweifel/git-auto-commit-action
-      - uses: stefanzweifel/git-auto-commit-action@v4
+      - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           # Local file path to the repository
           repository: '${{ inputs.repository-dir }}'

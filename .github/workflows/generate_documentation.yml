@@ -80,6 +80,7 @@ jobs:
         with:
           fetch-depth: '0'
           clean: 'true'
+          token: ${{secrets.ciToken}}
 
       - name: Checkout actions from private repository
         uses: actions/checkout@v4.1.1
@@ -87,6 +88,7 @@ jobs:
           repository: AVISPL/symphony-devops-workflows
           ref: '${{ inputs.symphony-devops-workflows_ref }}'
           path: ./.github/symphony-devops-workflows
+          token: ${{ secrets.ciToken }}
 
       - name: Setup JDK
         uses: ./.github/symphony-devops-workflows/actions/setup_jdk
