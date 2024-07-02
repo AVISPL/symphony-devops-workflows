@@ -1,4 +1,4 @@
-# Copyright (c) 2022 AVI-SPL Inc.
+# Copyright (c) 2022-2024 AVI-SPL Inc.
 # All Rights Reserved.
 #
 # Builds, runs tests and deploys a Maven project
@@ -84,6 +84,22 @@ on:
         description: 'The directory in which the project''s pom.xml resides is needed to submit to Dependabot'
         required: false
         type: string
+      mvn-output-file:
+        description: |
+          Path and name of file maven command results are being saved to
+          Conents of this file will be appended by email sender action to email body it generates
+        required: true
+        type: string
+      module-name:
+        description: |
+          This optional input is reserved for modules that are packaged as war file (i.e. symphony-commproxy). 
+          The reason this input is required is because symphony-commproxy is not the name of the project within the Symphony harbor
+          registry (hence, symphony-microservice-name cannot be used). If specified, a step in this workflow will unzip the war file
+          and update the version.txt of the module to make sure correct version gets displayed in Symphony UI. Furthermore, 
+          respective Dockerfile needs the expanded war file (with updated version) to be copied to the tomcat webapps directory.
+        required: false
+        type: string
+        default: ''
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -99,6 +115,31 @@ on:
           It must be a GitHub PAT (Personal Access Token) with read and write authorizations
           on the GitHub repositories to be read/updated
         required: false
+      builderSmtpHost:
+        description: 'The SMTP server host address'
+        required: true
+      emailTo:
+        description: 'The To email address'
+        required: true
+      emailFrom:
+        description: 'The From email display name'
+        required: true
+      commitUserName:
+        description: |
+          User name to be used as Git committer by the workflow, when the workflow issues new 
+          Git commits (for example when updating deployment files). It is unrelated to the person 
+          who ran the workflow. It is recommended to use a technical user dedicated to the CI system.
+          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
+          the commit will look like:
+            Author: John <John@users.noreply.github.com>
+            Committer: MyCIUser
+            Signed-off-by: MyCIUser <MyCIUser@...com>
+        required: true
+      commitUserEmail:
+        description: |
+          User email to be used as Git committer. This is NOT the user email
+          of the person who ran the workflow, see commit user name.
+        required: true
 
 jobs:
   reusable_job_deploy_branch_maven:
@@ -174,6 +215,27 @@ jobs:
 
         shell: bash
 
+      - name: Create version and docker information files to send to email sender job
+        run: |
+          REPOSITORY=${GITHUB_REPOSITORY}
+          # Strip "AVISPL/ from GITHUB_REPOSITORY environment variable
+          REPOSITORY=${REPOSITORY//AVISPL\/}
+
+          # Add name of repository to first line of version.txt
+          echo "$REPOSITORY" > version.txt
+
+          # Add DOCKER_TAG_WITH_VERSION to second line of version.txt
+          echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}" >> version.txt
+
+          # Next section should only be executed if there is non-empty docker-file input
+          if [[! -n "${{ inputs.docker-file }}"]]; then
+            # Add "DOCKER_IMAGE_TAG_PREFIX(ends with /)REPOSITORY" to first line of docker.txt
+            echo "${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}$REPOSITORY" > docker.txt
+
+            # Add DOCKER_TAGS_ALL to second line of docker.txt
+            echo "${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}" >> docker.txt
+          fi
+
       - # Git tag is mandatory for this workflow
         name: Validate git tags
         id: validate_git_tags
@@ -202,6 +264,18 @@ jobs:
           git_delete_tag_if_exists: 'true'
           # TODO check if token used here should be user token or CI token
           github_token: ${{ secrets.userToken }}
+          mvn-output-file: ${{ inputs.mvn-output-file }}
+
+      # Update version.txt (custom step that only applies to modules such as symphony-commproxy)
+      - name: Update version.txt if exists
+        if: ${{ inputs.module-name != '' }}
+        run: |
+          unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
+          # if module contains version.txt, append build-number to version specified in this file
+          if [ -f ./${{ inputs.module-name }}/WEB-INF/classes/version.txt ]; then
+            echo "version.txt exists, appending build-number to end of version specified in this file"
+            sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' ./${{ inputs.module-name }}/WEB-INF/classes/version.txt
+          fi
 
       # Docker
       - name: Docker build
@@ -236,6 +310,8 @@ jobs:
           # Token for checking-out private repository
           # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
           github-token: ${{ secrets.ciToken }}
+          commit-user-name: ${{ secrets.commitUserName }}
+          commit-user-email: ${{ secrets.commitUserEmail }}
 
       # Submit Maven dependencies to Dependabot submission API
       - name: Submit Maven dependencies with directory specified
@@ -270,3 +346,9 @@ jobs:
 
       - name: Send email workflow status
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
+        with:
+          builderSmtpHost: ${{ secrets.builderSmtpHost }}
+          mvn-output-file: ${{ inputs.mvn-output-file }}
+          emailTo: ${{ secrets.emailTo }}
+          emailFrom: ${{ secrets.emailFrom }}
+          ciToken: ${{ secrets.ciToken }}

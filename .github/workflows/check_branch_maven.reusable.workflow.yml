@@ -52,8 +52,51 @@ on:
           outside of workspace directory
         required: false
         type: string
+      module-name:
+        description: |
+          This optional input is reserved for modules that are packaged as war file (i.e. symphony-commproxy). 
+          If this input is specified the value will be used within a step in this workflow to unzip it. 
+          The respective Dockerfile for such modules does not accept the war file and require expanded war file
+          to be copied to the tomcat webapps directory.
+        required: false
+        type: string
+        default: ''
+    #
+    secrets:
+      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
+      commitUserName:
+        description: |
+          User name to be used as Git committer by the workflow, when the workflow issues new 
+          Git commits (for example when updating deployment files). It is unrelated to the person 
+          who ran the workflow. It is recommended to use a technical user dedicated to the CI system.
+          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
+          the commit will look like:
+            Author: John <John@users.noreply.github.com>
+            Committer: MyCIUser
+            Signed-off-by: MyCIUser <MyCIUser@...com>
+        required: true
 
 jobs:
+  run_workflow_decision:
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    outputs:
+      CONTINUE: ${{ steps.continue.outputs.continue }}
+    steps:
+      - name: Should workflow be executed
+        id: continue
+        shell: bash
+        env:
+          AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          echo $commit_message
+          if [[ "$AUTO_RELEASE_COMMIT_ACTOR" = "${{ github.actor }}" ]] && [[ $commit_message == "[AUTO] Release"* ]]; then
+            echo "Aborting workflow...pom.xml was modified by automated actor with [AUTO] Release in commit message."
+            echo "continue=false" >> $GITHUB_OUTPUT
+          else
+            echo "Executing workflow"
+            echo "continue=true" >> $GITHUB_OUTPUT
+          fi
   reusable_job_check_branch_maven:
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
@@ -70,6 +113,9 @@ jobs:
     # Note: GitHub does not allow to pass an object as job input (such as an array)
     # so need this trick with multiple variables
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+
+    needs: [run_workflow_decision]
+    if: ${{ needs.run_workflow_decision.outputs.continue == 'true' }}
     steps:
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
@@ -126,6 +172,11 @@ jobs:
           maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven_other_options }}
           # Git options
           git_tag: ''
+
+      # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
+      - name: Unzip war file if module-name is specified
+        if: ${{ inputs.module-name != '' }}
+        run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
       # Docker
       - name: Docker build tag push

@@ -52,6 +52,12 @@ inputs:
       Necessary for pushing to Git updated deployment files since it is a private repository
       Use a PAT (Personal Access Token) from a user who has write permission on deployment repository
     required: true
+  commit-user-name:
+    description: User to be used as Git committer
+    required: true
+  commit-user-email:
+    description: User email to be used as Git committer
+    required: true
 runs:
   using: "composite"
   steps:
@@ -127,10 +133,8 @@ runs:
 
         # Git commit message
         commit_message: '${{ inputs.commit-message }}'
-        # TODO Git commit user and author - use secrets instead of hardcoded value
-        # Git commit user and author
-        commit_user_name: 'AVISymphonyDev'
-        commit_user_email: 'AVISymphonyDev@avispl.com'
+        commit_user_name: ${{ inputs.commit-user-name }}
+        commit_user_email: ${{ inputs.commit-user-email }}
         # commit_author - Do NOT specify value and use default action behaviour
         #   "commit author defaults to author of the commit that triggered the run"
         #   Author in GitHub will look like:

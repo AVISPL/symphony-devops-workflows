@@ -1,0 +1,123 @@
+# Copyright (c) 2024 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Generates documentation from OpenAPI and copies generated PDF file
+name: generate_documentation
+
+on:
+  workflow_call:
+    inputs:
+      pom-xml-file:
+        description: 'The path of the project pom.xml'
+        required: false
+        default: 'pom.xml'
+        type: string
+      maven_goals:
+        description: 'The goals for the mvn command (optional)'
+        required: false
+        type: string
+        default: 'clean install'
+      runs-on_label_1:
+        description: 'The job runner first label (optional)'
+        required: false
+        type: string
+        default: 'self-hosted'
+      runs-on_label_2:
+        description: 'The job runner second label (optional)'
+        required: false
+        type: string
+        default: 'linux'
+      symphony-devops-workflows_ref:
+        description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''develop'''
+        required: false
+        type: string
+        default: 'develop'
+      source-pdf-filename:
+        description: 'source generated pdf file name under target/generated-docs/'
+        required: true
+        type: string
+      destination-pdf-filename:
+        description: 'destination REST API doc pdf file name in root'
+        required: true
+        type: string
+    secrets:
+      ciToken:
+        description: |
+          GitHub token to be used for updating AVI-SPL private repositories. In this workflow,
+          it is used only for updating Kubernetes deployment files
+          This token should belong to the CI user, although workflow would work with any token
+          with correct permissions
+          It must be a GitHub PAT (Personal Access Token) with read and write authorizations
+          on the GitHub repositories to be read/updated
+        required: true
+      commitUserName:
+        description: |
+          User name to be used as Git committer by the workflow, when the workflow issues new 
+          Git commits (for example when updating deployment files). It is unrelated to the person 
+          who ran the workflow. It is recommended to use a technical user dedicated to the CI system.
+          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
+          the commit will look like:
+            Author: John <John@users.noreply.github.com>
+            Committer: MyCIUser
+            Signed-off-by: MyCIUser <MyCIUser@...com>
+        required: true
+      commitUserEmail:
+        description: |
+          User email to be used as Git committer. This is NOT the user email
+          of the person who ran the workflow, see commit user name.
+        required: true
+
+jobs:
+  generate_documentation:
+    permissions:
+      contents: write
+      actions: read
+
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    steps:
+      - name: Git checkout current repository/branch
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: '0'
+          clean: 'true'
+          token: ${{secrets.ciToken}}
+
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          ref: '${{ inputs.symphony-devops-workflows_ref }}'
+          path: ./.github/symphony-devops-workflows
+          token: ${{ secrets.ciToken }}
+
+      - name: Setup JDK
+        uses: ./.github/symphony-devops-workflows/actions/setup_jdk
+        with:
+          distribution: 'custom'
+
+      - name: Get project version
+        id: get_project_version
+        uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
+        with:
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+
+      - name: Maven build
+        uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
+        with:
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+          maven_goals: ${{ inputs.maven_goals }}
+          maven_other_options: '-DskipTests=false -DskipITs=false -DskipDocGeneration=false'
+          git_tag: ''
+
+      - name: Move generated PDF to root directory
+        run: mv target/generated-docs/${{ inputs.source-pdf-filename }} ./${{ inputs.destination-pdf-filename }}
+
+      - name: Git commit push
+        uses: AVISPL/symphony-devops-workflows/actions/git_add_commit_push@develop
+        with:
+          repository-dir: '.'
+          file-pattern: ${{ inputs.destination-pdf-filename }}
+          commit-message: '[AUTO] PDF Documentation'
+          commit-user-name: ${{ secrets.commitUserName }}
+          commit-user-email: ${{ secrets.commitUserEmail }}
+          github-token: ${{ secrets.ciToken }}

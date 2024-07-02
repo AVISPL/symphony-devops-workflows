@@ -79,13 +79,19 @@ on:
         required: false
         type: string
         default: '[ "self-hosted", "linux" ]'
+      module-name:
+        description: 'The name of module being deployed'
+        required: false
+        type: string
+        default: ''
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
       commitUserName:
         description: |
-          User name to be used as Git committer. This is NOT the user name of the person who
-          ran the workflow.
+          User name to be used as Git committer by the workflow, when the workflow issues new 
+          Git commits (for example when updating deployment files). It is unrelated to the person 
+          who ran the workflow. It is recommended to use a technical user dedicated to the CI system.
           For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
           the commit will look like:
             Author: John <John@users.noreply.github.com>
@@ -254,6 +260,11 @@ jobs:
           # Disable Git tagging (already done when pushing pom.xml with updated version)
           git_tag: ''
 
+      # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
+      - name: Unzip war file if module-name is specified
+        if: ${{ inputs.module-name != '' }}
+        run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
+
       # Docker
       - name: Docker build
         id: docker_build_tag_push
@@ -289,3 +300,5 @@ jobs:
           # Token for checking-out private repository
           # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
           github-token: ${{ secrets.ciToken }}
+          commit-user-name: ${{ secrets.commitUserName }}
+          commit-user-email: ${{ secrets.commitUserEmail }}
