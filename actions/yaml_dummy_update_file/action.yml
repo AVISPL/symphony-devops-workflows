@@ -33,6 +33,8 @@ runs:
         # Create temporary file
         SOURCE_FILE="${{ inputs.yaml-file }}"
         TMP_FILE="${SOURCE_FILE}.tmp"
+        echo "list all files"
+        ls -all
 
         # Cleanup old dummy changes
         if [[ "true" == "${{ inputs.cleanup-old-dummy-changes }}" ]]; then
