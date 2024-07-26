@@ -39,6 +39,8 @@ runs:
         ls -all ./AVISPL
         echo "list all files in AVISPL/symphony-provisioning-shared-tmp"
         ls -all ./AVISPL/symphony-provisioning-shared-tmp
+        echo "list all files in AVISPL/symphony-provisioning-shared-tmp/.github/"
+        ls -all ./AVISPL/symphony-provisioning-shared-tmp/.github/
         # Cleanup old dummy changes
         if [[ "true" == "${{ inputs.cleanup-old-dummy-changes }}" ]]; then
           cp "${SOURCE_FILE}" "${TMP_FILE}"
