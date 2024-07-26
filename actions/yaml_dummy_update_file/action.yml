@@ -35,7 +35,8 @@ runs:
         TMP_FILE="${SOURCE_FILE}.tmp"
         echo "list all files"
         ls -all
-
+        echo "list all files in AVISPL directory"
+        ls -all ./AVISPL
         # Cleanup old dummy changes
         if [[ "true" == "${{ inputs.cleanup-old-dummy-changes }}" ]]; then
           cp "${SOURCE_FILE}" "${TMP_FILE}"
