@@ -34,13 +34,6 @@ runs:
         SOURCE_FILE="${{ inputs.yaml-file }}"
         TMP_FILE="${SOURCE_FILE}.tmp"
 
-        echo "list all files in AVISPL/symphony-provisioning-shared-tmp/.github/"
-        ls -all ./AVISPL/symphony-provisioning-shared-tmp/.github/
-        echo "Source file is equal to ${SOURCE_FILE}"
-        if ! [ -f "${SOURCE_FILE}" ]; then
-          echo "${SOURCE_FILE} file does not exist."
-        fi
-
         # Cleanup old dummy changes
         if [[ "true" == "${{ inputs.cleanup-old-dummy-changes }}" ]]; then
           cp "${SOURCE_FILE}" "${TMP_FILE}"
