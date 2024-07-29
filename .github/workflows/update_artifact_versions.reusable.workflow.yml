@@ -71,6 +71,7 @@ jobs:
           ref: 'develop'
           path: ./${{ env.BASE_REPOSITORY }}
           token: ${{ secrets.ciToken }}
+
       - name: Checkout AVISPL/${{ inputs.symphony-module-name }}
         uses: actions/checkout@v4.1.1
         with:
@@ -78,6 +79,7 @@ jobs:
           ref: '${{ inputs.branch }}'
           path: ./${{ inputs.symphony-module-name }}
           token: ${{ secrets.ciToken }}
+
       - name: Checkout AVISPL/symphony-devops-workflows
         uses: actions/checkout@v4.1.1
         with:
@@ -85,11 +87,13 @@ jobs:
           ref: 'develop'
           path: ./symphony-devops-workflows
           token: ${{ secrets.ciToken }}
+
       - name: Setup Maven settings
         uses: ./symphony-devops-workflows/actions/setup_maven_settings
         with:
           nexus-user: ${{ secrets.nexusUser }}
           nexus-password: ${{ secrets.nexusPassword }}
+
       - name: Update dependency versions of AVISPL/${{ inputs.symphony-module-name }}
         id: update_pom
         shell: bash
@@ -129,6 +133,7 @@ jobs:
           fi
           # output commit_pom to indicate to next step that it needs to be committed
           echo "COMMIT_POM=$commit_pom" >> $GITHUB_OUTPUT
+
       - name: Commit dependency version updates to AVISPL/${{ inputs.symphony-module-name }}'s pom.xml
         # only perform this step if previous step updated the pom
         if: ${{ steps.update_pom.outputs.COMMIT_POM == 'true' }}
@@ -139,6 +144,7 @@ jobs:
           commit-message: '[AUTO] updated ${{ inputs.symphony-module-name }} dependency versions'
           commit-user-name: ${{ secrets.commitUserName }}
           commit-user-email: ${{ secrets.commitUserEmail }}
+
       - name: Release AVISPL/${{ inputs.symphony-module-name }}
         id: release-step
         uses: aurelien-baudet/workflow-dispatch@v2.1.1
@@ -152,6 +158,7 @@ jobs:
           # https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
           wait-for-completion-interval: 10s
           wait-for-completion-timeout: 10m
+
       # checking out the module again in order to get latest updated version from previous release step
       - name: Checkout AVISPL/${{ inputs.symphony-module-name }}
         uses: actions/checkout@v4.1.1
@@ -160,6 +167,7 @@ jobs:
           ref: '${{ inputs.branch }}'
           path: ./${{ inputs.symphony-module-name }}
           token: ${{ secrets.ciToken }}
+
       - name: Extract latest version of AVISPL/${{ inputs.symphony-module-name }}
         id: new-version
         shell: bash
@@ -179,6 +187,7 @@ jobs:
           version=$(mvn -B exec:exec -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive -q)
           echo "The new version of ${{ inputs.symphony-module-name }} module is $version"
           echo "VERSION=$version" >> $GITHUB_OUTPUT
+
       - name: Update AVISPL/${{ env.BASE_REPOSITORY }} modules.txt file
         shell: bash
         run: |
@@ -211,6 +220,7 @@ jobs:
              fi
           done
           cat modules.txt
+
       - name: Commit updates to AVISPL/${{ env.BASE_REPOSITORY }}'s modules.txt
         uses: ./symphony-devops-workflows/actions/git_add_commit_push
         with:

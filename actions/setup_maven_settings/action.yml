@@ -16,7 +16,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup Maven settings
-      uses: s4u/maven-settings-action@v2.7.0
+      uses: s4u/maven-settings-action@v3.0.0
       with:
         servers: |
           [{
