@@ -88,6 +88,11 @@ jobs:
           path: ./symphony-devops-workflows
           token: ${{ secrets.ciToken }}
 
+      - name: check .m2 directory
+        shell: bash
+        run: |
+          ls -al /home/github.runner/.m2/
+
       - name: Setup Maven settings
         uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
         with:
