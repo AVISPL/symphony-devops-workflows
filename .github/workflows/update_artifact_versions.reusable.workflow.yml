@@ -147,7 +147,7 @@ jobs:
 
       - name: Release AVISPL/${{ inputs.symphony-module-name }}
         id: release-step
-        uses: aurelien-baudet/workflow-dispatch@v2.1.1
+        uses: the-actions-org/workflow-dispatch@v4
         with:
           workflow: release.maven.workflow.yml
           token: ${{ secrets.ciToken }}
