@@ -153,12 +153,6 @@ jobs:
         with:
           distribution: 'custom'
 
-      - name: Setup Maven settings
-        uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
-        with:
-          nexus-user: ${{ secrets.nexusUser }}
-          nexus-password: ${{ secrets.nexusPassword }}
-
       - name: Get project version
         id: get_project_version
         uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
@@ -175,6 +169,11 @@ jobs:
         with:
           tags: 'snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
           allowEmpty: 'false'
+      - name: Setup Maven settings
+        uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
+        with:
+          nexus-user: ${{ secrets.nexusUser }}
+          nexus-password: ${{ secrets.nexusPassword }}
 
       - name: Maven build
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
