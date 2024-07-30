@@ -193,6 +193,12 @@ jobs:
         with:
           distribution: 'custom'
 
+      - name: Setup Maven settings
+        uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
+        with:
+          nexus-user: ${{ secrets.nexusUser }}
+          nexus-password: ${{ secrets.nexusPassword }}
+
       - name: Get project version
         id: get_project_version
         uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
@@ -257,11 +263,6 @@ jobs:
         with:
           tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
           allowEmpty: 'false'
-      - name: Setup Maven settings
-        uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
-        with:
-          nexus-user: ${{ secrets.nexusUser }}
-          nexus-password: ${{ secrets.nexusPassword }}
 
       - name: Maven build and Git tag
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
