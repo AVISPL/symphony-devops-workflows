@@ -93,7 +93,6 @@ on:
       nexusPassword:
         description: the password of nexus user which performs Maven commands
         required: true
-      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
       commitUserName:
         description: |
           User name to be used as Git committer by the workflow, when the workflow issues new 
