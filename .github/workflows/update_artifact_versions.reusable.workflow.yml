@@ -89,7 +89,7 @@ jobs:
           token: ${{ secrets.ciToken }}
 
       - name: Setup Maven settings
-        uses: ./symphony-devops-workflows/actions/setup_maven_settings
+        uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
         with:
           nexus-user: ${{ secrets.nexusUser }}
           nexus-password: ${{ secrets.nexusPassword }}
