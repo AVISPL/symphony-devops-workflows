@@ -91,7 +91,7 @@ jobs:
       - name: check .m2 directory
         shell: bash
         run: |
-          ls -al /home/github.runner/.m2/
+          ls -al
 
       - name: Setup Maven settings
         uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
