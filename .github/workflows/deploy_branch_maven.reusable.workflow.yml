@@ -199,10 +199,6 @@ jobs:
           nexus-user: ${{ secrets.nexusUser }}
           nexus-password: ${{ secrets.nexusPassword }}
 
-      - name: check .m2 directory contains settings.xml
-        run: |
-          echo "list contents of .m2 directory"
-          ls /home/github.runner/.m2/
       - name: Get project version
         id: get_project_version
         uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
@@ -212,11 +208,6 @@ jobs:
       - name: Compute build number
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
-
-      - name: check .m2 directory contains settings.xml
-        run: |
-          echo "list contents of .m2 directory"
-          ls /home/github.runner/.m2/
 
       # Compute docker tags to be reused as "global variables"
       - name: Compute docker tags
@@ -273,10 +264,6 @@ jobs:
           tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
           allowEmpty: 'false'
 
-      - name: check .m2 directory contains settings.xml
-        run: |
-          echo "list contents of .m2 directory"
-          ls /home/github.runner/.m2/
       - name: Maven build and Git tag
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
         with:
