@@ -213,6 +213,11 @@ jobs:
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
 
+      - name: check .m2 directory contains settings.xml
+        run: |
+          echo "list contents of .m2 directory"
+          ls /home/github.runner/.m2/
+
       # Compute docker tags to be reused as "global variables"
       - name: Compute docker tags
         id: compute_docker_tags
@@ -268,6 +273,10 @@ jobs:
           tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
           allowEmpty: 'false'
 
+      - name: check .m2 directory contains settings.xml
+        run: |
+          echo "list contents of .m2 directory"
+          ls /home/github.runner/.m2/
       - name: Maven build and Git tag
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
         with:
