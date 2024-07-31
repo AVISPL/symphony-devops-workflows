@@ -145,11 +145,17 @@ jobs:
           commit-user-name: ${{ secrets.commitUserName }}
           commit-user-email: ${{ secrets.commitUserEmail }}
 
+      - name: is workflow there?
+        shell: bash
+        run: |
+          echo "list contents of ${{ inputs.symphony-module-name }} directory"
+          ls al ${{ inputs.symphony-module-name }}/.github/workflows/
+
       - name: Release AVISPL/${{ inputs.symphony-module-name }}
         id: release-step
         uses: the-actions-org/workflow-dispatch@v4
         with:
-          workflow: workflow_release_branch_maven
+          workflow: release.maven.workflow.yml
           token: ${{ secrets.ciToken }}
           repo: AVISPL/${{ inputs.symphony-module-name }}
           ref: ${{ inputs.branch }}
