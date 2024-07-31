@@ -149,7 +149,7 @@ jobs:
         shell: bash
         run: |
           echo "list contents of ${{ inputs.symphony-module-name }} directory"
-          ls al ${{ inputs.symphony-module-name }}/.github/workflows/
+          ls -al ${{ inputs.symphony-module-name }}/.github/workflows/
 
       - name: Release AVISPL/${{ inputs.symphony-module-name }}
         id: release-step
