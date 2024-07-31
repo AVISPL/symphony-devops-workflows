@@ -68,7 +68,7 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/${{ env.BASE_REPOSITORY }}
-          ref: 'feature/SYUS-10565'
+          ref: 'develop'
           path: ./${{ env.BASE_REPOSITORY }}
           token: ${{ secrets.ciToken }}
 
@@ -84,7 +84,7 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
-          ref: 'feature/SYUS-10565'
+          ref: 'develop'
           path: ./symphony-devops-workflows
           token: ${{ secrets.ciToken }}
 
