@@ -149,7 +149,7 @@ jobs:
         id: release-step
         uses: the-actions-org/workflow-dispatch@v4
         with:
-          workflow: release.maven.workflow.yml
+          workflow: workflow_release_branch_maven
           token: ${{ secrets.ciToken }}
           repo: AVISPL/${{ inputs.symphony-module-name }}
           ref: ${{ inputs.branch }}
