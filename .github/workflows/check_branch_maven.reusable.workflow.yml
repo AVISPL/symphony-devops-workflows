@@ -70,6 +70,12 @@ on:
       nexusPassword:
         description: the password of nexus user which performs Maven commands
         required: true
+      sonarToken:
+        description: the token of Sonarqube code analyzer
+        required: true
+      sonarHostUrl:
+        description: the URL of Sonarqube dedicated to Symphony 
+        required: true
       commitUserName:
         description: |
           User name to be used as Git committer by the workflow, when the workflow issues new 
@@ -157,6 +163,26 @@ jobs:
         with:
           nexus-user: ${{ secrets.nexusUser }}
           nexus-password: ${{ secrets.nexusPassword }}
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build and analyze
+        env:
+          SONAR_TOKEN: ${{ secrets.sonarToken }}
+          SONAR_HOST_URL: ${{ secrets.sonarHostUrl }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
       - name: Get project version
         id: get_project_version
