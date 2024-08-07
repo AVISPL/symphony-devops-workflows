@@ -1,7 +1,7 @@
 # Copyright (c) 2024 AVI-SPL Inc.
 # All Rights Reserved.
 #
-# Generates documentation from OpenAPI and copies generated PDF file
+# Copies REST specification openapi file from source dir to rest-docs spec repo
 name: copy_spec_to_rest_docs
 
 on:
@@ -100,15 +100,15 @@ jobs:
           path: ./.github/symphony-rest-docs
           token: ${{ secrets.ciToken }}
 
-      - name: Move generated PDF to root directory
+      - name: Copy openapi.yml spec to destination rest-docs spec dir
         run: cp ${{ inputs.source-spec-filepath }} ./.github/symphony-rest-docs/spec/${{ inputs.destination-spec-filename }}
 
       - name: Git commit push
         uses: AVISPL/symphony-devops-workflows/actions/git_add_commit_push@develop
         with:
-          repository-dir: '.'
-          file-pattern: ${{ inputs.destination-pdf-filename }}
-          commit-message: '[AUTO] PDF Documentation'
+          repository-dir: './.github/symphony-rest-docs'
+          file-pattern: './.github/symphony-rest-docs/spec/${{ inputs.destination-spec-filename }}'
+          commit-message: '[AUTO] Spec update ${{inputs.destination-spec-filename}}'
           commit-user-name: ${{ secrets.commitUserName }}
           commit-user-email: ${{ secrets.commitUserEmail }}
           github-token: ${{ secrets.ciToken }}
