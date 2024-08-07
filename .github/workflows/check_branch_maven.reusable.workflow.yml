@@ -209,7 +209,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
           SONAR_HOST_URL: ${{ secrets.sonarHostUrl }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.sources=src/main/java
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
       # Check the Quality Gate status.
       - name: SonarQube Quality Gate check
