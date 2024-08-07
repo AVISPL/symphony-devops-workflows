@@ -2,7 +2,7 @@
 # All Rights Reserved.
 #
 # Generates documentation from OpenAPI and copies generated PDF file
-name: generate_documentation
+name: copy_spec_to_rest_docs
 
 on:
   workflow_call:
