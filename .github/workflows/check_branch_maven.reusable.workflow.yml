@@ -191,13 +191,18 @@ jobs:
           # Git options
           git_tag: ''
 
+      - name: Read Symphony Modules being released
+        shell: bash
+        run: |
+          ls -al
+
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@v2.3.0
         with:
           projectBaseDir: ./${{ inputs.module-name }}
           args: >
             -Dsonar.organization=AVISPL
-            -Dsonar.prdjectKey=${{ inputs.module-name }}
+            -Dsonar.projectKey=${{ inputs.module-name }}
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
           SONAR_HOST_URL: ${{ secrets.sonarHostUrl }}
