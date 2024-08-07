@@ -191,21 +191,34 @@ jobs:
           # Git options
           git_tag: ''
 
-      - name: Read Symphony Modules being released
-        shell: bash
-        run: |
-          ls -al
-
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@v2.3.0
+      - name: Cache SonarQube packages
+        uses: actions/cache@v1
         with:
-          projectBaseDir: .
-          args: >
-            -Dsonar.organization=AVISPL
-            -Dsonar.projectKey=${{ inputs.module-name }}
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
           SONAR_HOST_URL: ${{ secrets.sonarHostUrl }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+
+      # Check the Quality Gate status.
+      - name: SonarQube Quality Gate check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        # Force to fail step after specific time.
+        timeout-minutes: 5
+        env:
+         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Unzip war file if module-name is specified
