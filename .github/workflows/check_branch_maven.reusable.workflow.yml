@@ -192,12 +192,7 @@ jobs:
           git_tag: ''
 
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@v1
-        with:
-          projectBaseDir: .
-          args: >
-            -Dsonar.organization=AVISPL
-            -Dsonar.prdjectKey=${{ inputs.module-name }}
+        uses: sonarsource/sonarqube-scan-action@v2.3.0
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
           SONAR_HOST_URL: ${{ secrets.sonarHostUrl }}
