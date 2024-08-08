@@ -181,21 +181,21 @@ jobs:
           tags: 'snapshot,${{ steps.get_project_version.outputs.project-version }}.${{ steps.compute_build_number.outputs.build-number }}'
           allowEmpty: 'false'
 
-      - name: Maven build
-        uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
-        with:
-          # Maven options
-          pom-xml-file: ${{ inputs.pom-xml-file }}
-          maven_goals: ${{ inputs.maven_goals }}
-          maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven_other_options }}
-          # Git options
-          git_tag: ''
+      #- name: Maven build
+      #  uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
+      #  with:
+      #    # Maven options
+      #    pom-xml-file: ${{ inputs.pom-xml-file }}
+      #    maven_goals: ${{ inputs.maven_goals }}
+      #    maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven_other_options }}
+      #    # Git options
+      #    git_tag: ''
 
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
           SONAR_HOST_URL: ${{ secrets.sonarHostUrl }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar #-DskipTests
 
       # Check the Quality Gate status.
       - name: SonarQube Quality Gate check
@@ -207,9 +207,6 @@ jobs:
         timeout-minutes: 5
         env:
          SONAR_TOKEN: ${{ secrets.sonarToken }}
-
-      - name: "Example show SonarQube Quality Gate Status value"
-        run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
 
       - name: SonarQube Quality Gate Output
         if: ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status != 'PASSED' }}
