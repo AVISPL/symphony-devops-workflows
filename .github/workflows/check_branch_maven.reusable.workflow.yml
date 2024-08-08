@@ -213,7 +213,6 @@ jobs:
 
       # Check the Quality Gate status.
       - name: SonarQube Quality Gate check
-        id: sonarqube-quality-gate-check
         uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
         with:
           scanMetadataReportFile: target/sonar/report-task.txt
@@ -221,6 +220,12 @@ jobs:
         timeout-minutes: 5
         env:
          SONAR_TOKEN: ${{ secrets.sonarToken }}
+
+      - name: SonarQube Quality Gate Output
+        shell: bash
+        run: |
+          ls -al
+          cat ./target/sonar/report-task.txt
 
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Unzip war file if module-name is specified
