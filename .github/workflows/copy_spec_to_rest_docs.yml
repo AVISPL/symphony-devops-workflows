@@ -99,9 +99,11 @@ jobs:
           ref: '${{ inputs.symphony-rest-docs_ref }}'
           path: ./.github/symphony-rest-docs
           token: ${{ secrets.ciToken }}
+      - name: List all
+        run: pwd && ls -al
 
       - name: Copy openapi.yml spec to destination rest-docs spec dir
-        run: cp ${{ inputs.source-spec-filepath }} ./.github/symphony-rest-docs/spec/${{ inputs.destination-spec-filename }}
+        run: cp ./${{ inputs.source-spec-filepath }} ./.github/symphony-rest-docs/spec/${{ inputs.destination-spec-filename }}
 
       - name: Git commit push
         uses: AVISPL/symphony-devops-workflows/actions/git_add_commit_push@develop
