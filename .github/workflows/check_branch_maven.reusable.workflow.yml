@@ -88,7 +88,7 @@ on:
             Signed-off-by: MyCIUser <MyCIUser@...com>
         required: true
 env:
-  SONAR_HOST_URL: https://sonarqube-dev.devvnocsymphony.com/
+  SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
 jobs:
   run_workflow_decision:
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
@@ -195,7 +195,7 @@ jobs:
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
-          SONAR_HOST_URL: "$SONAR_HOST_URL"
+          SONAR_HOST_URL: $SONAR_HOST_URL
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
 
       # Check the Quality Gate status.
