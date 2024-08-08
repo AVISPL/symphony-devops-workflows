@@ -109,6 +109,9 @@ on:
       nexusPassword:
         description: the password of nexus user which performs Maven commands
         required: true
+      sonarToken:
+        description: the token of Sonarqube code analyzer
+        required: true
       userToken:
         description: 'Token of the user who is running the workflow. Required for updating Git tags'
         required: true
@@ -146,7 +149,8 @@ on:
           User email to be used as Git committer. This is NOT the user email
           of the person who ran the workflow, see commit user name.
         required: true
-
+env:
+  SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
 jobs:
   reusable_job_deploy_branch_maven:
     # Permissions are required for actions that need to do changes on repository
@@ -274,9 +278,34 @@ jobs:
           git_tag: ${{ inputs.git_tag }}
           git_tag_fail_if_exists: 'false'
           git_delete_tag_if_exists: 'true'
-          # TODO check if token used here should be user token or CI token
           github_token: ${{ secrets.userToken }}
           mvn-output-file: ${{ inputs.mvn-output-file }}
+
+      - name: SonarQube scan
+        env:
+          SONAR_TOKEN: ${{ secrets.sonarToken }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
+
+      # Check the Quality Gate status.
+      - name: SonarQube quality gate check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        with:
+          scanMetadataReportFile: target/sonar/report-task.txt
+        # Force to fail step after specific time.
+        timeout-minutes: 5
+        env:
+         SONAR_TOKEN: ${{ secrets.sonarToken }}
+
+      - name: SonarQube quality gate output
+        #if: ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status != 'PASSED' }}
+        if: always()
+        shell: bash
+        run: |
+          # extract dashboard URL from previous step's output
+          dashboardUrl=`sed -n 's/^dashboardUrl=\(.*\)/\1/p' < ./target/sonar/report-task.txt`
+          echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+          echo "To see full details, go to $dashboardUrl"
 
       # Update version.txt (custom step that only applies to modules such as symphony-commproxy)
       - name: Update version.txt if exists
