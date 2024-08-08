@@ -213,6 +213,7 @@ jobs:
         if: always()
         shell: bash
         run: |
+          cat ./target/sonar/report-task.txt
           serverUrl=`sed -n 's/^serverUrl=\(.*\)/\1/p' < ./target/sonar/report-task.txt`
           dashboardUrl=`sed -n 's/^dashboardUrl=\*\*\*\(.*\)/\1/p' < ./target/sonar/report-task.txt`
           echo $serverUrl
