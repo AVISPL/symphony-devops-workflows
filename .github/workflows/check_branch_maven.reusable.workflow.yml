@@ -199,6 +199,7 @@ jobs:
 
       # Check the Quality Gate status.
       - name: SonarQube Quality Gate check
+        id: sonarqube-quality-gate-check
         uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
         with:
           scanMetadataReportFile: target/sonar/report-task.txt
