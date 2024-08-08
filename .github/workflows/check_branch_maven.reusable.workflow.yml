@@ -73,9 +73,6 @@ on:
       sonarToken:
         description: the token of Sonarqube code analyzer
         required: true
-      #sonarHostUrl:
-      #  description: the URL of Sonarqube dedicated to Symphony 
-      #  required: true
       commitUserName:
         description: |
           User name to be used as Git committer by the workflow, when the workflow issues new 
@@ -213,6 +210,7 @@ jobs:
         if: always()
         shell: bash
         run: |
+          # extract dashboard URL from previous step's output
           dashboardUrl=`sed -n 's/^dashboardUrl=\(.*\)/\1/p' < ./target/sonar/report-task.txt`
           echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
           echo "To see full details, go to $dashboardUrl"
@@ -230,5 +228,3 @@ jobs:
         with:
           docker-file: ${{ inputs.docker-file }}
           docker-tag-push: false
-
-  # TODO should email be sent upon every check ? (same as for deploy workflow)
