@@ -195,7 +195,7 @@ jobs:
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
-          SONAR_HOST_URL: $SONAR_HOST_URL
+          SONAR_HOST_URL: "$SONAR_HOST_URL"
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
 
       # Check the Quality Gate status.
