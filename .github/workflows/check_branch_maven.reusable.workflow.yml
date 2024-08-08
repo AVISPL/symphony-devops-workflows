@@ -216,8 +216,8 @@ jobs:
           cat ./target/sonar/report-task.txt
           serverUrl=`sed -n 's/^serverUrl=\(.*\)/\1/p' < ./target/sonar/report-task.txt`
           dashboardUrl=`sed -n 's/^dashboardUrl=\*\*\*\(.*\)/\1/p' < ./target/sonar/report-task.txt`
-          echo $serverUrl
-          echo $dashboardUrl
+          echo "Server URL is $serverUrl"
+          echo "Dashboard URL is $dashboardUrl"
           echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
           echo "To see full details, go to https://sonarqube-dev.devvnocsymphony.com/$dashboardUrl"
 
