@@ -73,9 +73,9 @@ on:
       sonarToken:
         description: the token of Sonarqube code analyzer
         required: true
-      sonarHostUrl:
-        description: the URL of Sonarqube dedicated to Symphony 
-        required: true
+      #sonarHostUrl:
+      #  description: the URL of Sonarqube dedicated to Symphony 
+      #  required: true
       commitUserName:
         description: |
           User name to be used as Git committer by the workflow, when the workflow issues new 
@@ -87,7 +87,8 @@ on:
             Committer: MyCIUser
             Signed-off-by: MyCIUser <MyCIUser@...com>
         required: true
-
+env:
+  SONAR_HOST_URL: https://sonarqube-dev.devvnocsymphony.com/
 jobs:
   run_workflow_decision:
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
@@ -194,7 +195,7 @@ jobs:
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
-          SONAR_HOST_URL: ${{ secrets.sonarHostUrl }}
+          SONAR_HOST_URL: $SONAR_HOST_URL
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
 
       # Check the Quality Gate status.
@@ -219,7 +220,7 @@ jobs:
           echo "Server URL is $serverUrl"
           echo "Dashboard URL is $dashboardUrl"
           echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
-          echo "To see full details, go to https://sonarqube-dev.devvnocsymphony.com/$dashboardUrl"
+          echo "To see full details, go to $SONAR_HOST_URL$dashboardUrl"
 
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Unzip war file if module-name is specified
