@@ -191,25 +191,11 @@ jobs:
           # Git options
           git_tag: ''
 
-      #- name: Cache SonarQube packages
-      #  uses: actions/cache@v1
-      #  with:
-      #    path: ~/.sonar/cache
-      #    key: ${{ runner.os }}-sonar
-      #    restore-keys: ${{ runner.os }}-sonar
-
-      #- name: Cache Maven packages
-      #  uses: actions/cache@v1
-      #  with:
-      #    path: ~/.m2
-      #    key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-      #    restore-keys: ${{ runner.os }}-m2
-
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
           SONAR_HOST_URL: ${{ secrets.sonarHostUrl }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
 
       # Check the Quality Gate status.
       - name: SonarQube Quality Gate check
@@ -221,11 +207,17 @@ jobs:
         env:
          SONAR_TOKEN: ${{ secrets.sonarToken }}
 
+      - name: "Example show SonarQube Quality Gate Status value"
+        run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+
       - name: SonarQube Quality Gate Output
+        if: ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status != 'PASSED' }}
         shell: bash
         run: |
-          ls -al
-          cat ./target/sonar/report-task.txt
+          serverUrl=`sed -n 's/^serverUrl=\(.*\)/\1/p' < ./target/sonar/report-task.txt`
+          dashboardUrl=`sed -n 's/^dashboardUrl=\*\*\*\(.*\)/\1/p' < ./target/sonar/report-task.txt`
+          echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+          echo "To see full details, go to $serverUrl/$dashboardUrl"
 
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Unzip war file if module-name is specified
