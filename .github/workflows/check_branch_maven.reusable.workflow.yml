@@ -213,13 +213,9 @@ jobs:
         if: always()
         shell: bash
         run: |
-          cat ./target/sonar/report-task.txt
-          serverUrl=`sed -n 's/^serverUrl=\(.*\)/\1/p' < ./target/sonar/report-task.txt`
-          dashboardUrl=`sed -n 's/^dashboardUrl=\*\*\*\(.*\)/\1/p' < ./target/sonar/report-task.txt`
-          echo "Server URL is $serverUrl"
-          echo "Dashboard URL is $dashboardUrl"
+          dashboardUrl=`sed -n 's/^dashboardUrl=\(.*\)/\1/p' < ./target/sonar/report-task.txt`
           echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
-          echo "To see full details, go to $SONAR_HOST_URL$dashboardUrl"
+          echo "To see full details, go to $dashboardUrl"
 
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Unzip war file if module-name is specified
