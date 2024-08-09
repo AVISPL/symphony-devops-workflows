@@ -281,10 +281,19 @@ jobs:
           github_token: ${{ secrets.userToken }}
           mvn-output-file: ${{ inputs.mvn-output-file }}
 
+      - name: Create SonarQube output section in mvn-output-file
+        shell: bash
+        run: |
+          echo "<br>" >> ${{ inputs.mvn-output-file }}
+          echo "<br>" >> ${{ inputs.mvn-output-file }}
+          echo "------------------------------------------------------------------<br>" >> ${{ inputs.mvn-output-file }}
+          echo "DETAILED SonarQube LOGS ARE LISTED BELOW<br>" >> ${{ inputs.mvn-output-file }}
+          echo "------------------------------------------------------------------<br>" >> ${{ inputs.mvn-output-file }}
+
       - name: SonarQube scan
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests  | tee ${{ inputs.mvn-output-file }}
 
       # Check the Quality Gate status.
       - name: SonarQube quality gate check
