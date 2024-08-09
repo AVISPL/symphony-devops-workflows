@@ -1,0 +1,114 @@
+# Copyright (c) 2024 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Copies REST specification openapi file from source dir to rest-docs spec repo
+name: copy_spec_to_rest_docs
+
+on:
+  workflow_call:
+    inputs:
+      runs-on_label_1:
+        description: 'The job runner first label (optional)'
+        required: false
+        type: string
+        default: 'self-hosted'
+      runs-on_label_2:
+        description: 'The job runner second label (optional)'
+        required: false
+        type: string
+        default: 'linux'
+      symphony-devops-workflows_ref:
+        description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''develop'''
+        required: false
+        type: string
+        default: 'develop'
+      symphony-rest-docs_ref:
+        description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''develop'''
+        required: false
+        type: string
+        default: 'develop'
+      source-spec-filepath:
+        description: 'source openapi.yaml specification relative filepath'
+        required: true
+        type: string
+      destination-spec-filename:
+        description: 'destination REST API Docs relative filepath'
+        required: true
+        type: string
+    secrets:
+      # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
+      nexusUser:
+        description: the username of nexus user which performs Maven commands
+        required: true
+      nexusPassword:
+        description: the password of nexus user which performs Maven commands
+        required: true
+      ciToken:
+        description: |
+          GitHub token to be used for updating AVI-SPL private repositories. In this workflow,
+          it is used only for updating Kubernetes deployment files
+          This token should belong to the CI user, although workflow would work with any token
+          with correct permissions
+          It must be a GitHub PAT (Personal Access Token) with read and write authorizations
+          on the GitHub repositories to be read/updated
+        required: true
+      commitUserName:
+        description: |
+          User name to be used as Git committer by the workflow, when the workflow issues new 
+          Git commits (for example when updating deployment files). It is unrelated to the person 
+          who ran the workflow. It is recommended to use a technical user dedicated to the CI system.
+          For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
+          the commit will look like:
+            Author: John <John@users.noreply.github.com>
+            Committer: MyCIUser
+            Signed-off-by: MyCIUser <MyCIUser@...com>
+        required: true
+      commitUserEmail:
+        description: |
+          User email to be used as Git committer. This is NOT the user email
+          of the person who ran the workflow, see commit user name.
+        required: true
+
+jobs:
+  copy_spec_to_rest_docs:
+    permissions:
+      contents: write
+      actions: read
+
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    steps:
+      - name: Git checkout current repository/branch
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: '0'
+          clean: 'true'
+          token: ${{secrets.ciToken}}
+
+      - name: Checkout actions from private repository
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: AVISPL/symphony-devops-workflows
+          ref: '${{ inputs.symphony-devops-workflows_ref }}'
+          path: ./.github/symphony-devops-workflows
+          token: ${{ secrets.ciToken }}
+
+      - name: Checkout Symphony Rest Docs
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: AVISPL/symphony-rest-docs
+          ref: '${{ inputs.symphony-rest-docs_ref }}'
+          path: ./.github/symphony-rest-docs
+          token: ${{ secrets.ciToken }}
+
+      - name: Copy openapi.yml spec to destination rest-docs spec dir
+        run: cp ./${{ inputs.source-spec-filepath }} ./.github/symphony-rest-docs/spec/${{ inputs.destination-spec-filename }}
+
+      - name: Git commit push
+        uses: AVISPL/symphony-devops-workflows/actions/git_add_commit_push@develop
+        with:
+          repository-dir: './.github/symphony-rest-docs'
+          file-pattern: './spec/${{ inputs.destination-spec-filename }}'
+          commit-message: '[AUTO] Spec update ${{inputs.destination-spec-filename}}'
+          commit-user-name: ${{ secrets.commitUserName }}
+          commit-user-email: ${{ secrets.commitUserEmail }}
+          github-token: ${{ secrets.ciToken }}
