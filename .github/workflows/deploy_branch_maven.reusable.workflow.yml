@@ -281,19 +281,10 @@ jobs:
           github_token: ${{ secrets.userToken }}
           mvn-output-file: ${{ inputs.mvn-output-file }}
 
-      - name: Create SonarQube output section in mvn-output-file
-        shell: bash
-        run: |
-          echo "\n" >> ${{ inputs.mvn-output-file }}
-          echo "\n" >> ${{ inputs.mvn-output-file }}
-          echo "------------------------------------------------------------------\n" >> ${{ inputs.mvn-output-file }}
-          echo "DETAILED SonarQube LOGS ARE LISTED BELOW\n" >> ${{ inputs.mvn-output-file }}
-          echo "------------------------------------------------------------------\n" >> ${{ inputs.mvn-output-file }}
-
       - name: SonarQube scan
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests  | tee ${{ inputs.mvn-output-file }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests  | tee ./sonarqube_results.txt
 
       # Check the Quality Gate status.
       - name: SonarQube quality gate check
@@ -313,9 +304,10 @@ jobs:
         run: |
           # extract dashboard URL from previous step's output
           dashboardUrl=`sed -n 's/^dashboardUrl=\(.*\)/\1/p' < ./target/sonar/report-task.txt`
-          echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
-          echo "To see full details, go to $dashboardUrl"
-
+          echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}" >> ./sonarqube_results.txt
+          echo "To see full details, go to $dashboardUrl" >> ./sonarqube_results.txt
+          echo "" >> ./sonarqube_results.txt
+          echo "" >> ./sonarqube_results.txt
       # Update version.txt (custom step that only applies to modules such as symphony-commproxy)
       - name: Update version.txt if exists
         if: ${{ inputs.module-name != '' }}
@@ -399,6 +391,7 @@ jobs:
         with:
           builderSmtpHost: ${{ secrets.builderSmtpHost }}
           mvn-output-file: ${{ inputs.mvn-output-file }}
+          sonarqube-output-file: ./sonarqube_results.txt
           emailTo: ${{ secrets.emailTo }}
           emailFrom: ${{ secrets.emailFrom }}
           ciToken: ${{ secrets.ciToken }}
