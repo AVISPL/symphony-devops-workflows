@@ -284,11 +284,11 @@ jobs:
       - name: Create SonarQube output section in mvn-output-file
         shell: bash
         run: |
-          echo "<br>" >> ${{ inputs.mvn-output-file }}
-          echo "<br>" >> ${{ inputs.mvn-output-file }}
-          echo "------------------------------------------------------------------<br>" >> ${{ inputs.mvn-output-file }}
-          echo "DETAILED SonarQube LOGS ARE LISTED BELOW<br>" >> ${{ inputs.mvn-output-file }}
-          echo "------------------------------------------------------------------<br>" >> ${{ inputs.mvn-output-file }}
+          echo "\n" >> ${{ inputs.mvn-output-file }}
+          echo "\n" >> ${{ inputs.mvn-output-file }}
+          echo "------------------------------------------------------------------\n" >> ${{ inputs.mvn-output-file }}
+          echo "DETAILED SonarQube LOGS ARE LISTED BELOW\n" >> ${{ inputs.mvn-output-file }}
+          echo "------------------------------------------------------------------\n" >> ${{ inputs.mvn-output-file }}
 
       - name: SonarQube scan
         env:
