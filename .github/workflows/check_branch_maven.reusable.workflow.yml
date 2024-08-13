@@ -61,6 +61,18 @@ on:
         required: false
         type: string
         default: ''
+      run-sonar-qube-scan:
+        description: |
+          Indicates if SonarQube scan step should run
+        type: boolean
+        required: true
+        default: false
+      sonar-qube-quality-gate-timeout-minutes:
+        description: |
+          Indicates the duration to wait for sonarqube-quality-gate-action before forcing the step to fail.
+        type: number
+        required: false
+        default: 5
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -72,7 +84,7 @@ on:
         required: true
       sonarToken:
         description: the token of Sonarqube code analyzer
-        required: true
+        required: false
       commitUserName:
         description: |
           User name to be used as Git committer by the workflow, when the workflow issues new 
@@ -190,24 +202,26 @@ jobs:
           git_tag: ''
 
       - name: SonarQube scan
+        if: ${{ inputs.run-sonar-qube-scan }}
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
 
       # Check the Quality Gate status.
       - name: SonarQube quality gate check
+        if: ${{ inputs.run-sonar-qube-scan }}
         id: sonarqube-quality-gate-check
         uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
         with:
           scanMetadataReportFile: target/sonar/report-task.txt
         # Force to fail step after specific time.
-        timeout-minutes: 5
+        timeout-minutes: ${{ sonar-qube-quality-gate-timeout-minutes }}
         env:
          SONAR_TOKEN: ${{ secrets.sonarToken }}
 
       - name: SonarQube quality gate output
         #if: ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status != 'PASSED' }}
-        if: always()
+        if: ${{ inputs.run-sonar-qube-scan && always() }} 
         shell: bash
         run: |
           # extract dashboard URL from previous step's output

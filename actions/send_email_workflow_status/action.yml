@@ -288,6 +288,7 @@ runs:
       run: |
         echo "<br>" >> body.txt
         echo "<br>" >> body.txt
+        echo "<br>" >> body.txt
         echo "------------------------------------------------------------------<br>" >> body.txt
         echo "DETAILED SonarQube LOGS ARE LISTED BELOW<br>" >> body.txt
         echo "------------------------------------------------------------------<br>" >> body.txt
