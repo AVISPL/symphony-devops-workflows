@@ -290,7 +290,7 @@ runs:
         https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs > workflow_logs.txt
 
     - name: Append SonarQube logs to email body
-      if: ${{ inputs.include-sonar-qube-results }}
+      if: ${{ inputs.include-sonar-qube-results == 'true' }}
       shell: bash
       run: |
         echo "<br>" >> body.txt
