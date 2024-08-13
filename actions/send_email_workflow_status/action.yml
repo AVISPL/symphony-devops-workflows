@@ -31,7 +31,7 @@ inputs:
       Conents of this file will be appended by email sender action to email body it generates
     required: false
   include-sonar-qube-results:
-    description: |
+    description: >
       Indicates if SonarQube scan results should be added to the email body
     type: boolean
     required: true
