@@ -406,6 +406,7 @@ jobs:
           builderSmtpHost: ${{ secrets.builderSmtpHost }}
           mvn-output-file: ${{ inputs.mvn-output-file }}
           sonarqube-output-file: ./sonarqube_results.txt
+          include-sonar-qube-results: ${{ inputs.run-sonar-qube-scan }}
           emailTo: ${{ secrets.emailTo }}
           emailFrom: ${{ secrets.emailFrom }}
           ciToken: ${{ secrets.ciToken }}

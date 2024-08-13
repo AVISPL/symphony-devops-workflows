@@ -29,7 +29,13 @@ inputs:
     description: >
       Path and name of file SonarQube command results are being saved to
       Conents of this file will be appended by email sender action to email body it generates
+    required: false
+  include-sonar-qube-results:
+    description: |
+      Indicates if SonarQube scan results should be added to the email body
+    type: boolean
     required: true
+    default: false
   ciToken:
     description: 'CI bearer token to allow for making Github API calls to obtain workflow logs'
     required: true
@@ -284,6 +290,7 @@ runs:
         https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs > workflow_logs.txt
 
     - name: Append SonarQube logs to email body
+      if: {{ inputs.include-sonar-qube-results }}
       shell: bash
       run: |
         echo "<br>" >> body.txt
