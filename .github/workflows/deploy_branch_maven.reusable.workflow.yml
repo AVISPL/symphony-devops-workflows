@@ -307,7 +307,7 @@ jobs:
         with:
           scanMetadataReportFile: target/sonar/report-task.txt
         # Force to fail step after specific time.
-        timeout-minutes: ${{ sonar-qube-quality-gate-timeout-minutes }}
+        timeout-minutes: ${{ inputs.sonar-qube-quality-gate-timeout-minutes }}
         env:
          SONAR_TOKEN: ${{ secrets.sonarToken }}
 
