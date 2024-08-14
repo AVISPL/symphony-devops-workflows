@@ -306,6 +306,7 @@ runs:
       shell: bash
       run: |
         echo "<br>" >> body.txt
+        echo "<br>" >> body.txt
         echo "-----------------------------------------------------------------------<br>" >> body.txt
         echo "DETAILED WORKFLOW LOGS ARE LISTED BELOW<br>" >> body.txt
         echo "-----------------------------------------------------------------------<br>" >> body.txt
