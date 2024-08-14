@@ -224,7 +224,7 @@ jobs:
         if: ${{ inputs.run-sonar-qube-scan && always() }} 
         shell: bash
         run: |
-          # extract dashboard URL from previous step's output
+          # extract SonarQube dashboard URL from previous step's output and print it in workflow logs to allow for easy access to results
           dashboardUrl=`sed -n 's/^dashboardUrl=\(.*\)/\1/p' < ./target/sonar/report-task.txt`
           echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
           echo "To see detailed SonarQube analysis, please go to $dashboardUrl"
