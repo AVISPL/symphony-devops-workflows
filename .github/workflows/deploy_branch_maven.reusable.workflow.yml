@@ -312,7 +312,14 @@ jobs:
           # if SonarQube scan has failed, create empty mvn_results.txt as next step won't be executed to create it, and we need empty text file to pass to email sender
           if [ ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }} != 'PASSED' ]; then
             touch ${{ inputs.mvn-output-file }}
-            ls -al
+            echo "<br>" >> ${{ inputs.mvn-output-file }}
+            echo "<br>" >> ${{ inputs.mvn-output-file }}
+            echo "------------------------------------------------------------------<br>" >> ${{ inputs.mvn-output-file }}
+            echo "DETAILED MAVEN LOGS ARE LISTED BELOW<br>" >> ${{ inputs.mvn-output-file }}
+            echo "------------------------------------------------------------------<br>" >> ${{ inputs.mvn-output-file }}
+            echo "SonarQube quality check finished with status of <b style='color:red;'>${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}</b>" >> ${{ inputs.mvn-output-file }}
+            echo "Maven command to deploy this module, and workflow action to tag it are being cancelled!"> > ${{ inputs.mvn-output-file }}
+            echo "Please go to $dashboardUrl and fix issue(s) flagged by SonarQube to fix deployment of this module." >> ${{ inputs.mvn-output-file }}
           fi
 
       - name: Maven build and Git tag
