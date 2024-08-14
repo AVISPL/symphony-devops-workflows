@@ -279,20 +279,6 @@ jobs:
           tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAGS_ALL }}'
           allowEmpty: 'false'
 
-      - name: Maven build and Git tag
-        uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
-        with:
-          # Maven options
-          pom-xml-file: ${{ inputs.pom-xml-file }}
-          maven_goals: ${{ inputs.maven_goals }}
-          maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven_other_options }}
-          # Git options
-          git_tag: ${{ inputs.git_tag }}
-          git_tag_fail_if_exists: 'false'
-          git_delete_tag_if_exists: 'true'
-          github_token: ${{ secrets.userToken }}
-          mvn-output-file: ${{ inputs.mvn-output-file }}
-
       - name: SonarQube scan
         if: ${{ inputs.run-sonar-qube-scan }}
         env:
@@ -322,6 +308,21 @@ jobs:
           echo "To see detailed SonarQube analysis, please go to $dashboardUrl" >> ./sonarqube_results.txt
           echo "" >> ./sonarqube_results.txt
           echo "" >> ./sonarqube_results.txt
+
+      - name: Maven build and Git tag
+        uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
+        with:
+          # Maven options
+          pom-xml-file: ${{ inputs.pom-xml-file }}
+          maven_goals: ${{ inputs.maven_goals }}
+          maven_other_options: -Dbuilder.version=${{ steps.compute_build_number.outputs.build-number }} ${{ inputs.maven_other_options }}
+          # Git options
+          git_tag: ${{ inputs.git_tag }}
+          git_tag_fail_if_exists: 'false'
+          git_delete_tag_if_exists: 'true'
+          github_token: ${{ secrets.userToken }}
+          mvn-output-file: ${{ inputs.mvn-output-file }}
+
       # Update version.txt (custom step that only applies to modules such as symphony-commproxy)
       - name: Update version.txt if exists
         if: ${{ inputs.module-name != '' }}
