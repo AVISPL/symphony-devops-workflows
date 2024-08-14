@@ -295,9 +295,9 @@ runs:
       run: |
         echo "<br>" >> body.txt
         echo "<br>" >> body.txt
-        echo "------------------------------------------------------------------<br>" >> body.txt
+        echo "-----------------------------------------------------------------------<br>" >> body.txt
         echo "DETAILED SonarQube LOGS ARE LISTED BELOW<br>" >> body.txt
-        echo "------------------------------------------------------------------<br>" >> body.txt
+        echo "-----------------------------------------------------------------------<br>" >> body.txt
         # replace new lines with <br>
         sed -i '{:q;N;s/\n/<br>/g;t q}' ${{ inputs.sonarqube-output-file }}
         cat ${{ inputs.sonarqube-output-file }} >> body.txt
@@ -306,9 +306,9 @@ runs:
       shell: bash
       run: |
         echo "<br>" >> body.txt
-        echo "------------------------------------------------------------------<br>" >> body.txt
+        echo "-----------------------------------------------------------------------<br>" >> body.txt
         echo "DETAILED WORKFLOW LOGS ARE LISTED BELOW<br>" >> body.txt
-        echo "------------------------------------------------------------------<br>" >> body.txt
+        echo "-----------------------------------------------------------------------<br>" >> body.txt
         # replace new lines with <br>
         sed -i '{:q;N;s/\n/<br>/g;t q}' workflow_logs.txt
         cat workflow_logs.txt >> body.txt
