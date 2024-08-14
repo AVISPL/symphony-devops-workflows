@@ -220,7 +220,6 @@ jobs:
          SONAR_TOKEN: ${{ secrets.sonarToken }}
 
       - name: SonarQube quality gate output
-        #if: ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status != 'PASSED' }}
         if: ${{ inputs.run-sonar-qube-scan && always() }} 
         shell: bash
         run: |
