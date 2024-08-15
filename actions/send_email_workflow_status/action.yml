@@ -27,7 +27,7 @@ inputs:
     required: true
   sonarqube-output-file:
     description: >
-      Path and name of file SonarQube command results are being extracted from
+      Path and name of file SonarQube scan results are being extracted from
       Contents of this file will be appended by email sender action to email body it generates
     required: false
   include-sonar-qube-results:
