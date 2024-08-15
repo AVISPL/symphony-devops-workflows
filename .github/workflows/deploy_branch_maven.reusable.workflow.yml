@@ -318,7 +318,6 @@ jobs:
           fi
           echo "SonarQube quality check finished with status of <b style='color:$color;'>${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}</b>" >> ./sonarqube_results.txt
           echo "To see detailed SonarQube analysis, please go to $dashboardUrl" >> ./sonarqube_results.txt
-          echo "" >> ./sonarqube_results.txt
           # below lines are to add text to output within workflow with SonarQube's results
           echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
           echo "To see detailed SonarQube analysis, please go to $dashboardUrl"
