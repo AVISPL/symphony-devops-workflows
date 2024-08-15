@@ -310,7 +310,7 @@ jobs:
             color=red
             touch ${{ inputs.mvn-output-file }}
             echo "----------------------------------------------------------------------------" >> ${{ inputs.mvn-output-file }}
-            echo "DETAILED MAVEN LOGS ARE LISTED BELOW" >> ${{ inputs.mvn-output-file }}
+            echo "MAVEN DEPLOYMENT WAS NOT ATTEMPTED" >> ${{ inputs.mvn-output-file }}
             echo "----------------------------------------------------------------------------" >> ${{ inputs.mvn-output-file }}
             echo "SonarQube quality check finished with status of <b style='color:$color;'>${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}</b>" >> ${{ inputs.mvn-output-file }}
             echo "Maven command to deploy this module, and workflow action to tag it are being cancelled!" >> ${{ inputs.mvn-output-file }}
