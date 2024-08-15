@@ -34,7 +34,7 @@ inputs:
     description: >
       Indicates if SonarQube scan results should be added to the email body
     type: boolean
-    required: true
+    required: false
     default: false
   ciToken:
     description: 'CI bearer token to allow for making Github API calls to obtain workflow logs'
