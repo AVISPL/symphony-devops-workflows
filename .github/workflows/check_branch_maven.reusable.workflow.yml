@@ -61,6 +61,18 @@ on:
         required: false
         type: string
         default: ''
+      run-sonar-qube-scan:
+        description: |
+          Indicates if SonarQube scan step should run
+        type: boolean
+        required: false
+        default: false
+      sonar-qube-quality-gate-timeout-minutes:
+        description: |
+          Indicates the duration to wait for sonarqube-quality-gate-action before forcing the step to fail.
+        type: number
+        required: false
+        default: 5
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -70,6 +82,9 @@ on:
       nexusPassword:
         description: the password of nexus user which performs Maven commands
         required: true
+      sonarToken:
+        description: the token of Sonarqube code analyzer
+        required: false
       commitUserName:
         description: |
           User name to be used as Git committer by the workflow, when the workflow issues new 
@@ -81,7 +96,8 @@ on:
             Committer: MyCIUser
             Signed-off-by: MyCIUser <MyCIUser@...com>
         required: true
-
+env:
+  SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
 jobs:
   run_workflow_decision:
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
@@ -185,6 +201,33 @@ jobs:
           # Git options
           git_tag: ''
 
+      - name: SonarQube scan
+        if: ${{ inputs.run-sonar-qube-scan }}
+        env:
+          SONAR_TOKEN: ${{ secrets.sonarToken }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -DskipTests
+
+      # Check the Quality Gate status.
+      - name: SonarQube quality gate check
+        if: ${{ inputs.run-sonar-qube-scan }}
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        with:
+          scanMetadataReportFile: target/sonar/report-task.txt
+        # Force to fail step after specific time.
+        timeout-minutes: ${{ inputs.sonar-qube-quality-gate-timeout-minutes }}
+        env:
+         SONAR_TOKEN: ${{ secrets.sonarToken }}
+
+      - name: SonarQube quality gate output
+        if: ${{ inputs.run-sonar-qube-scan && always() }} 
+        shell: bash
+        run: |
+          # extract SonarQube dashboard URL from previous step's output and print it in workflow logs to allow for easy access to results
+          dashboardUrl=`sed -n 's/^dashboardUrl=\(.*\)/\1/p' < ./target/sonar/report-task.txt`
+          echo "SonarQube quality check finished with status of ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+          echo "To see detailed SonarQube analysis, please go to $dashboardUrl"
+
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Unzip war file if module-name is specified
         if: ${{ inputs.module-name != '' }}
@@ -198,5 +241,3 @@ jobs:
         with:
           docker-file: ${{ inputs.docker-file }}
           docker-tag-push: false
-
-  # TODO should email be sent upon every check ? (same as for deploy workflow)
