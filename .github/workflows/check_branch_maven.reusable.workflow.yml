@@ -65,7 +65,7 @@ on:
         description: |
           Indicates if SonarQube scan step should run
         type: boolean
-        required: true
+        required: false
         default: false
       sonar-qube-quality-gate-timeout-minutes:
         description: |
