@@ -309,9 +309,9 @@ jobs:
             # Add text to file being passed to email sender with SonarQube status and dashboard URL
             color=red
             touch ${{ inputs.mvn-output-file }}
-            echo "------------------------------------------------------------------" >> ${{ inputs.mvn-output-file }}
+            echo "----------------------------------------------------------------------------" >> ${{ inputs.mvn-output-file }}
             echo "DETAILED MAVEN LOGS ARE LISTED BELOW" >> ${{ inputs.mvn-output-file }}
-            echo "------------------------------------------------------------------" >> ${{ inputs.mvn-output-file }}
+            echo "----------------------------------------------------------------------------" >> ${{ inputs.mvn-output-file }}
             echo "SonarQube quality check finished with status of <b style='color:$color;'>${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}</b>" >> ${{ inputs.mvn-output-file }}
             echo "Maven command to deploy this module, and workflow action to tag it are being cancelled!" >> ${{ inputs.mvn-output-file }}
             echo "Please go to $dashboardUrl and fix issue(s) flagged by SonarQube to fix deployment of this module." >> ${{ inputs.mvn-output-file }}
