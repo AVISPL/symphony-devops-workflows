@@ -22,12 +22,12 @@ inputs:
     required: true
   mvn-output-file:
     description: >
-      Path and name of file maven command results are being saved to
+      Path and name of file maven command results are being extracted from
       Contents of this file will be appended by email sender action to email body it generates
     required: true
   sonarqube-output-file:
     description: >
-      Path and name of file SonarQube command results are being saved to
+      Path and name of file SonarQube command results are being extracted from
       Contents of this file will be appended by email sender action to email body it generates
     required: false
   include-sonar-qube-results:
