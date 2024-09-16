@@ -181,7 +181,7 @@ jobs:
              path=$(find . -name 'pom.xml' -not -path "*/target/*")
              cd ${path//pom.xml/}
           fi
-          echo "Running mvn -B exec:exec -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive -q command"
+          echo "Running mvn command to extract version"
           version=$(mvn -B exec:exec -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive -q)
           echo "The new version of ${{ inputs.symphony-module-name }} module is $version"
           echo "VERSION=$version" >> $GITHUB_OUTPUT
