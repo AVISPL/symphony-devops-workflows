@@ -62,7 +62,7 @@ env:
   MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property"
 jobs:
   update_artifact_versions:
-    runs-on: '[ "self-hosted", "linux" ]'
+    runs-on: [self-hosted]
     steps:
       - name: Checkout AVISPL/${{ env.BASE_REPOSITORY }} (contains modules.txt)
         uses: actions/checkout@v4.1.1
