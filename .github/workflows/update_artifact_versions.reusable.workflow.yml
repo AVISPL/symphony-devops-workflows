@@ -185,6 +185,7 @@ jobs:
           mvn -v
           echo "Running mvn command to extract version"
           version=$(mvn -B exec:exec -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive -q)
+          echo "mvn command succeeded"
           echo "The new version of ${{ inputs.symphony-module-name }} module is $version"
           echo "VERSION=$version" >> $GITHUB_OUTPUT
 
