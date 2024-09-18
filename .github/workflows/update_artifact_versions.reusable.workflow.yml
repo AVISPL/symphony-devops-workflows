@@ -62,7 +62,7 @@ env:
   MAVEN_COMMAND_STARTER: "mvn -B org.codehaus.mojo:versions-maven-plugin:2.13.0:set-property"
 jobs:
   update_artifact_versions:
-    runs-on: [ "self-hosted", "linux" ]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout AVISPL/${{ env.BASE_REPOSITORY }} (contains modules.txt)
         uses: actions/checkout@v4.1.1
@@ -180,11 +180,7 @@ jobs:
              path=$(find . -name 'pom.xml' -not -path "*/target/*")
              cd ${path//pom.xml/}
           fi
-          echo "execute command without putting in temp var"
-          mvn -B exec:exec -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive -q
-          echo "command executed"
           version=$(mvn -B exec:exec -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive -q)
-          echo "mvn command succeeded"
           echo "The new version of ${{ inputs.symphony-module-name }} module is $version"
           echo "VERSION=$version" >> $GITHUB_OUTPUT
 
