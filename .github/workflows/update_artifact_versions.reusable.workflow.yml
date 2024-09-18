@@ -182,7 +182,7 @@ jobs:
              cd ${path//pom.xml/}
           fi
           echo "Running mvn command to extract version"
-          version=$(mvn –X -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          version=$(mvn -B exec:exec -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive -q)
           echo "The new version of ${{ inputs.symphony-module-name }} module is $version"
           echo "VERSION=$version" >> $GITHUB_OUTPUT
 
