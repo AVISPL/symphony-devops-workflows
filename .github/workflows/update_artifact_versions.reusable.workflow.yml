@@ -176,6 +176,7 @@ jobs:
           # some Symphony modules (specifically symphony-audit) do not have their pom file in root directory, 
           # therefore following if statement locates the pom.xml and changes directory to its location
           if [ ! -f pom.xml ]; then
+             echo "pom xml file not found, looking for it"
              path=$(find . -name 'pom.xml' -not -path "*/target/*")
              cd ${path//pom.xml/}
           fi
