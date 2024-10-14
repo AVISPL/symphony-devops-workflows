@@ -8,7 +8,7 @@ inputs:
   java-version:
     description: 'Java version'
     required: false
-    default: '21.0.2'
+    default: '22.0.2'
   distribution:
     description: 'Distribution (e.g. "adopt")'
     required: false
@@ -16,11 +16,11 @@ inputs:
   downloadUrl:
     description: 'URL to download JDK archive. Should be used if `distribution` is custom.'
     required: false
-    default: "https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_linux-x64_bin.tar.gz"
+    default: "https://download.java.net/java/GA/jdk22.0.2/c9ecb94cd31b495da20a27d4581645e8/9/GPL/openjdk-22.0.2_linux-aarch64_bin.tar.gz"
   checkSum:
     description: 'SHA256 sum of archive.'
     required: false
-    default: "a2def047a73941e01a73739f92755f86b895811afb1f91243db214cff5bdac3f"
+    default: "41536f115668308ecf4eba92aaf6acaeb0936225828b741efd83b6173ba82963"
 
 runs:
   using: "composite"

@@ -1,22 +1,12 @@
 # Copyright (c) 2024 AVI-SPL Inc.
 # All Rights Reserved.
 #
-# Generates documentation from OpenAPI and copies generated PDF file
-name: generate_documentation
+# Copies REST specification openapi file from source dir to rest-docs spec repo
+name: copy_spec_to_rest_docs
 
 on:
   workflow_call:
     inputs:
-      pom-xml-file:
-        description: 'The path of the project pom.xml'
-        required: false
-        default: 'pom.xml'
-        type: string
-      maven_goals:
-        description: 'The goals for the mvn command (optional)'
-        required: false
-        type: string
-        default: 'clean install'
       runs-on_label_1:
         description: 'The job runner first label (optional)'
         required: false
@@ -32,12 +22,17 @@ on:
         required: false
         type: string
         default: 'develop'
-      source-pdf-filename:
-        description: 'source generated pdf file name under target/generated-docs/'
+      symphony-rest-docs_ref:
+        description: 'symphony-devops-workflows reference branch (or tag) to be used. E.g. ''develop'''
+        required: false
+        type: string
+        default: 'develop'
+      source-spec-filepath:
+        description: 'source openapi.yaml specification relative filepath'
         required: true
         type: string
-      destination-pdf-filename:
-        description: 'destination REST API doc pdf file name in root'
+      destination-spec-filename:
+        description: 'destination REST API Docs relative filepath'
         required: true
         type: string
     secrets:
@@ -75,7 +70,7 @@ on:
         required: true
 
 jobs:
-  generate_documentation:
+  copy_spec_to_rest_docs:
     permissions:
       contents: write
       actions: read
@@ -97,40 +92,23 @@ jobs:
           path: ./.github/symphony-devops-workflows
           token: ${{ secrets.ciToken }}
 
-      - name: Setup JDK
-        uses: ./.github/symphony-devops-workflows/actions/setup_jdk
+      - name: Checkout Symphony Rest Docs
+        uses: actions/checkout@v4.1.1
         with:
-          distribution: 'custom'
+          repository: AVISPL/symphony-rest-docs
+          ref: '${{ inputs.symphony-rest-docs_ref }}'
+          path: ./.github/symphony-rest-docs
+          token: ${{ secrets.ciToken }}
 
-      - name: Setup Maven settings
-        uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
-        with:
-          nexus-user: ${{ secrets.nexusUser }}
-          nexus-password: ${{ secrets.nexusPassword }}
-
-      - name: Get project version
-        id: get_project_version
-        uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
-        with:
-          pom-xml-file: ${{ inputs.pom-xml-file }}
-
-      - name: Maven build
-        uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
-        with:
-          pom-xml-file: ${{ inputs.pom-xml-file }}
-          maven_goals: ${{ inputs.maven_goals }}
-          maven_other_options: '-DskipTests=false -DskipITs=false -DskipDocGeneration=false'
-          git_tag: ''
-
-      - name: Move generated PDF to root directory
-        run: mv target/generated-docs/${{ inputs.source-pdf-filename }} ./${{ inputs.destination-pdf-filename }}
+      - name: Copy openapi.yml spec to destination rest-docs spec dir
+        run: cp ./${{ inputs.source-spec-filepath }} ./.github/symphony-rest-docs/spec/${{ inputs.destination-spec-filename }}
 
       - name: Git commit push
         uses: AVISPL/symphony-devops-workflows/actions/git_add_commit_push@develop
         with:
-          repository-dir: '.'
-          file-pattern: ${{ inputs.destination-pdf-filename }}
-          commit-message: '[AUTO] PDF Documentation'
+          repository-dir: './.github/symphony-rest-docs'
+          file-pattern: './spec/${{ inputs.destination-spec-filename }}'
+          commit-message: '[AUTO] Spec update ${{inputs.destination-spec-filename}}'
           commit-user-name: ${{ secrets.commitUserName }}
           commit-user-email: ${{ secrets.commitUserEmail }}
           github-token: ${{ secrets.ciToken }}
