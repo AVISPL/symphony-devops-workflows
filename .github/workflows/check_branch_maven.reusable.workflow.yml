@@ -111,6 +111,7 @@ jobs:
           AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
         run: |
           commit_message="${{ github.event.head_commit.message }}"
+          commit_message=$(echo "$commit_message" | sed 's/\([^\\]\)"/\1\\"/g')
           if [[ "$AUTO_RELEASE_COMMIT_ACTOR" = "${{ github.actor }}" ]] && [[ $commit_message == "[AUTO] Release"* ]]; then
             echo "Aborting workflow...pom.xml was modified by automated actor with [AUTO] Release in commit message."
             echo "continue=false" >> $GITHUB_OUTPUT
