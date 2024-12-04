@@ -180,7 +180,7 @@ jobs:
              path=$(find . -name 'pom.xml' -not -path "*/target/*")
              cd ${path//pom.xml/}
           fi
-          version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "The new version of ${{ inputs.symphony-module-name }} module is $version"
           echo "VERSION=$version" >> $GITHUB_OUTPUT
 
