@@ -88,16 +88,16 @@ jobs:
           path: ./symphony-devops-workflows
           token: ${{ secrets.ciToken }}
 
+      - name: Setup JDK
+        uses: ./symphony-devops-workflows/actions/setup_jdk
+        with:
+          distribution: 'custom'
+
       - name: Setup Maven settings
         uses: ./symphony-devops-workflows/actions/setup_maven_settings
         with:
           nexus-user: ${{ secrets.nexusUser }}
           nexus-password: ${{ secrets.nexusPassword }}
-
-      - name: Setup JDK
-        uses: ./.github/symphony-devops-workflows/actions/setup_jdk
-        with:
-          distribution: 'custom'
 
       - name: Update dependency versions of AVISPL/${{ inputs.symphony-module-name }}
         id: update_pom
