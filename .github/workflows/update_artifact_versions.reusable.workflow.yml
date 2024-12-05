@@ -200,7 +200,8 @@ jobs:
           cat ./pom.xml
           echo "second cat to extract module names"
           #cat ./pom.xml | grep "<module>" | sed 's/\s*<.*>\(.*\)<.*>/\1/'
-          mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q
+          mvn help:evaluate -Dexpression=project.version -q -DforceStdout
+          mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q -DforceStdout
           #IFS=$'\n' read -r -d '' -a modules < <( cat pom.xml | grep "<module>" | sed 's/\s*<.*>\(.*\)<.*>/\1/' )
           #modules+=("${{ inputs.symphony-module-name }}")
           echo "after maven command"
