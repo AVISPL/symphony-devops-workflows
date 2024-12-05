@@ -196,7 +196,7 @@ jobs:
           fi
           # following will run maven command to determine if there are child modules and puts result in an array
           echo "before maven command"
-          IFS=$'\n' read -r -d '' -a modules < <( mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q )
+          IFS=$'\n' read -r -d '' -a modules < <( mvn --also-make dependency:tree | grep 'dependency:' | awk '{ print $(NF-1) }' )
           echo "after maven command"
           version=${{ steps.new-version.outputs.VERSION }}
           cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
