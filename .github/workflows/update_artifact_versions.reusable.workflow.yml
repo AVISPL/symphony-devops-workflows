@@ -198,7 +198,7 @@ jobs:
           echo "before maven command"
           #cat ./pom.xml | grep "<module>" | sed 's/\s*<.*>\(.*\)<.*>/\1/'
           mvn -v
-          #mvn help:evaluate -Dexpression=project.version -q -DforceStdout
+          mvn help:evaluate -Dexpression=project.version -q -DforceStdout
           #mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q -DforceStdout
           #IFS=$'\n' read -r -d '' -a modules < <( cat pom.xml | grep "<module>" | sed 's/\s*<.*>\(.*\)<.*>/\1/' )
           #modules+=("${{ inputs.symphony-module-name }}")
