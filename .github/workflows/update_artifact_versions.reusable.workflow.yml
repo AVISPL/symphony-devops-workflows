@@ -94,6 +94,11 @@ jobs:
           nexus-user: ${{ secrets.nexusUser }}
           nexus-password: ${{ secrets.nexusPassword }}
 
+      - name: Setup JDK
+        uses: ./.github/symphony-devops-workflows/actions/setup_jdk
+        with:
+          distribution: 'custom'
+
       - name: Update dependency versions of AVISPL/${{ inputs.symphony-module-name }}
         id: update_pom
         shell: bash
@@ -196,7 +201,7 @@ jobs:
           fi
           # following will run maven command to determine if there are child modules and puts result in an array
           echo "before maven command"
-          IFS=$'\n' read -r -d '' -a modules < <( mvn -q -Dexec.executable="echo" -Dexec.args='${project.artifactId}' org.codehaus.mojo:exec-maven-plugin:1.3.1:exec )
+          IFS=$'\n' read -r -d '' -a modules < <( mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q )
           echo "after maven command"
           version=${{ steps.new-version.outputs.VERSION }}
           cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
