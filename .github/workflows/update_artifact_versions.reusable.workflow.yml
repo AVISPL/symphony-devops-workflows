@@ -88,11 +88,6 @@ jobs:
           path: ./symphony-devops-workflows
           token: ${{ secrets.ciToken }}
 
-      - name: Setup JDK
-        uses: ./symphony-devops-workflows/actions/setup_jdk
-        with:
-          distribution: 'custom'
-
       - name: Setup Maven settings
         uses: ./symphony-devops-workflows/actions/setup_maven_settings
         with:
@@ -201,6 +196,7 @@ jobs:
           fi
           # following will run maven command to determine if there are child modules and puts result in an array
           echo "before maven command"
+          mvn -v
           IFS=$'\n' read -r -d '' -a modules < <( mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q )
           echo "after maven command"
           version=${{ steps.new-version.outputs.VERSION }}
