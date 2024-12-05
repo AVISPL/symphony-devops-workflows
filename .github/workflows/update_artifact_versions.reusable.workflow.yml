@@ -197,23 +197,23 @@ jobs:
           # following will run maven command to determine if there are child modules and puts result in an array
           echo "before maven command"
           cat pom.xml | grep "<module>" | sed 's/\s*<.*>\(.*\)<.*>/\1/'
-          IFS=$'\n' read -r -d '' -a modules < <( cat pom.xml | grep "<module>" | sed 's/\s*<.*>\(.*\)<.*>/\1/' )
-          modules+=("${{ inputs.symphony-module-name }}")
+          #IFS=$'\n' read -r -d '' -a modules < <( cat pom.xml | grep "<module>" | sed 's/\s*<.*>\(.*\)<.*>/\1/' )
+          #modules+=("${{ inputs.symphony-module-name }}")
           echo "after maven command"
-          version=${{ steps.new-version.outputs.VERSION }}
-          cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
+          #version=${{ steps.new-version.outputs.VERSION }}
+          #cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
           # if there are child modules, add them to modules.txt with their respective parent version
-          for module in ${modules[@]}; do
-             if [ "${module}" = "${{ inputs.symphony-module-name }}" ]; then
-                # set version of parent modules (aka inputs.symphony-module-name)
-                sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
-             else
-                # grab the child module's name, add its version (same as parent), and append to end of modules.txt
-                new_module="${module}:$version"
-                echo "Child module being added is: ${new_module}"
-                echo ${new_module} >> modules.txt
-             fi
-          done
+          #for module in ${modules[@]}; do
+          #   if [ "${module}" = "${{ inputs.symphony-module-name }}" ]; then
+          #      # set version of parent modules (aka inputs.symphony-module-name)
+          #      sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
+          #   else
+          #      # grab the child module's name, add its version (same as parent), and append to end of modules.txt
+          #      new_module="${module}:$version"
+          #      echo "Child module being added is: ${new_module}"
+          #      echo ${new_module} >> modules.txt
+          #   fi
+          #done
           cat modules.txt
 
       - name: Commit updates to AVISPL/${{ env.BASE_REPOSITORY }}'s modules.txt
