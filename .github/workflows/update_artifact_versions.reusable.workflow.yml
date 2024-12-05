@@ -195,7 +195,9 @@ jobs:
              cd ${path//pom.xml/}
           fi
           # following will run maven command to determine if there are child modules and puts result in an array
+          echo "before maven command"
           IFS=$'\n' read -r -d '' -a modules < <( mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q )
+          echo "after maven command"
           version=${{ steps.new-version.outputs.VERSION }}
           cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
           # if there are child modules, add them to modules.txt with their respective parent version
