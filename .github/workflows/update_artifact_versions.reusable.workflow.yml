@@ -185,7 +185,7 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_OUTPUT
 
       - name: Update AVISPL/${{ env.BASE_REPOSITORY }} modules.txt file
-        shell: bash {0}
+        shell: bash
         run: |
           cd $GITHUB_WORKSPACE/${{ inputs.symphony-module-name }}
           # some Symphony modules (specifically symphony-audit) do not have their pom file in root directory, 
@@ -196,7 +196,7 @@ jobs:
           fi
           # following will run maven command to determine if there are child modules and puts result in an array
           echo "before maven command"
-          mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q
+          mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec
           #mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q -DforceStdout
           #IFS=$'\n' read -r -d '' -a modules < <( cat pom.xml | grep "<module>" | sed 's/\s*<.*>\(.*\)<.*>/\1/' )
           #modules+=("${{ inputs.symphony-module-name }}")
