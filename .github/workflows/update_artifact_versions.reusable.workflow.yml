@@ -64,13 +64,6 @@ jobs:
   update_artifact_versions:
     runs-on: ubuntu-latest
     steps:
-      - name: Cache local Maven repository
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
       - name: Checkout AVISPL/${{ env.BASE_REPOSITORY }} (contains modules.txt)
         uses: actions/checkout@v4.1.1
         with:
