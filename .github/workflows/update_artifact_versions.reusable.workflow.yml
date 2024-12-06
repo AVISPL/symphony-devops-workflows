@@ -194,11 +194,8 @@ jobs:
              path=$(find . -name 'pom.xml' -not -path "*/target/*")
              cd ${path//pom.xml/}
           fi
-          echo "running maven command"
-          mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q
-          echo "after running maven command"
           # following will run maven command to determine if there are child modules and puts result in an array
-          IFS=$'\n' read -r -d '' -a modules < <( mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q  )
+          IFS=$'\n' read -r -d '' -a modules < <( mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.artifactId}' | grep '###MODULE_PREFIX### ' | cut -f2 -d' ' && printf '\0' )
           version=${{ steps.new-version.outputs.VERSION }}
           cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
           # if there are child modules, add them to modules.txt with their respective parent version
