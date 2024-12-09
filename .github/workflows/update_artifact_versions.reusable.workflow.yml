@@ -180,7 +180,7 @@ jobs:
              path=$(find . -name 'pom.xml' -not -path "*/target/*")
              cd ${path//pom.xml/}
           fi
-          version=$(mvn -B exec:exec -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive -q)
+          version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "The new version of ${{ inputs.symphony-module-name }} module is $version"
           echo "VERSION=$version" >> $GITHUB_OUTPUT
 
@@ -188,7 +188,7 @@ jobs:
         shell: bash
         run: |
           cd $GITHUB_WORKSPACE/${{ inputs.symphony-module-name }}
-          # some Symphony modules (specifically symphony-audit) do not have their pom file in root directory, 
+          # some Symphony modules (specifically symphony-audit-shared) do not have their pom file in root directory, 
           # therefore following if statement locates the pom.xml and changes directory to its location
           if [ ! -f pom.xml ]; then
              path=$(find . -name 'pom.xml' -not -path "*/target/*")
