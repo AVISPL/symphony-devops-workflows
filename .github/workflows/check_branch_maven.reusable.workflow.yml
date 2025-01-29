@@ -205,7 +205,7 @@ jobs:
         if: ${{ inputs.run-sonar-qube-scan }}
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Duser.timezone=UTC
 
       # Check the Quality Gate status.
       - name: SonarQube quality gate check
