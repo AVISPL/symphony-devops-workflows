@@ -112,8 +112,8 @@ jobs:
         run: |
           commit_message="${{ github.event.head_commit.message }}"
           commit_message=$(echo "$commit_message" | sed 's/\([^\\]\)"/\1\\"/g')
-          if [[ "$AUTO_RELEASE_COMMIT_ACTOR" = "${{ github.actor }}" ]] && [[ $commit_message == "[AUTO] Release"* ]]; then
-            echo "Aborting workflow...pom.xml was modified by automated actor with [AUTO] Release in commit message."
+          if [[ "$AUTO_RELEASE_COMMIT_ACTOR" = "${{ github.actor }}" ]] && [[ $commit_message == "[AUTO]"* ]]; then
+            echo "Aborting workflow. Commit was performed by automated actor with [AUTO] in commit message."
             echo "continue=false" >> $GITHUB_OUTPUT
           else
             echo "Executing workflow"
@@ -205,7 +205,7 @@ jobs:
         if: ${{ inputs.run-sonar-qube-scan }}
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Duser.timezone=UTC
 
       # Check the Quality Gate status.
       - name: SonarQube quality gate check
