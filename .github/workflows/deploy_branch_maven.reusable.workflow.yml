@@ -161,11 +161,6 @@ on:
           User email to be used as Git committer. This is NOT the user email
           of the person who ran the workflow, see commit user name.
         required: true
-
-concurrency:
-  group: symphony-group
-  cancel-in-progress: false
-
 env:
   SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
 jobs:
