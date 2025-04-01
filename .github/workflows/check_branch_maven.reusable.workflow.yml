@@ -163,10 +163,10 @@ jobs:
           # Indicate where to check out project to
           path: ./.github/symphony-devops-workflows
 
-      - name: Setup JDK
-        uses: ./.github/symphony-devops-workflows/actions/setup_jdk
-        with:
-          distribution: 'custom'
+      #- name: Setup JDK
+      #  uses: ./.github/symphony-devops-workflows/actions/setup_jdk
+      #  with:
+      #    distribution: 'custom'
 
       - name: Setup Maven settings
         uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
