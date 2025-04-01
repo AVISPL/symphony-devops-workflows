@@ -100,7 +100,7 @@ env:
   SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
 jobs:
   run_workflow_decision:
-    runs-on: ${{ inputs.runs-on_label_1 }}"
+    runs-on: ${{ inputs.runs-on_label_1 }}
     outputs:
       CONTINUE: ${{ steps.continue.outputs.continue }}
     steps:
@@ -134,7 +134,7 @@ jobs:
     # Use runner which has requested labels
     # Note: GitHub does not allow to pass an object as job input (such as an array)
     # so need this trick with multiple variables
-    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    runs-on: ${{ inputs.runs-on_label_1 }}
 
     needs: [run_workflow_decision]
     if: ${{ needs.run_workflow_decision.outputs.continue == 'true' }}
