@@ -389,32 +389,13 @@ jobs:
         uses: advanced-security/maven-dependency-submission-action@v4.0.0
         with:
           directory: '${{ inputs.dependabot-submit-dependencies-directory }}'
+
       - name: Submit Maven dependencies without directory specified
         if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies && inputs.dependabot-submit-dependencies-directory == '' }}
         uses: advanced-security/maven-dependency-submission-action@v4.0.0
 
-  # Job to send email - execute event when previous job(s) in workflow have failed
-  job_send_mail:
-    # For details on if condition when previous job is skipped and there is a needs condition,
-    # see discussions here:
-    # https://github.com/actions/runner/issues/491#issuecomment-926924523
-    if: ${{ !cancelled() }}
-    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
-    needs: reusable_job_deploy_branch_maven
-    steps:
-      # Job might not be executed on same runner than first job (if several candidates
-      # match labels), in which case workspace will be empty,
-      # so need to checkout again required actions from dedicated repository
-      - name: Checkout actions from private repository
-        uses: actions/checkout@v4.1.1
-        with:
-          repository: AVISPL/symphony-devops-workflows
-          # Select revision
-          ref: '${{ inputs.symphony-devops-workflows_ref }}'
-          # Indicate where to check out project to
-          path: ./.github/symphony-devops-workflows
-
       - name: Send email workflow status
+        if: ${{ !cancelled() }}
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
         with:
           builderSmtpHost: ${{ secrets.builderSmtpHost }}
@@ -424,3 +405,35 @@ jobs:
           emailTo: ${{ secrets.emailTo }}
           emailFrom: ${{ secrets.emailFrom }}
           ciToken: ${{ secrets.ciToken }}
+
+#  # Job to send email - execute event when previous job(s) in workflow have failed
+#  job_send_mail:
+#    # For details on if condition when previous job is skipped and there is a needs condition,
+#    # see discussions here:
+#    # https://github.com/actions/runner/issues/491#issuecomment-926924523
+#    if: ${{ !cancelled() }}
+#    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+#    needs: reusable_job_deploy_branch_maven
+#    steps:
+#      # Job might not be executed on same runner than first job (if several candidates
+#      # match labels), in which case workspace will be empty,
+#      # so need to checkout again required actions from dedicated repository
+#      - name: Checkout actions from private repository
+#        uses: actions/checkout@v4.1.1
+#        with:
+#          repository: AVISPL/symphony-devops-workflows
+#          # Select revision
+#          ref: '${{ inputs.symphony-devops-workflows_ref }}'
+#          # Indicate where to check out project to
+#          path: ./.github/symphony-devops-workflows
+
+#      - name: Send email workflow status
+#        uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
+#        with:
+#          builderSmtpHost: ${{ secrets.builderSmtpHost }}
+#          mvn-output-file: ${{ inputs.mvn-output-file }}
+#          sonarqube-output-file: ./sonarqube_results.txt
+#          include-sonar-qube-results: ${{ inputs.run-sonar-qube-scan }}
+#          emailTo: ${{ secrets.emailTo }}
+#          emailFrom: ${{ secrets.emailFrom }}
+#          ciToken: ${{ secrets.ciToken }}
