@@ -1,0 +1,34 @@
+name: trigger_autotests
+
+on:
+  workflow_call:
+    inputs:
+      ms:
+        description: 'MS to run autotests on'
+        required: true
+        type: string
+    secrets:
+      ciToken:
+        description: |
+          GitHub token to be used for updating AVI-SPL private repositories. In this workflow,
+          it is used only for updating Kubernetes deployment files
+          This token should belong to the CI user, although workflow would work with any token
+          with correct permissions
+          It must be a GitHub PAT (Personal Access Token) with read and write authorizations
+          on the GitHub repositories to be read/updated
+        required: true
+
+
+jobs:
+  trigger_autotests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger ${{ inputs.ms }} Autotests
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{secrets.ciToken}}
+          repository: AVISPL/symphony-autotests
+          event-type: run-autotests
+          client-payload: '{
+              "ms": "${{ inputs.ms }}"
+            }'
