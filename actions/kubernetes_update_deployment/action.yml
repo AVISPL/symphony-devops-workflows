@@ -58,6 +58,10 @@ inputs:
   commit-user-email:
     description: User email to be used as Git committer
     required: true
+  environment:
+    description: Symphony environment values file is being updated for
+    required: false
+    default: 'dev'
 runs:
   using: "composite"
   steps:
@@ -68,7 +72,7 @@ runs:
         echo "Compute paths"
         CHECKOUT_DIR="${{ inputs.workspace-checkout-dir }}"
         # Path is relative to the Kubernetes deployer repository's root directory
-        DESCRIPTOR_FILE_NAME="symphony/charts/${{ inputs.symphony-microservice-name }}/values-dev.yaml"
+        DESCRIPTOR_FILE_NAME="symphony/charts/${{ inputs.symphony-microservice-name }}/values-${{ inputs.environment }}.yaml"
         FILENAME_RELATIVE_PATH="${CHECKOUT_DIR}/${DESCRIPTOR_FILE_NAME}"
         FILENAME_ABSOLUTE_PATH="${GITHUB_WORKSPACE}/${FILENAME_RELATIVE_PATH}"
         #
