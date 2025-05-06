@@ -139,6 +139,7 @@ runs:
         commit_message: '${{ inputs.commit-message }}'
         commit_user_name: ${{ inputs.commit-user-name }}
         commit_user_email: ${{ inputs.commit-user-email }}
+        branch: '${{ inputs.symphony-kubernetes-deployer-ref }}'
         # commit_author - Do NOT specify value and use default action behaviour
         #   "commit author defaults to author of the commit that triggered the run"
         #   Author in GitHub will look like:

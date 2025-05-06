@@ -23,6 +23,14 @@ on:
         description: name of module that is being released
         required: true
         type: string
+      environments:
+        description: |
+          Comma-separated list of environments to direct which symphony-kubernetes-deployer values 
+          files to be update with new version of microservices being released. 
+          Default is 'dev', but accepted values can be 'devops,dev,qa,sim,int,prod,emea,pwc'
+        required: false
+        type: string
+        default: 'dev'
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
       nexusUser:
@@ -153,6 +161,7 @@ jobs:
           token: ${{ secrets.ciToken }}
           repo: AVISPL/${{ inputs.symphony-module-name }}
           ref: ${{ inputs.branch }}
+          environments: ${{ inputs.environments }}
           wait-for-completion: true
           # GitHub API has a rate limit (though it is high) so we should be cautious to not call the API too many times 
           # https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
