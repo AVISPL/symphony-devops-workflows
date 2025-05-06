@@ -8,7 +8,7 @@
 # Prerequisites :
 # - GitHub actions from AVI-SPL private repository must be available in local workspace directory
 # TODO ENHANCEMENT: parameterize with an "environment" input to allow updating dev/qa/int...
-name: 'Kubernetes update microservice Docker image (only for Dev environment)'
+name: 'Kubernetes update microservice Docker image'
 description: >
   Set docker image to be used for given microservice with provided one
   by updating adequate Kubernetes file descriptor
