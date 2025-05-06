@@ -161,7 +161,7 @@ jobs:
           token: ${{ secrets.ciToken }}
           repo: AVISPL/${{ inputs.symphony-module-name }}
           ref: ${{ inputs.branch }}
-          environments: '${{ inputs.environments }}'
+          inputs: '{ "environments": "${{ inputs.environments }}" }'
           wait-for-completion: true
           # GitHub API has a rate limit (though it is high) so we should be cautious to not call the API too many times 
           # https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
