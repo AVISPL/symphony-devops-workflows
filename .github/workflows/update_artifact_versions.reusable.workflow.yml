@@ -167,6 +167,7 @@ jobs:
           # https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
           wait-for-completion-interval: 10s
           wait-for-completion-timeout: 10m
+          display-workflow-run-url-interval: 10s
 
       # checking out the module again in order to get latest updated version from previous release step
       - name: Checkout AVISPL/${{ inputs.symphony-module-name }}
