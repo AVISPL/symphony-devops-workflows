@@ -8,7 +8,7 @@
 # Prerequisites :
 # - GitHub actions from AVI-SPL private repository must be available in local workspace directory
 # TODO ENHANCEMENT: parameterize with an "environment" input to allow updating dev/qa/int...
-name: 'Kubernetes update microservice Docker image (only for Dev environment)'
+name: 'Kubernetes update microservice Docker image'
 description: >
   Set docker image to be used for given microservice with provided one
   by updating adequate Kubernetes file descriptor
@@ -58,6 +58,10 @@ inputs:
   commit-user-email:
     description: User email to be used as Git committer
     required: true
+  environment:
+    description: Symphony environment values file is being updated for
+    required: false
+    default: 'dev'
 runs:
   using: "composite"
   steps:
@@ -68,7 +72,7 @@ runs:
         echo "Compute paths"
         CHECKOUT_DIR="${{ inputs.workspace-checkout-dir }}"
         # Path is relative to the Kubernetes deployer repository's root directory
-        DESCRIPTOR_FILE_NAME="symphony/charts/${{ inputs.symphony-microservice-name }}/values-dev.yaml"
+        DESCRIPTOR_FILE_NAME="symphony/charts/${{ inputs.symphony-microservice-name }}/values-${{ inputs.environment }}.yaml"
         FILENAME_RELATIVE_PATH="${CHECKOUT_DIR}/${DESCRIPTOR_FILE_NAME}"
         FILENAME_ABSOLUTE_PATH="${GITHUB_WORKSPACE}/${FILENAME_RELATIVE_PATH}"
         #
@@ -135,6 +139,7 @@ runs:
         commit_message: '${{ inputs.commit-message }}'
         commit_user_name: ${{ inputs.commit-user-name }}
         commit_user_email: ${{ inputs.commit-user-email }}
+        branch: '${{ inputs.symphony-kubernetes-deployer-ref }}'
         # commit_author - Do NOT specify value and use default action behaviour
         #   "commit author defaults to author of the commit that triggered the run"
         #   Author in GitHub will look like:

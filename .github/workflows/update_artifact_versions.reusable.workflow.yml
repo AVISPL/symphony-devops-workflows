@@ -23,6 +23,14 @@ on:
         description: name of module that is being released
         required: true
         type: string
+      environments:
+        description: |
+          Comma-separated list of environments to direct which symphony-kubernetes-deployer values 
+          files to be update with new version of microservices being released. 
+          Default is 'dev', but accepted values can be 'devops,dev,qa,sim,int,prod,emea,pwc'
+        required: false
+        type: string
+        default: 'dev'
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
       nexusUser:
@@ -153,11 +161,13 @@ jobs:
           token: ${{ secrets.ciToken }}
           repo: AVISPL/${{ inputs.symphony-module-name }}
           ref: ${{ inputs.branch }}
+          inputs: '{ "environments": "${{ inputs.environments }}" }'
           wait-for-completion: true
           # GitHub API has a rate limit (though it is high) so we should be cautious to not call the API too many times 
           # https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
           wait-for-completion-interval: 10s
           wait-for-completion-timeout: 10m
+          display-workflow-run-url-interval: 10s
 
       # checking out the module again in order to get latest updated version from previous release step
       - name: Checkout AVISPL/${{ inputs.symphony-module-name }}
@@ -194,7 +204,7 @@ jobs:
              path=$(find . -name 'pom.xml' -not -path "*/target/*")
              cd ${path//pom.xml/}
           fi
-          # following will run maven command to determine if there are child modules and puts result in an array
+          # following will run maven command to determine if there are child modules and puts result into modules array
           IFS=$'\n' read -r -d '' -a modules < <( mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.artifactId}' | grep '###MODULE_PREFIX### ' | cut -f2 -d' ' && printf '\0' )
           version=${{ steps.new-version.outputs.VERSION }}
           cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
@@ -204,6 +214,10 @@ jobs:
                 # set version of parent modules (aka inputs.symphony-module-name)
                 sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
              else
+                # symphony-dal-shared artifactId is syphony-dal-commons, therefore following custom code will make its version is not left blank in modules.txt
+                if [ "${{ inputs.symphony-module-name }}" = "symphony-dal-shared" ]; then
+                   sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
+                fi
                 # grab the child module's name, add its version (same as parent), and append to end of modules.txt
                 new_module="${module}:$version"
                 echo "Child module being added is: ${new_module}"
