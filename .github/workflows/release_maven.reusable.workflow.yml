@@ -129,7 +129,7 @@ on:
 
 jobs:
   run_workflow_decision:
-    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    runs-on: ${{ fromJSON(inputs.runs-on-labels) }}
     outputs:
       CONTINUE: ${{ steps.continue.outputs.continue }}
     steps:
