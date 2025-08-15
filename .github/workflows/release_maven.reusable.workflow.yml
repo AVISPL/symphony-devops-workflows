@@ -164,6 +164,8 @@ jobs:
     # so need this trick to convert text input to an array
     runs-on: ${{ fromJSON(inputs.runs-on-labels) }}
 
+    needs: [run_workflow_decision]
+    if: ${{ needs.run_workflow_decision.outputs.continue == 'true' }}
     steps:
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
