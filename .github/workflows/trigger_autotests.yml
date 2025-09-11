@@ -10,7 +10,7 @@ on:
       skip_slow_tests:
         description: 'Whether to skip slow tests (they may take a few hours)'
         required: false
-        type: boolean
+        type: string
     secrets:
       ciToken:
         description: |
