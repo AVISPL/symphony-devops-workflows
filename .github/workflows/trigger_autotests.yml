@@ -4,9 +4,13 @@ on:
   workflow_call:
     inputs:
       ms:
-        description: 'MS to run autotests on'
+        description: 'MS to run autotests for'
         required: true
         type: string
+      skip_slow_tests:
+        description: 'Whether to skip slow tests (they may take a few hours)'
+        required: false
+        type: boolean
     secrets:
       ciToken:
         description: |
@@ -43,3 +47,6 @@ jobs:
           token: ${{secrets.ciToken}}
           repository: AVISPL/symphony-qa-automation
           event-type: run-autotests
+          client-payload: '{
+              "skip_slow_tests": "${{ inputs.skip_slow_tests }}"
+            }'
