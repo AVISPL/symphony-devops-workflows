@@ -205,9 +205,7 @@ jobs:
              cd ${path//pom.xml/}
           fi
           # following will run maven command to determine if there are child modules and puts result into modules array
-          artifactId=$(grep -m1 '<artifactId>' pom.xml | sed -E 's/.*<artifactId>([^<]+)<\/artifactId>.*/\1/')
-          childModules=$(grep '<module>' pom.xml | sed -E 's/.*<module>([^<]+)<\/module>.*/\1/' | tr '\n' ' ')
-          modules=($artifactId $childModules)
+          IFS=$'\n' read -r -d '' -a modules < <( mvn -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_PREFIX### ${project.artifactId}' | grep '###MODULE_PREFIX### ' | cut -f2 -d' ' && printf '\0' )
 
           version=${{ steps.new-version.outputs.VERSION }}
           cd $GITHUB_WORKSPACE/${{ env.BASE_REPOSITORY }}/release_modules/
