@@ -4,8 +4,12 @@ on:
   workflow_call:
     inputs:
       ms:
-        description: 'MS to run autotests on'
+        description: 'MS to run autotests for'
         required: true
+        type: string
+      skip_slow_tests:
+        description: 'Whether to skip slow tests (they may take a few hours)'
+        required: false
         type: string
     secrets:
       ciToken:
@@ -22,6 +26,7 @@ on:
 jobs:
   trigger_autotests:
     runs-on: ubuntu-latest
+    if: ${{ inputs.ms != 'UI' }}
     steps:
       - name: Trigger ${{ inputs.ms }} Autotests
         uses: peter-evans/repository-dispatch@v3
@@ -31,4 +36,17 @@ jobs:
           event-type: run-autotests
           client-payload: '{
               "ms": "${{ inputs.ms }}"
+            }'
+  trigger_ui_autotests:
+    if: ${{ inputs.ms == 'UI' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger UI Autotests
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{secrets.ciToken}}
+          repository: AVISPL/symphony-qa-automation
+          event-type: run-autotests
+          client-payload: '{
+              "skip_slow_tests": "${{ inputs.skip_slow_tests }}"
             }'
