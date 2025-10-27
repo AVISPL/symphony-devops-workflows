@@ -319,31 +319,32 @@ jobs:
           docker-tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
           docker-image-prefix: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}'
 
-      # Update Kubernetes deployment on Dev environment under develop branch
-      # (only when docker image was actually pushed to the Docker registry)
-      - name: Kubernetes update deployment of DEV environment within develop branch
-        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
-        with:
-          # Name of Helm subchart (name of directory under "/symphony/charts")
-          # in symphony-kubernetes-deployer repository
-          symphony-microservice-name: '${{ inputs.symphony-microservice-name }}'
-          # New value for docker image in deployment file
-          # Only docker tag name (e.g. 6.4.0.2308281259), not full path to repository
-          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
-          fail-if-no-file-change: 'true'
-          # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
-          workspace-checkout-dir: 'symphony-kubernetes-deployer'
-          # The revision (branch) to be updated in deployer repository
-          # Value should be overridden for testing purpose only.
-          # By default, 'develop' branch should be used
-          symphony-kubernetes-deployer-ref: 'develop'
-          commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
-          # Token for checking-out private repository
-          # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
-          github-token: ${{ secrets.ciToken }}
-          commit-user-name: ${{ secrets.commitUserName }}
-          commit-user-email: ${{ secrets.commitUserEmail }}
+      # Commenting out following action to prevent release workflow from updating develop branch of symphony-kubernetes-deployer
+      ## Update Kubernetes deployment on Dev environment under develop branch
+      ## (only when docker image was actually pushed to the Docker registry)
+      #- name: Kubernetes update deployment of DEV environment within develop branch
+      #  if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
+      #  uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+      #  with:
+      #    # Name of Helm subchart (name of directory under "/symphony/charts")
+      #    # in symphony-kubernetes-deployer repository
+      #    symphony-microservice-name: '${{ inputs.symphony-microservice-name }}'
+      #    # New value for docker image in deployment file
+      #    # Only docker tag name (e.g. 6.4.0.2308281259), not full path to repository
+      #    docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
+      #    fail-if-no-file-change: 'true'
+      #    # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
+      #    workspace-checkout-dir: 'symphony-kubernetes-deployer'
+      #    # The revision (branch) to be updated in deployer repository
+      #    # Value should be overridden for testing purpose only.
+      #    # By default, 'develop' branch should be used
+      #    symphony-kubernetes-deployer-ref: 'develop'
+      #    commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
+      #    # Token for checking-out private repository
+      #    # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
+      #    github-token: ${{ secrets.ciToken }}
+      #    commit-user-name: ${{ secrets.commitUserName }}
+      #    commit-user-email: ${{ secrets.commitUserEmail }}
 
       # Following steps are used to update environment specific values file within ${{ inputs.git-ref }} branch of symphony-kubernetes-deployer repository.
       # Following steps will only be executed if the inputs.environments contains the environment's name (i.e. devops, dev, qa, sim, int, prod, pwc, or emea)
