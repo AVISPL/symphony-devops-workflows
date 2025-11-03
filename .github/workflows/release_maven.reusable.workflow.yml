@@ -126,28 +126,9 @@ on:
           It must be a GitHub PAT (Personal Access Token) with read and write authorizations
           on the GitHub repositories to be read/updated
         required: false
-
+env:
+  AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
 jobs:
-  run_workflow_decision:
-    runs-on: ${{ fromJSON(inputs.runs-on-labels) }}
-    outputs:
-      CONTINUE: ${{ steps.continue.outputs.continue }}
-    steps:
-      - name: Should workflow be executed
-        id: continue
-        shell: bash
-        env:
-          AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
-        run: |
-          commit_message="${{ github.event.head_commit.message }}"
-          commit_message=$(echo "$commit_message" | sed 's/\([^\\]\)"/\1\\"/g')
-          if [[ "$AUTO_RELEASE_COMMIT_ACTOR" = "${{ github.actor }}" ]] && [[ $commit_message == "[AUTO]"* ]]; then
-            echo "Aborting workflow. Commit was performed by automated actor with [AUTO] in commit message."
-            echo "continue=false" >> $GITHUB_OUTPUT
-          else
-            echo "Executing workflow"
-            echo "continue=true" >> $GITHUB_OUTPUT
-          fi
   reusable_job_release_branch_maven:
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
@@ -164,12 +145,28 @@ jobs:
     # so need this trick to convert text input to an array
     runs-on: ${{ fromJSON(inputs.runs-on-labels) }}
 
-    needs: [run_workflow_decision]
-    if: ${{ needs.run_workflow_decision.outputs.continue == 'true' }}
     steps:
+      - name: Should workflow be executed
+        id: check
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          commit_message=$(echo "$commit_message" | sed 's/\([^\\]\)"/\1\\"/g')
+          if [[ "$AUTO_RELEASE_COMMIT_ACTOR" = "${{ github.actor }}" ]] && [[ $commit_message == "[AUTO]"* ]]; then
+            echo "Aborting workflow. Commit was performed by automated actor with [AUTO] in commit message."
+            echo "continue=false" >> $GITHUB_OUTPUT
+          else
+            echo "Executing workflow"
+            echo "continue=true" >> $GITHUB_OUTPUT
+          fi
+      # we have to remove content of all com.symphony packages to prevent of using
+      # leftover jars of builds that aren't merged yet
+      - name: Clean local .m2 cache
+        if: ${{ steps.check.outputs.continue == 'true' }}
+        run:  rm -rfv "$HOME/.m2/repository/com/avispl" || true
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
       - name: Git checkout
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: actions/checkout@v4.1.1
         with:
           # Select revision
@@ -185,6 +182,7 @@ jobs:
       # (feature not available yet)
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
@@ -194,11 +192,13 @@ jobs:
           path: ./.github/symphony-devops-workflows
 
       - name: Setup JDK
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/setup_jdk
         with:
           distribution: 'custom'
 
       - name: Setup Maven settings
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
         with:
           nexus-user: ${{ secrets.nexusUser }}
@@ -210,11 +210,13 @@ jobs:
       # It is also used as new project version, when version is not provided by workflow input
       # parameter
       - name: Compute build number
+        if: ${{ steps.check.outputs.continue == 'true' }}
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
 
       # Get project version (used to compute new version if not provided)
       - name: Get project version
+        if: ${{ steps.check.outputs.continue == 'true' }}
         id: get_project_version
         uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
         with:
@@ -223,6 +225,7 @@ jobs:
       # Compute release version depending on user input, current version and
       # build number
       - name: Compute release version
+        if: ${{ steps.check.outputs.continue == 'true' }}
         id: compute_release_version
         uses: ./.github/symphony-devops-workflows/actions/maven_compute_release_version
         with:
@@ -232,6 +235,7 @@ jobs:
 
       # Git - check tag does not already exist
       - name: Check tag does NOT already exist
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/git_tag_exists
         with:
           tag-name: ${{ steps.compute_release_version.outputs.release-version }}
@@ -239,18 +243,21 @@ jobs:
 
       # Update pom.xml locally
       - name: Update pom.xml version
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/maven_update_project_version
         with:
           pom-xml-file: ${{ inputs.pom-xml-file }}
           new-project-version: ${{ steps.compute_release_version.outputs.release-version }}
 
       - name: Print pom.xml version
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
         with:
           pom-xml-file: ${{ inputs.pom-xml-file }}
 
       # Git commit and push
       - name: Git commit push
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/git_add_commit_push
         with:
           repository-dir: '.'
@@ -265,6 +272,7 @@ jobs:
       # Release docker tag must be exact same as the Maven project version
       #   e.g. 5.6.1.2208051600
       - name: Compute docker tags
+        if: ${{ steps.check.outputs.continue == 'true' }}
         id: compute_docker_tags
         run: |
           echo "Compute docker tags"
@@ -286,6 +294,7 @@ jobs:
       # same rules whatever the workflow which created them, whatever way tags were
       # provided or computed
       - name: Validate docker tags
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
         with:
           tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
@@ -293,6 +302,7 @@ jobs:
 
       # Build and deploy project
       - name: Maven build
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
         with:
           # Maven options
@@ -304,14 +314,14 @@ jobs:
 
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Unzip war file if module-name is specified
-        if: ${{ inputs.module-name != '' }}
+        if: ${{ inputs.module-name != '' && steps.check.outputs.continue == 'true' }}
         run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
       # Docker
       - name: Docker build
         id: docker_build_tag_push
         # Run docker build only when a docker file has been specified (not empty value)
-        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
         with:
           docker-file: ${{ inputs.docker-file }}
@@ -319,37 +329,10 @@ jobs:
           docker-tags: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
           docker-image-prefix: '${{ steps.compute_docker_tags.outputs.DOCKER_IMAGE_TAG_PREFIX }}'
 
-      # Commenting out following action to prevent release workflow from updating develop branch of symphony-kubernetes-deployer
-      ## Update Kubernetes deployment on Dev environment under develop branch
-      ## (only when docker image was actually pushed to the Docker registry)
-      #- name: Kubernetes update deployment of DEV environment within develop branch
-      #  if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' }}
-      #  uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
-      #  with:
-      #    # Name of Helm subchart (name of directory under "/symphony/charts")
-      #    # in symphony-kubernetes-deployer repository
-      #    symphony-microservice-name: '${{ inputs.symphony-microservice-name }}'
-      #    # New value for docker image in deployment file
-      #    # Only docker tag name (e.g. 6.4.0.2308281259), not full path to repository
-      #    docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
-      #    fail-if-no-file-change: 'true'
-      #    # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
-      #    workspace-checkout-dir: 'symphony-kubernetes-deployer'
-      #    # The revision (branch) to be updated in deployer repository
-      #    # Value should be overridden for testing purpose only.
-      #    # By default, 'develop' branch should be used
-      #    symphony-kubernetes-deployer-ref: 'develop'
-      #    commit-message: '[AUTO] Source https://github.com/${{ github.repository }}/commit/${{ github.sha }}'
-      #    # Token for checking-out private repository
-      #    # Use a PAT (Personal Access Token) from a user who has write permission on specified repository
-      #    github-token: ${{ secrets.ciToken }}
-      #    commit-user-name: ${{ secrets.commitUserName }}
-      #    commit-user-email: ${{ secrets.commitUserEmail }}
-
       # Following steps are used to update environment specific values file within ${{ inputs.git-ref }} branch of symphony-kubernetes-deployer repository.
       # Following steps will only be executed if the inputs.environments contains the environment's name (i.e. devops, dev, qa, sim, int, prod, pwc, or emea)
       - name: Kubernetes update deployment of DEV environment within ${{ inputs.git-ref }} branch
-        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'dev') }}
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'dev') && steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
@@ -374,7 +357,7 @@ jobs:
           commit-user-email: ${{ secrets.commitUserEmail }}
 
       - name: Kubernetes update deployment of QA environment within ${{ inputs.git-ref }} branch
-        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'qa') }}
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'qa') && steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
@@ -399,7 +382,7 @@ jobs:
           commit-user-email: ${{ secrets.commitUserEmail }}
 
       - name: Kubernetes update deployment of DEVOPS environment within ${{ inputs.git-ref }} branch
-        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'devops') }}
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'devops') && steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
@@ -424,7 +407,7 @@ jobs:
           commit-user-email: ${{ secrets.commitUserEmail }}
 
       - name: Kubernetes update deployment of SIM environment within ${{ inputs.git-ref }} branch
-        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'sim') }}
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'sim') && steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
@@ -449,7 +432,7 @@ jobs:
           commit-user-email: ${{ secrets.commitUserEmail }}
 
       - name: Kubernetes update deployment of INT environment within ${{ inputs.git-ref }} branch
-        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'int') }}
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'int') && steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
@@ -474,7 +457,7 @@ jobs:
           commit-user-email: ${{ secrets.commitUserEmail }}
 
       - name: Kubernetes update deployment of PROD environment within ${{ inputs.git-ref }} branch
-        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'prod') }}
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'prod') && steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
@@ -499,7 +482,7 @@ jobs:
           commit-user-email: ${{ secrets.commitUserEmail }}
 
       - name: Kubernetes update deployment of EMEA environment within ${{ inputs.git-ref }} branch
-        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'emea') }}
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'emea') && steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
@@ -524,7 +507,7 @@ jobs:
           commit-user-email: ${{ secrets.commitUserEmail }}
 
       - name: Kubernetes update deployment of PWC environment within ${{ inputs.git-ref }} branch
-        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'pwc') }}
+        if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'pwc') && steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
