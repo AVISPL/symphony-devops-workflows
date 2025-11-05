@@ -325,12 +325,14 @@ runs:
         echo "Job ID to make Github API call is: $JOB_ID"
 
         # get logs for JOB_ID and push it to file
-        CI_TOKEN="${{ inputs.ciToken }}"
-        curl -L \
+        logs=$(curl -L \
         -H "Accept: application/vnd.github+json" \
-        -H "Authorization: Bearer $CI_TOKEN" \
+        -H "Authorization: Bearer ${{ inputs.ciToken }}" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
-        https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs > workflow_logs.txt
+        https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs)
+        echo "Logs are below:"
+        echo "$logs"
+        echo  $logs > workflow_logs.txt
 
         echo "<br>" >> body.txt
         echo "<br>" >> body.txt
