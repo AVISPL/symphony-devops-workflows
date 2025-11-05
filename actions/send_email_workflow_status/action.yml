@@ -325,7 +325,7 @@ runs:
         echo "Job ID to make Github API call is: $JOB_ID"
         
         # get logs for JOB_ID and push it to file
-        curl -L \
+        curl -sL \
         -H "Accept: application/vnd.github+json" \
         -H "Authorization: Bearer ${{ inputs.ciToken }}" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
