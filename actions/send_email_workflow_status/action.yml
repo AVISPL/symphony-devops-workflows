@@ -55,7 +55,7 @@ runs:
       #      Solution should be generic and avoid hardcoding ob job names
       #      (found examples with "needs.job1.result=='failure'" that need to hardcode job name)
       # Get workflow conclusion (sets env variable WORKFLOW_CONCLUSION)
-      uses: technote-space/workflow-conclusion-action@v2
+      uses: technote-space/workflow-conclusion-action@v3
 
     - name: Prepare email
       shell: bash
@@ -63,7 +63,7 @@ runs:
         # Prepare email
 
         # Status uppercase : SUCCESS / FAILURE (other value is unexpected)
-        status="${WORKFLOW_CONCLUSION}"
+        status="${env.WORKFLOW_CONCLUSION}"
         status="${status^^}"
         echo "Status is: [${status}]"
 
