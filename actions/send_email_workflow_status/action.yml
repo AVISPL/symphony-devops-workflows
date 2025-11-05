@@ -71,9 +71,11 @@ runs:
 
         # Status uppercase : SUCCESS / FAILURE (other value is unexpected)
         #status="${{ env.WORKFLOW_CONCLUSION }}"
-        status = "${{ steps.check-ci.outputs.conclusion }}
+        status="${{ github.event.workflow_run.conclusion }}" 
+        status2="${{ steps.check-ci.outputs.conclusion }}"
         status="${status^^}"
-        echo "Status is: [${status}]"
+        echo "Status1 is: ${status1}"
+        echo "Status is: ${status}"
 
         # Should email be sent ?
         sendEmailOnlyOnFailure="${{inputs.sendEmailOnlyOnFailure}}"
