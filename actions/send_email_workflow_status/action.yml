@@ -308,9 +308,6 @@ runs:
     - name: Append workflow logs to email body
       shell: bash
       run: |
-        - name: Append workflow logs to email body
-      shell: bash
-      run: |
         # get list of jobs that ran within this workflow 
         JOBS_JSON=$(curl -L \
         -H "Accept: application/vnd.github+json" \
