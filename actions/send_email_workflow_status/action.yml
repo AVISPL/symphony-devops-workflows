@@ -56,13 +56,6 @@ runs:
     #  #      (found examples with "needs.job1.result=='failure'" that need to hardcode job name)
     #  # Get workflow conclusion (sets env variable WORKFLOW_CONCLUSION)
     #  uses: technote-space/workflow-conclusion-action@v3
-    - name: Get workflow status
-      id: check-ci
-      uses: LASER-Yi/workflow-status@v0.1.0
-      with:
-        token: ${{ inputs.ciToken }}
-        workflow: ${{ github.workflow }}
-        branch: ${{ github.ref }}
 
     - name: Prepare email
       shell: bash
@@ -72,9 +65,7 @@ runs:
         # Status uppercase : SUCCESS / FAILURE (other value is unexpected)
         #status="${{ env.WORKFLOW_CONCLUSION }}"
         status="${{ github.event.workflow_run.conclusion }}" 
-        status2="${{ steps.check-ci.outputs.conclusion }}"
         status="${status^^}"
-        echo "Status1 is: ${status1}"
         echo "Status is: ${status}"
 
         # Should email be sent ?
