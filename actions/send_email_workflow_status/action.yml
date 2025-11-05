@@ -46,16 +46,23 @@ runs:
     - name: Install jq
       uses: ./.github/symphony-devops-workflows/actions/install_jq
 
+    #- name: Get workflow status
+    #  # TODO security thirdparty action (but recommended by GitHub support)
+    #  #      Check if better way to get workflow status
+    #  #      WARNING: variable job.status provides current job status,
+    #  #      not status of previous jobs in same workflow
+    #  #      Functions such as success() or failure() can ONLY be used in if: conditionals
+    #  #      Solution should be generic and avoid hardcoding ob job names
+    #  #      (found examples with "needs.job1.result=='failure'" that need to hardcode job name)
+    #  # Get workflow conclusion (sets env variable WORKFLOW_CONCLUSION)
+    #  uses: technote-space/workflow-conclusion-action@v3
     - name: Get workflow status
-      # TODO security thirdparty action (but recommended by GitHub support)
-      #      Check if better way to get workflow status
-      #      WARNING: variable job.status provides current job status,
-      #      not status of previous jobs in same workflow
-      #      Functions such as success() or failure() can ONLY be used in if: conditionals
-      #      Solution should be generic and avoid hardcoding ob job names
-      #      (found examples with "needs.job1.result=='failure'" that need to hardcode job name)
-      # Get workflow conclusion (sets env variable WORKFLOW_CONCLUSION)
-      uses: technote-space/workflow-conclusion-action@v3
+      id: check-ci
+      uses: LASER-Yi/workflow-status@v0.1.0
+      with:
+        token: ${{ inputs.ciToken }}
+        workflow: ${{ github.workflow }}
+        branch: ${{ github.ref }}
 
     - name: Prepare email
       shell: bash
@@ -63,7 +70,8 @@ runs:
         # Prepare email
 
         # Status uppercase : SUCCESS / FAILURE (other value is unexpected)
-        status="${{ env.WORKFLOW_CONCLUSION }}"
+        #status="${{ env.WORKFLOW_CONCLUSION }}"
+        status = "${{ steps.check-ci.outputs.conclusion }}
         status="${status^^}"
         echo "Status is: [${status}]"
 
