@@ -64,10 +64,15 @@ runs:
 
         # Status uppercase : SUCCESS / FAILURE (other value is unexpected)
         #status="${{ env.WORKFLOW_CONCLUSION }}"
-        status="${{ github.event.workflow_run.conclusion }}" 
+        repo="${{ github.repository }}"
+        run_id="${{ github.run_id }}"
+        status=$(curl -s -H "Authorization: Bearer ${{ inputs.ciToken }}" \
+        "https://api.github.com/repos/$repo/actions/runs/$run_id" | jq -r '.conclusion')
+        #status="${{ github.event.workflow_run.conclusion }}" 
         status="${status^^}"
-        echo "Status is: ${status}"
+        echo "Status is: $status"
 
+        
         # Should email be sent ?
         sendEmailOnlyOnFailure="${{inputs.sendEmailOnlyOnFailure}}"
         if [[ "true" == "${sendEmailOnlyOnFailure}" && "SUCCESS" == "${status}" ]]; then
