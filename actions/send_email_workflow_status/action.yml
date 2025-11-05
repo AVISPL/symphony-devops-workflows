@@ -338,7 +338,7 @@ runs:
         echo "DETAILED WORKFLOW LOGS ARE LISTED BELOW<br>" >> body.txt
         echo "----------------------------------------------------------------------------<br>" >> body.txt
         # replace new lines with <br>
-        echo "workflow logs are listed belwo"
+        echo "workflow logs are listed below"
         cat workflow_logs.txt
         sed -i '{:q;N;s/\n/<br>/g;t q}' workflow_logs.txt
         cat workflow_logs.txt >> body.txt
