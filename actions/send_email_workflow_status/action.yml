@@ -343,6 +343,9 @@ runs:
         echo "View detailed workflow logs via: https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs"
         sed -i '{:q;N;s/\n/<br>/g;t q}' workflow_logs.txt
         cat workflow_logs.txt >> body.txt
+        
+        echo "what are my permissions"
+        curl -I -H "Authorization: Bearer ${{ inputs.ciToken }}" https://api.github.com/user | grep "x-oauth-scopes"
 
     - name: Send mail
       uses: dawidd6/action-send-mail@v3.12.0
