@@ -57,7 +57,7 @@ runs:
 
         # Status uppercase : SUCCESS / FAILURE (other value is unexpected)
         status="SUCCESS"
-        if ! grep -q "BUILD SUCCESS" "${{ inputs.mvn-output-file }}" || [ "${{ inputs.sonarqube-status }}" != "PASSED" ]; then
+        if ! grep -q "BUILD SUCCESS" "${{ inputs.mvn-output-file }}" || { [ -n "${{ inputs.sonarqube-status }}" ] && [ "${{ inputs.sonarqube-status }}" != "PASSED" ]; }; then
           status="FAILED"
         fi
         echo "Status is: $status"
