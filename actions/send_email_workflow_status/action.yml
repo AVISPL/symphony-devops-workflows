@@ -323,7 +323,7 @@ runs:
         LENGTH=${#JOB_IDs[@]}
         JOB_ID=${JOB_IDs[$LENGTH-1]}
         echo "Job ID to make Github API call is: $JOB_ID"
-        
+        sleep 60
         # get logs for JOB_ID and push it to file
         curl -L \
         -H "Accept: application/vnd.github+json" \
