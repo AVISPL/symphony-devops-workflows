@@ -340,6 +340,7 @@ runs:
         # replace new lines with <br>
         echo "workflow logs are listed below"
         cat workflow_logs.txt
+        echo "View detailed workflow logs via: https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs"
         sed -i '{:q;N;s/\n/<br>/g;t q}' workflow_logs.txt
         cat workflow_logs.txt >> body.txt
 

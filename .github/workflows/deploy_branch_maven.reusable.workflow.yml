@@ -398,36 +398,6 @@ jobs:
         if: ${{ !cancelled() && !failure() && inputs.dependabot-submit-dependencies && inputs.dependabot-submit-dependencies-directory == '' }}
         uses: advanced-security/maven-dependency-submission-action@v4.0.0
 
-      - name: Append workflow logs to email body
-        shell: bash
-        run: |
-          # get list of jobs that ran within this workflow 
-          JOBS_JSON=$(curl -L \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.ciToken }}" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id}}/attempts/${{ github.run_attempt }}/jobs)
-          
-          echo $JOBS_JSON > jobs_response.json
-          echo "List of Jobs are: $JOBS_JSON"
-          
-          # extract "reusable_job_deploy_branch_maven" job ID 
-          JOB_IDs=($(cat jobs_response.json | jq '.jobs[] | select(.name | endswith("reusable_job_deploy_branch_maven")).id'))
-          LENGTH=${#JOB_IDs[@]}
-          JOB_ID=${JOB_IDs[$LENGTH-1]}
-          echo "Job ID to make Github API call is: $JOB_ID"
-          
-          gh api /repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs > workflow_logs.txt
-          
-          echo "<br>" >> body.txt
-          echo "<br>" >> body.txt
-          echo "----------------------------------------------------------------------------<br>" >> body.txt
-          echo "DETAILED WORKFLOW LOGS ARE LISTED BELOW<br>" >> body.txt
-          echo "----------------------------------------------------------------------------<br>" >> body.txt
-          # replace new lines with <br>
-          echo "workflow logs are listed below"
-          cat workflow_logs.txt
-
       - name: Send email workflow status
         if: ${{ !cancelled() }}
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
