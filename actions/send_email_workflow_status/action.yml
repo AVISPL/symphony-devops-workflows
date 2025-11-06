@@ -338,8 +338,8 @@ runs:
         echo "DETAILED WORKFLOW LOGS ARE LISTED BELOW<br>" >> body.txt
         echo "----------------------------------------------------------------------------<br>" >> body.txt
         # replace new lines with <br>
-        echo "To view details workflow logs use following URL to make an API call to Github. NOTE: you must use Bearer authentication with your personal access token:<br>"
-        echo "https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs"
+        echo "To view details workflow logs use following URL to make an API call to Github. NOTE: you must use Bearer authentication with your personal access token:<br>" >> body.txt
+        echo "https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs" >> body.txt
         #sed -i '{:q;N;s/\n/<br>/g;t q}' workflow_logs.txt
         #cat workflow_logs.txt >> body.txt
 
