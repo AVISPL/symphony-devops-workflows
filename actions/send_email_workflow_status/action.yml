@@ -323,7 +323,7 @@ runs:
         LENGTH=${#JOB_IDs[@]}
         JOB_ID=${JOB_IDs[$LENGTH-1]}
         echo "Job ID to make Github API call is: $JOB_ID"
-        sleep 60
+
         # get logs for JOB_ID and push it to file
         curl -L \
         -H "Accept: application/vnd.github+json" \
@@ -338,11 +338,10 @@ runs:
         echo "DETAILED WORKFLOW LOGS ARE LISTED BELOW<br>" >> body.txt
         echo "----------------------------------------------------------------------------<br>" >> body.txt
         # replace new lines with <br>
-        echo "workflow logs are listed below"
-        cat workflow_logs.txt
-        echo "View detailed workflow logs via: https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs"
-        sed -i '{:q;N;s/\n/<br>/g;t q}' workflow_logs.txt
-        cat workflow_logs.txt >> body.txt
+        echo "To view details workflow logs use following URL to make an API call to Github. NOTE: you must use Bearer authentication with your personal access token:<br>"
+        echo "https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs"
+        #sed -i '{:q;N;s/\n/<br>/g;t q}' workflow_logs.txt
+        #cat workflow_logs.txt >> body.txt
 
     - name: Send mail
       uses: dawidd6/action-send-mail@v3.12.0
