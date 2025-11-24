@@ -30,6 +30,10 @@ inputs:
       Path and name of file SonarQube scan results are being extracted from
       Contents of this file will be appended by email sender action to email body it generates
     required: false
+  sonarqube-status:
+    description: 'String that specifies Sonar checks PASSED or FAILED'
+    required: false
+    default: 'PASSED'
   include-sonar-qube-results:
     description: >
       Indicates if SonarQube scan results should be added to the email body
@@ -46,26 +50,17 @@ runs:
     - name: Install jq
       uses: ./.github/symphony-devops-workflows/actions/install_jq
 
-    - name: Get workflow status
-      # TODO security thirdparty action (but recommended by GitHub support)
-      #      Check if better way to get workflow status
-      #      WARNING: variable job.status provides current job status,
-      #      not status of previous jobs in same workflow
-      #      Functions such as success() or failure() can ONLY be used in if: conditionals
-      #      Solution should be generic and avoid hardcoding ob job names
-      #      (found examples with "needs.job1.result=='failure'" that need to hardcode job name)
-      # Get workflow conclusion (sets env variable WORKFLOW_CONCLUSION)
-      uses: technote-space/workflow-conclusion-action@v2
-
     - name: Prepare email
       shell: bash
       run: |
         # Prepare email
 
         # Status uppercase : SUCCESS / FAILURE (other value is unexpected)
-        status="${WORKFLOW_CONCLUSION}"
-        status="${status^^}"
-        echo "Status is: [${status}]"
+        status="SUCCESS"
+        if ! grep -q "BUILD SUCCESS" "${{ inputs.mvn-output-file }}" || { [ -n "${{ inputs.sonarqube-status }}" ] && [ "${{ inputs.sonarqube-status }}" != "PASSED" ]; }; then
+          status="FAILED"
+        fi
+        echo "Status is: $status"
 
         # Should email be sent ?
         sendEmailOnlyOnFailure="${{inputs.sendEmailOnlyOnFailure}}"
@@ -263,32 +258,6 @@ runs:
         echo ""
         echo ""
 
-    - name: Extract workflow logs
-      shell: bash
-      run: |
-        # get list of jobs that ran within this workflow 
-        JOBS_JSON=$(curl -L \
-        -H "Accept: application/vnd.github+json" \
-        -H "Authorization: Bearer ${{ inputs.ciToken }}" \
-        -H "X-GitHub-Api-Version: 2022-11-28" \
-        https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id}}/attempts/${{ github.run_attempt }}/jobs)
-        
-        echo $JOBS_JSON > jobs_response.json
-        echo "List of Jobs are: $JOBS_JSON"
-        
-        # extract "reusable_job_deploy_branch_maven" job ID 
-        JOB_IDs=($(cat jobs_response.json | jq '.jobs[] | select(.name | endswith("reusable_job_deploy_branch_maven")).id'))
-        LENGTH=${#JOB_IDs[@]}
-        JOB_ID=${JOB_IDs[$LENGTH-1]}
-        echo "Job ID to make Github API call is: $JOB_ID"
-        
-        # get logs for JOB_ID and push it to file
-        curl -L \
-        -H "Accept: application/vnd.github+json" \
-        -H "Authorization: Bearer ${{ inputs.ciToken }}" \
-        -H "X-GitHub-Api-Version: 2022-11-28" \
-        https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs > workflow_logs.txt
-
     - name: Append SonarQube logs to email body
       if: ${{ inputs.include-sonar-qube-results == 'true' }}
       shell: bash
@@ -305,14 +274,44 @@ runs:
     - name: Append workflow logs to email body
       shell: bash
       run: |
+        # get list of jobs that ran within this workflow 
+        JOBS_JSON=$(curl -L \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer ${{ inputs.ciToken }}" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id}}/attempts/${{ github.run_attempt }}/jobs)
+
+        echo $JOBS_JSON > jobs_response.json
+        echo "List of Jobs are: $JOBS_JSON"
+
+        # extract "reusable_job_deploy_branch_maven" job ID 
+        JOB_IDs=($(cat jobs_response.json | jq '.jobs[] | select(.name | endswith("reusable_job_deploy_branch_maven")).id'))
+        LENGTH=${#JOB_IDs[@]}
+        JOB_ID=${JOB_IDs[$LENGTH-1]}
+
+        # NOTE: GH started returning 404 not found when we try to make API call to download detailed workflow logs at runtime. 
+        #       Commenting out following code (and 2 lines at bottom of this step) in case they change their minds in the future and allow it.
+        ## get logs for JOB_ID and push it to file
+        #curl -L \
+        #-H "Accept: application/vnd.github+json" \
+        #-H "Authorization: Bearer ${{ inputs.ciToken }}" \
+        #-H "X-GitHub-Api-Version: 2022-11-28" \
+        #https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs \
+        #-o workflow_logs.txt
+
         echo "<br>" >> body.txt
         echo "<br>" >> body.txt
         echo "----------------------------------------------------------------------------<br>" >> body.txt
         echo "DETAILED WORKFLOW LOGS ARE LISTED BELOW<br>" >> body.txt
         echo "----------------------------------------------------------------------------<br>" >> body.txt
+        echo "To view detailed workflow logs use following URL to make an API call to Github.<br>" >> body.txt
+        echo "NOTES:<br>" >> body.txt
+        echo "(1) You must use Bearer authentication with your personal access token.<br>" >> body.txt
+        echo "(2) Following link expires in 90 days, and will return 404 NOT_FOUND if used after it has expired.<br>" >> body.txt
+        echo "https://api.github.com/repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs" >> body.txt
         # replace new lines with <br>
-        sed -i '{:q;N;s/\n/<br>/g;t q}' workflow_logs.txt
-        cat workflow_logs.txt >> body.txt
+        #sed -i '{:q;N;s/\n/<br>/g;t q}' workflow_logs.txt
+        #cat workflow_logs.txt >> body.txt
 
     - name: Send mail
       uses: dawidd6/action-send-mail@v3.12.0

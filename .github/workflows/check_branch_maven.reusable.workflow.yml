@@ -98,27 +98,8 @@ on:
         required: true
 env:
   SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
+  AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
 jobs:
-  run_workflow_decision:
-    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
-    outputs:
-      CONTINUE: ${{ steps.continue.outputs.continue }}
-    steps:
-      - name: Should workflow be executed
-        id: continue
-        shell: bash
-        env:
-          AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
-        run: |
-          commit_message="${{ github.event.head_commit.message }}"
-          commit_message=$(echo "$commit_message" | sed 's/\([^\\]\)"/\1\\"/g')
-          if [[ "$AUTO_RELEASE_COMMIT_ACTOR" = "${{ github.actor }}" ]] && [[ $commit_message == "[AUTO]"* ]]; then
-            echo "Aborting workflow. Commit was performed by automated actor with [AUTO] in commit message."
-            echo "continue=false" >> $GITHUB_OUTPUT
-          else
-            echo "Executing workflow"
-            echo "continue=true" >> $GITHUB_OUTPUT
-          fi
   reusable_job_check_branch_maven:
     # Permissions are required for actions that need to do changes on repository
     # (change files or git operations) or which require access to some GitHub APIs
@@ -136,12 +117,28 @@ jobs:
     # so need this trick with multiple variables
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
 
-    needs: [run_workflow_decision]
-    if: ${{ needs.run_workflow_decision.outputs.continue == 'true' }}
     steps:
+      - name: Should workflow be executed
+        id: check
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          commit_message=$(echo "$commit_message" | sed 's/\([^\\]\)"/\1\\"/g')
+          if [[ "$AUTO_RELEASE_COMMIT_ACTOR" = "${{ github.actor }}" ]] && [[ $commit_message == "[AUTO]"* ]]; then
+            echo "Aborting workflow. Commit was performed by automated actor with [AUTO] in commit message."
+            echo "continue=false" >> $GITHUB_OUTPUT
+          else
+            echo "Executing workflow"
+            echo "continue=true" >> $GITHUB_OUTPUT
+          fi
+      # we have to remove content of all com.symphony packages to prevent of using
+      # leftover jars of builds that aren't merged yet
+      - name: Clean local .m2 cache
+        if: ${{ steps.check.outputs.continue == 'true' }}
+        run:  rm -rfv "$HOME/.m2/repository/com/avispl" || true
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
       - name: Git checkout current repository/branch
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: actions/checkout@v4.1.1
         with:
           # TODO HOUSEKEEPING check if fetch-depth 0 is really needed (should not
@@ -155,6 +152,7 @@ jobs:
       # (feature not available yet)
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: actions/checkout@v4.1.1
         with:
           repository: AVISPL/symphony-devops-workflows
@@ -164,27 +162,32 @@ jobs:
           path: ./.github/symphony-devops-workflows
 
       - name: Setup JDK
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/setup_jdk
         with:
           distribution: 'custom'
 
       - name: Setup Maven settings
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/setup_maven_settings
         with:
           nexus-user: ${{ secrets.nexusUser }}
           nexus-password: ${{ secrets.nexusPassword }}
 
       - name: Get project version
+        if: ${{ steps.check.outputs.continue == 'true' }}
         id: get_project_version
         uses: ./.github/symphony-devops-workflows/actions/maven_get_project_version
         with:
           pom-xml-file: ${{ inputs.pom-xml-file }}
 
       - name: Compute build number
+        if: ${{ steps.check.outputs.continue == 'true' }}
         id: compute_build_number
         uses: ./.github/symphony-devops-workflows/actions/build_number
 
       - name: Validate docker tags
+        if: ${{ steps.check.outputs.continue == 'true' }}
         id: validate_docker_tags
         uses: ./.github/symphony-devops-workflows/actions/tags_validate_clean
         with:
@@ -192,6 +195,7 @@ jobs:
           allowEmpty: 'false'
 
       - name: Maven build
+        if: ${{ steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/maven_build_and_tag
         with:
           # Maven options
@@ -202,14 +206,14 @@ jobs:
           git_tag: ''
 
       - name: SonarQube scan
-        if: ${{ inputs.run-sonar-qube-scan }}
+        if: ${{ inputs.run-sonar-qube-scan && steps.check.outputs.continue == 'true' }}
         env:
           SONAR_TOKEN: ${{ secrets.sonarToken }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Duser.timezone=UTC
 
       # Check the Quality Gate status.
       - name: SonarQube quality gate check
-        if: ${{ inputs.run-sonar-qube-scan }}
+        if: ${{ inputs.run-sonar-qube-scan && steps.check.outputs.continue == 'true' }}
         id: sonarqube-quality-gate-check
         uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
         with:
@@ -220,7 +224,7 @@ jobs:
          SONAR_TOKEN: ${{ secrets.sonarToken }}
 
       - name: SonarQube quality gate output
-        if: ${{ inputs.run-sonar-qube-scan && always() }} 
+        if: ${{ inputs.run-sonar-qube-scan && always() && steps.check.outputs.continue == 'true' }} 
         shell: bash
         run: |
           # extract SonarQube dashboard URL from previous step's output and print it in workflow logs to allow for easy access to results
@@ -230,13 +234,13 @@ jobs:
 
       # Unzip war file when module-name input is specified (reserved step for modules with "war" packaging)
       - name: Unzip war file if module-name is specified
-        if: ${{ inputs.module-name != '' }}
+        if: ${{ inputs.module-name != '' && steps.check.outputs.continue == 'true' }}
         run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
       # Docker
       - name: Docker build tag push
         # Run docker build only when a docker file has been specified (not empty value)
-        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
         uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
         with:
           docker-file: ${{ inputs.docker-file }}

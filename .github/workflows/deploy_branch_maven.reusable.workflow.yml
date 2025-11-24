@@ -181,6 +181,10 @@ jobs:
     # so need this trick with multiple variables
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
     steps:
+      # we have to remove content of all com.symphony packages to prevent of using
+      # leftover jars of builds that aren't merged yet
+      - name: Clean local .m2 cache
+        run:  rm -rfv "$HOME/.m2/repository/com/avispl" || true
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
       - name: Git checkout current repository/branch
@@ -401,6 +405,7 @@ jobs:
           builderSmtpHost: ${{ secrets.builderSmtpHost }}
           mvn-output-file: ${{ inputs.mvn-output-file }}
           sonarqube-output-file: ./sonarqube_results.txt
+          sonarqube-status: ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}
           include-sonar-qube-results: ${{ inputs.run-sonar-qube-scan }}
           emailTo: ${{ secrets.emailTo }}
           emailFrom: ${{ secrets.emailFrom }}
