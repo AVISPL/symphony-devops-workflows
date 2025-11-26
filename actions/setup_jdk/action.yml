@@ -1,4 +1,4 @@
-# Copyright (c) 2022 AVI-SPL Inc.
+# Copyright (c) 2022-2025 AVI-SPL Inc.
 # All Rights Reserved.
 #
 name: 'Setup JDK'
@@ -8,7 +8,7 @@ inputs:
   java-version:
     description: 'Java version'
     required: false
-    default: '22.0.2'
+    default: '25.0.1'
   distribution:
     description: 'Distribution (e.g. "adopt")'
     required: false
@@ -16,17 +16,17 @@ inputs:
   downloadUrl:
     description: 'URL to download JDK archive. Should be used if `distribution` is custom.'
     required: false
-    default: "https://download.java.net/java/GA/jdk22.0.2/c9ecb94cd31b495da20a27d4581645e8/9/GPL/openjdk-22.0.2_linux-aarch64_bin.tar.gz"
+    default: "https://download.java.net/java/GA/jdk25.0.1/2fbf10d8c78e40bd87641c434705079d/8/GPL/openjdk-25.0.1_linux-aarch64_bin.tar.gz"
   checkSum:
     description: 'SHA256 sum of archive.'
     required: false
-    default: "41536f115668308ecf4eba92aaf6acaeb0936225828b741efd83b6173ba82963"
+    default: "c5732ae191151195fbd2cfb7aef7675bf2c37cfa8bfd06f8330b6f04d4eb03a4"
 
 runs:
   using: "composite"
   steps:
     - name: Set up JDK
-      uses: actions/setup-java@v4.2.1
+      uses: actions/setup-java@v5.0.0
       # this is needed for backward compatibility, download distributions 
       # supported by actions/setup-java.
       # `custom` is used to download actual openjdk
