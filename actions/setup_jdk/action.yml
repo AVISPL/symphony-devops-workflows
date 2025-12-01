@@ -16,11 +16,11 @@ inputs:
   downloadUrl:
     description: 'URL to download JDK archive. Should be used if `distribution` is custom.'
     required: false
-    default: "https://download.java.net/java/GA/jdk25.0.1/2fbf10d8c78e40bd87641c434705079d/8/GPL/openjdk-25.0.1_linux-aarch64_bin.tar.gz"
+    default: "https://download.java.net/java/GA/jdk25.0.1/2fbf10d8c78e40bd87641c434705079d/8/GPL/openjdk-25.0.1_linux-x64_bin.tar.gz"
   checkSum:
     description: 'SHA256 sum of archive.'
     required: false
-    default: "c5732ae191151195fbd2cfb7aef7675bf2c37cfa8bfd06f8330b6f04d4eb03a4"
+    default: "514db33011f2c81fa9c589f7712735b42b9d2575db8f817d3be40a92d2ef7ad8"
 
 runs:
   using: "composite"
