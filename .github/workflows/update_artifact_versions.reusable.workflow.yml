@@ -121,8 +121,8 @@ jobs:
                 # first member being the artifact's name, and second member being the artifact's version
                 IFS=':' read -ra artifact_version <<< "$module"
                 if [[ "${artifact_version[0]}" == "symphony-shared-parent" ]]; then
-                   # handling symphony-shared-parent. This module is parent to all Symphony modules, and if its name is specified in modules.txt
-                   # following maven command will update its verion. 
+                   # Handling symphony-shared-parent. This module is parent to all Symphony components, and if it is one of the versionsed modules 
+                   # within modules.txt, following maven command will update its version.
                    # NOTE 1: Following command only updates the version if it is the latest in Nexus
                    # NOTE 2: Following command will not update anything if no parent exists in the pom.xml file 
                    mvn versions:update-parent -DparentVersion=${artifact_version[1]}
@@ -223,7 +223,7 @@ jobs:
                 # set version of parent modules (aka inputs.symphony-module-name)
                 sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
              else
-                # symphony-dal-shared artifactId is syphony-dal-commons, therefore following custom code will make its version is not left blank in modules.txt
+                # The artifactId for symphony-dal-shared is syphony-dal-commons, therefore following custom code will make sure its version is not left blank in modules.txt
                 if [ "${{ inputs.symphony-module-name }}" = "symphony-dal-shared" ]; then
                    sed -i "s/${{ inputs.symphony-module-name }}\($\)/${{ inputs.symphony-module-name }}:$version/g" modules.txt
                 fi
