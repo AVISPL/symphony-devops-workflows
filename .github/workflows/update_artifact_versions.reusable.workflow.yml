@@ -122,7 +122,9 @@ jobs:
                 IFS=':' read -ra artifact_version <<< "$module"
                 if [[ "${artifact_version[0]}" == "symphony-shared-parent" ]]; then
                    # handling symphony-shared-parent. This module is parent to all Symphony modules, and if its name is specified in modules.txt
-                   # following maven command will update its verion. NOTE: following command only updates the version if it is the latest in Nexus
+                   # following maven command will update its verion. 
+                   # NOTE 1: Following command only updates the version if it is the latest in Nexus
+                   # NOTE 2: Following command will not update anything if no parent exists in the pom.xml file 
                    mvn versions:update-parent -DparentVersion=${artifact_version[1]}
                 else
                    VERSION="${artifact_version[0]}.version"
