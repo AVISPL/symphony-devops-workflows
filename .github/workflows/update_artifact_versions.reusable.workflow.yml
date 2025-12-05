@@ -120,17 +120,23 @@ jobs:
                 # Following line will generate an array called "artifact_version" (split by ":") with
                 # first member being the artifact's name, and second member being the artifact's version
                 IFS=':' read -ra artifact_version <<< "$module"
-                VERSION="${artifact_version[0]}.version"
-                # Following while loop will locate all pom.xmls within a Github repository and verifies if it contains
-                # modules being updated that require to be updated. 
-                while IFS= read -d '' -r pom; do
-                   # only modify pom.xml if the dependency exists
-                   if grep -q "${VERSION}" $pom; then
-                      echo updating $pom/${VERSION} to ${artifact_version[1]}
-                      # run maven command to update the version of dependent module
-                      ${MAVEN_COMMAND_STARTER} -f $pom -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
-                   fi
-                done < <(find . -name pom.xml -not -path "*/target/*" -print0)
+                if [[ "${artifact_version[0]}" == "symphony-shared-parent" ]]; then
+                   # handling symphony-shared-parent. This module is parent to all Symphony modules, and if its name is specified in modules.txt
+                   # following maven command will update its verion. NOTE: following command only updates the version if it is the latest in Nexus
+                   mvn versions:update-parent -DparentVersion=${artifact_version[1]}
+                else
+                   VERSION="${artifact_version[0]}.version"
+                   # Following while loop will locate all pom.xmls within a Github repository and verifies if it contains
+                   # modules being updated that require to be updated. 
+                   while IFS= read -d '' -r pom; do
+                      # only modify pom.xml if the dependency exists
+                      if grep -q "${VERSION}" $pom; then
+                         echo updating $pom/${VERSION} to ${artifact_version[1]}
+                         # run maven command to update the version of dependent module
+                         ${MAVEN_COMMAND_STARTER} -f $pom -Dproperty=${VERSION} -DnewVersion=${artifact_version[1]} -q
+                      fi
+                   done < <(find . -name pom.xml -not -path "*/target/*" -print0)
+                fi
              fi
           done
           # determine if pom.xml file was updated by checking git status and verifying pom.xml is dirty
