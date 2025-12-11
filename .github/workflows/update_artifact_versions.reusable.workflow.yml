@@ -125,7 +125,7 @@ jobs:
                    # within modules.txt, following maven command will update its version.
                    # NOTE 1: Following command only updates the version if it is the latest in Nexus
                    # NOTE 2: Following command will not update anything if no parent exists in the pom.xml file 
-                   mvn versions:update-parent -DparentVersion=${artifact_version[1]}
+                   mvn versions:update-parent -DskipResolution=true -DparentVersion=${artifact_version[1]}
                 else
                    VERSION="${artifact_version[0]}.version"
                    # Following while loop will locate all pom.xmls within a Github repository and verifies if it contains
