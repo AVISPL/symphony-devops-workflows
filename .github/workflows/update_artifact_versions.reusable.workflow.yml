@@ -162,6 +162,7 @@ jobs:
           commit-user-email: ${{ secrets.commitUserEmail }}
 
       - name: Release AVISPL/${{ inputs.symphony-module-name }}
+        if: ${{ startsWith(inputs.branch, 'release/') }}
         id: release-step
         uses: the-actions-org/workflow-dispatch@v4
         with:
