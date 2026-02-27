@@ -12,10 +12,6 @@ inputs:
   repository:
     description: 'The repository to be checked out, e.g. "AVSPL/myrepo"'
     required: true
-  git-ref:
-    description: 'Reference (revision) to be checked out from specified  repository. E.g. ''develop'''
-    required: false
-    default: 'develop'
   github-token:
     description: >
       GitHub secret token to be provided by caller
@@ -58,11 +54,10 @@ runs:
   steps:
       # Checkout specified repository/ref
       - name: Git checkout repository/branch
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v6.0.2
         with:
           # Repository to be checked out
           repository: ${{ inputs.repository }}
-          ref: ${{ inputs.git-ref }}
           token: ${{ inputs.github-token }}
           # Relative path under $GITHUB_WORKSPACE to place the repository
           path: ${{ inputs.workspace-checkout-dir }}

@@ -94,7 +94,7 @@ jobs:
       # (feature not available yet)
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v6.0.2
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
@@ -109,7 +109,6 @@ jobs:
         uses: ./.github/symphony-devops-workflows/actions/yaml_dummy_update_file_commit_push
         with:
           repository: ${{ matrix.repository }}
-          git-ref: 'develop'
           yaml-file: '.github/dependabot.yml'
           workspace-checkout-dir: '${{ matrix.repository }}-tmp'
           # Avoid issues with existing temporary directory in runner workspace
