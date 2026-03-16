@@ -44,7 +44,6 @@ runs:
       id: docker_build_tag_push
       run: |
         echo "Docker build tag push"
-        # WARNING need to use sudo to run docker commands
 
         # Ensure docker-file has been specified
         if [[ -z "${{ inputs.docker-file }}" ]]; then
@@ -52,12 +51,9 @@ runs:
           exit 1
         fi
 
-        # TODO non self-hosted runner - handle credentials to private docker registry
-        # TODO non self-hosted runner - test if using sudo is OK
-
         # Ensure docker cli is available
         echo "Docker version:"
-        sudo docker version --format '{{json .}}'
+        docker version --format '{{json .}}'
         echo
 
         # WARNING : Dockerfile might not be in current directory
@@ -102,11 +98,11 @@ runs:
           # Build and tag
           echo "Docker build file [${{ inputs.docker-file }}]..."
 
-          echo Running: sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
-          sudo docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
+          echo Running: docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
+          docker build -f "${{ inputs.docker-file }}" -t "${FIRST_TAG}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
 
           # Docker push
-          sudo docker push "${FIRST_TAG}"
+          docker push "${FIRST_TAG}"
           echo "DOCKER_PUSHED=true" >> $GITHUB_OUTPUT
 
           # Re-tag and push other tags
@@ -115,18 +111,18 @@ runs:
             CURRENT_TAG="${IMAGE_TAG_PREFIX}:${TAGS_ARRAY[$i]}"
             #
             echo "Adding tag [${CURRENT_TAG}]..."
-            sudo docker tag "${FIRST_TAG}" "${CURRENT_TAG}"
+            docker tag "${FIRST_TAG}" "${CURRENT_TAG}"
             #
             echo "Pushing tag [${CURRENT_TAG}]..."
-            sudo docker push "${CURRENT_TAG}"
+            docker push "${CURRENT_TAG}"
             #
             echo "Tag [${CURRENT_TAG}] DONE"
           done
         else
           # Build only
           echo "Docker build file [${{ inputs.docker-file }}]..."
-          echo Running: sudo docker build -f "${{ inputs.docker-file }}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
-          sudo docker build -f "${{ inputs.docker-file }}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
+          echo Running: docker build -f "${{ inputs.docker-file }}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
+          docker build -f "${{ inputs.docker-file }}" ${{ inputs.docker-build-other-options }} "${DOCKERFILE_DIR}"
           echo "DOCKER_PUSHED=false" >> $GITHUB_OUTPUT
         fi
 

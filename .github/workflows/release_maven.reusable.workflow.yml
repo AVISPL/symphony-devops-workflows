@@ -332,10 +332,10 @@ jobs:
           username: ${{ secrets.dockerUser }}
           password: ${{ secrets.dockerPassword }}
 
-      - name: Setup buildx
-        # Run docker build only when a docker file has been specified (not empty value)
-        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
-        uses: docker/setup-buildx-action@v4
+      #- name: Setup buildx
+      #  # Run docker build only when a docker file has been specified (not empty value)
+      #  if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
+      #  uses: docker/setup-buildx-action@v4
 
       # Docker
       - name: Docker build
