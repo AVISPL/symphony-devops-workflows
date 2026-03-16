@@ -125,7 +125,13 @@ on:
           with correct permissions
           It must be a GitHub PAT (Personal Access Token) with read and write authorizations
           on the GitHub repositories to be read/updated
-        required: false
+        required: true
+      dockerUser:
+        description: Username of user with access to harbor registry to manage respective images
+        required: true
+      dockerPassword: 
+        description: Password of user with access to harbor registry to manage respective images
+        required: true
 env:
   AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
 jobs:
@@ -322,7 +328,7 @@ jobs:
         uses: docker/login-action@v4
         with:
           registry: registry.vnocsymphony.com
-          username: ${{ secrets.dockerLogin }}
+          username: ${{ secrets.dockerUser }}
           password: ${{ secrets.dockerPassword }}
 
       - name: Docker configuration test step
