@@ -164,11 +164,7 @@ jobs:
             echo "Executing workflow"
             echo "continue=true" >> $GITHUB_OUTPUT
           fi
-      # we have to remove content of all com.symphony packages to prevent of using
-      # leftover jars of builds that aren't merged yet
-      - name: Clean local .m2 cache
-        if: ${{ steps.check.outputs.continue == 'true' }}
-        run:  rm -rfv "$HOME/.m2/repository/com/avispl" || true
+
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
       - name: Git checkout
@@ -332,17 +328,12 @@ jobs:
           username: ${{ secrets.dockerUser }}
           password: ${{ secrets.dockerPassword }}
 
-      #- name: Setup buildx
-      #  # Run docker build only when a docker file has been specified (not empty value)
-      #  if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
-      #  uses: docker/setup-buildx-action@v4
-
       # Docker
       - name: Docker build
         id: docker_build_tag_push
         # Run docker build only when a docker file has been specified (not empty value)
         if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
+        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push_no_sudo
         with:
           docker-file: ${{ inputs.docker-file }}
           docker-tag-push: 'true'
