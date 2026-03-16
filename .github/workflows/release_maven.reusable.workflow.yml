@@ -317,6 +317,20 @@ jobs:
         if: ${{ inputs.module-name != '' && steps.check.outputs.continue == 'true' }}
         run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
+      - name: Docker configuration
+        # Run docker build only when a docker file has been specified (not empty value)
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
+        run: |
+          #docker login userid / password
+          cd ~/
+          echo "printing all items under home:"
+          ls -al
+          cd .docker/
+          echo "printing all items under .docker:"
+          ls -al
+          echo "cat config.json"
+          cat config.json 
+
       # Docker
       - name: Docker build
         id: docker_build_tag_push
