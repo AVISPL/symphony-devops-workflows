@@ -332,7 +332,7 @@ jobs:
           password: ${{ secrets.dockerPassword }}
 
       - name: Test base image pull
-        if: ${{ inputs.module-name != '' && steps.check.outputs.continue == 'true' }}
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
         run: docker pull registry.vnocsymphony.com/base_images/debian-jdk:latest
 
       # Docker
