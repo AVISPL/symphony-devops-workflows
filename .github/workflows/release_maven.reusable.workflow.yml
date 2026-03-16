@@ -322,6 +322,7 @@ jobs:
         if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
         run: |
           #docker login userid / password
+          echo "Bu1Ld3r!!" | docker login registry.vnocsymphony.com --username "builder" --password-stdin
           cd ~/
           echo "printing all items under home:"
           ls -al
