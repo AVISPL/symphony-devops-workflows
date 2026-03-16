@@ -317,12 +317,17 @@ jobs:
         if: ${{ inputs.module-name != '' && steps.check.outputs.continue == 'true' }}
         run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
-      - name: Docker configuration
-        # Run docker build only when a docker file has been specified (not empty value)
+      - name: Login to Symphony Harbor Docker Registry
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
+        uses: docker/login-action@v4
+        with:
+          registry: registry.vnocsymphony.com
+          username: ${{ secrets.dockerLogin }}
+          password: ${{ secrets.dockerPassword }}
+
+      - name: Docker configuration test step
         if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
         run: |
-          #docker login userid / password
-          echo "Bu1Ld3r!!" | docker login registry.vnocsymphony.com --username "builder" --password-stdin
           cd ~/
           echo "printing all items under home:"
           ls -al
