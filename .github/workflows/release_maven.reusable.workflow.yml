@@ -331,17 +331,9 @@ jobs:
           username: ${{ secrets.dockerUser }}
           password: ${{ secrets.dockerPassword }}
 
-      - name: Docker configuration test step
-        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
-        run: |
-          cd ~/
-          echo "printing all items under home:"
-          ls -al
-          cd .docker/
-          echo "printing all items under .docker:"
-          ls -al
-          echo "cat config.json"
-          cat config.json 
+      - name: Test base image pull
+        if: ${{ inputs.module-name != '' && steps.check.outputs.continue == 'true' }}
+        run: docker pull registry.vnocsymphony.com/base_images/debian-jdk:latest
 
       # Docker
       - name: Docker build
