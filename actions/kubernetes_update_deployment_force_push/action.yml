@@ -1,0 +1,185 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+# Set docker image to be used for given microservice with provided one
+# by updating adequate Kubernetes file descriptor
+# This action checks-out the deployment repository, updates descriptor (yaml) file
+# and pushes the change to GitHub
+# WARNING: only updates descriptor for environment that is passed in
+# WARNING: this action is only used by the Symphony's release workflow, as the release workflows are now
+# able to run in parallel, we need to force push updating of docker image tag in symphony-kubernetes-deployer's values files. 
+# The force push allows multiple workflows to run in parallel, and update values files at the same time without workflow failing on us.
+# Prerequisites :
+# - GitHub actions from AVI-SPL private repository must be available in local workspace directory
+name: 'Kubernetes update microservice Docker image force push'
+description: >
+  Set docker image to be used for given microservice with provided one
+  by updating adequate Kubernetes file descriptor
+
+inputs:
+  # TODO rename symphony-microservice-name to project-name
+  symphony-microservice-name:
+    description: >
+      Name of the microservice to be updated.
+      Used to find adequate file descriptor to be updated.
+      E.g. 'symphony-audit'
+    required: true
+  docker-image:
+    description: >
+      New docker image value to be replaced in descriptor file
+      E.g. "registry.vnocsymphony.com/symphony-microservices/symphony-notifications-email:1.1.0-SNAPSHOT.2205041703"
+    required: true
+  fail-if-no-file-change:
+    description: >
+      When "true", makes the action fail when replacement causes no file change
+      (which would make an empty commit)
+      Otherwise, action detects that there is nothing to commit and continues without
+      an error
+    default: 'true'
+    required: false
+  workspace-checkout-dir:
+    description: >
+     Path where to checkout the deployment repository. Relative path to current project''s workspace root directory,
+     without leading "./" (for some reason this breaks replacement). E.g. "localcheckout"
+    required: true
+  symphony-kubernetes-deployer-ref:
+    description: 'Reference (revision) to Kubernetes deployment repository (branch or tag) to be updated. E.g. ''develop'''
+    required: false
+    default: 'develop'
+  commit-message:
+    description: 'Git commit message'
+    required: true
+  github-token:
+    description: >
+      GitHub secret token to be provided by caller
+      Necessary for pushing to Git updated deployment files since it is a private repository
+      Use a PAT (Personal Access Token) from a user who has write permission on deployment repository
+    required: true
+  commit-user-name:
+    description: User to be used as Git committer
+    required: true
+  commit-user-email:
+    description: User email to be used as Git committer
+    required: true
+  environment:
+    description: Symphony environment values file is being updated for
+    required: false
+    default: 'dev'
+runs:
+  using: "composite"
+  steps:
+    # Compute paths to file to be reused as "global variables"
+    - name: Compute paths
+      id: compute_paths
+      run: |
+        echo "Compute paths"
+        CHECKOUT_DIR="${{ inputs.workspace-checkout-dir }}"
+        # Path is relative to the Kubernetes deployer repository's root directory
+        DESCRIPTOR_FILE_NAME="symphony/charts/${{ inputs.symphony-microservice-name }}/values-${{ inputs.environment }}.yaml"
+        FILENAME_RELATIVE_PATH="${CHECKOUT_DIR}/${DESCRIPTOR_FILE_NAME}"
+        FILENAME_ABSOLUTE_PATH="${GITHUB_WORKSPACE}/${FILENAME_RELATIVE_PATH}"
+        #
+        echo "CHECKOUT_DIR: [${CHECKOUT_DIR}]"
+        echo "DESCRIPTOR_FILE_NAME: [${DESCRIPTOR_FILE_NAME}]"
+        echo "FILENAME_RELATIVE_PATH: [${FILENAME_RELATIVE_PATH}]"
+        echo "FILENAME_ABSOLUTE_PATH: [${FILENAME_ABSOLUTE_PATH}]"
+        #
+        echo "CHECKOUT_DIR=${CHECKOUT_DIR}" >> $GITHUB_OUTPUT
+        echo "DESCRIPTOR_FILE_NAME=${DESCRIPTOR_FILE_NAME}" >> $GITHUB_OUTPUT
+        echo "FILENAME_RELATIVE_PATH=${FILENAME_RELATIVE_PATH}" >> $GITHUB_OUTPUT
+        echo "FILENAME_ABSOLUTE_PATH=${FILENAME_ABSOLUTE_PATH}" >> $GITHUB_OUTPUT
+      shell: bash
+
+    # Checkout the Git repository with Kubernetes deployment descriptors
+    # into local workspace directory
+    - name: Checkout Kubernetes deployer repository
+      uses: actions/checkout@v4.1.1
+      with:
+        # Repository to be checked out
+        repository: 'AVISPL/symphony-kubernetes-deployer'
+        # Select revision
+        ref: '${{ inputs.symphony-kubernetes-deployer-ref }}'
+        token: '${{ inputs.github-token }}'
+        # Indicate where to check out project to. Relative path under $GITHUB_WORKSPACE
+        path: "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
+        # Force clean to avoid leftover changes from previous runs in current workspace
+        clean: 'true'
+
+    - name: Show docker image value before change
+      run: |
+        echo "Value BEFORE in ${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}:"
+        grep 'tag: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
+      shell: bash
+
+    # Replace in file
+    - name: Replace docker image in file
+      uses: jacobtomlinson/gha-find-replace@v2
+      with:
+        find: "tag: .*"
+        replace: "tag: ${{ inputs.docker-image }}"
+        # File to replace into
+        include: "${{ steps.compute_paths.outputs.FILENAME_RELATIVE_PATH }}"
+        regex: true
+
+    - name: Show docker image value after change
+      run: |
+        echo "Value AFTER in ${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}:"
+        grep 'tag: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
+      shell: bash
+
+    # TODO git commit and push - move to separate action ?
+    #   (ensures same options are used in all projects)
+    # Git commit and push
+    # Note: many options are possible, see action documentation
+    #   https://github.com/marketplace/actions/git-auto-commit
+    #   https://github.com/stefanzweifel/git-auto-commit-action
+    - uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        # Local file path to the repository
+        repository: "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
+
+        # Git commit message
+        commit_message: '${{ inputs.commit-message }}'
+        commit_user_name: ${{ inputs.commit-user-name }}
+        commit_user_email: ${{ inputs.commit-user-email }}
+        branch: '${{ inputs.symphony-kubernetes-deployer-ref }}'
+        # commit_author - Do NOT specify value and use default action behaviour
+        #   "commit author defaults to author of the commit that triggered the run"
+        #   Author in GitHub will look like:
+        #   SebastienB-AVISPL authored and AVISymphonyDev committed
+
+        # Optional. Options used by `git-commit`.
+        # See https://git-scm.com/docs/git-commit#_options
+        # Git Sign-off contents is created using the "commit_*" options from this action call
+        commit_options: '--no-verify --signoff'
+
+        # Optional glob pattern of files which should be added to the commit
+        # Defaults to all (.)
+        # See the `pathspec`-documentation for git
+        # - https://git-scm.com/docs/git-add#Documentation/git-add.txt-ltpathspecgt82308203
+        # - https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
+        # Specify file path to ensure no unwanted files are committed/pushed by mistake
+        # WARNING: file path is relative to repository (see repository parameter)
+        file_pattern: ${{ steps.compute_paths.outputs.DESCRIPTOR_FILE_NAME }}
+
+        # Optional. Option used by `git-status` to determine if the repository is
+        # dirty. See https://git-scm.com/docs/git-status#_options
+        status_options: '--untracked-files=no'
+
+        # When "true", makes the action fail when replacement causes no file change
+        # (which would make an empty commit)
+        skip_dirty_check: ${{ inputs.fail-if-no-file-change }}
+
+        # Optional. Skip internal call to `git fetch`
+        # (repository has just been checked out)
+        skip_fetch: true
+        # Skip internal call to `git checkout`
+        # (repository has just been checked out)
+        skip_checkout: true
+
+        # Optional. Prevents the shell from expanding filenames
+        # Details: https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html
+        disable_globbing: true
+
+        # Optional. Options used by `git-push`.
+        # See https://git-scm.com/docs/git-push#_options
+        push_options: '--force'
