@@ -71,6 +71,21 @@ on:
         required: false
         type: string
         default: '[ "self-hosted", "linux" ]'
+      max-commits-check:
+        description: |
+          Enables the max commit count check on pull requests. When enabled, the workflow
+          will fail if the number of commits in the PR exceeds the max-commits threshold.
+          Only applies when mode is 'check'.
+        type: boolean
+        required: false
+        default: false
+      max-commits:
+        description: |
+          The maximum number of commits allowed in a pull request (inclusive).
+          Only used when max-commits-check is true.
+        type: number
+        required: false
+        default: 5
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -132,6 +147,13 @@ jobs:
           path: ./.github/symphony-devops-workflows
           # Force clean to avoid leftover changes from previous runs in workspace in current runner
           clean: 'true'
+
+      - name: Max commit count check
+        if: ${{ inputs.max-commits-check && inputs.mode == 'check' && github.event_name == 'pull_request' }}
+        uses: ./.github/symphony-devops-workflows/actions/max_commit_count
+        with:
+          max-commits: ${{ inputs.max-commits }}
+          token: ${{ secrets.ciToken }}
 
       - name: Install jq
         uses: ./.github/symphony-devops-workflows/actions/install_jq
