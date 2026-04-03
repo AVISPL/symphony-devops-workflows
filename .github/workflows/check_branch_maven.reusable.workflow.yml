@@ -73,6 +73,20 @@ on:
         type: number
         required: false
         default: 5
+      max-commits-check:
+        description: |
+          Enables the max commit count check on pull requests. When enabled, the workflow
+          will fail if the number of commits in the PR exceeds the max-commits threshold.
+        type: boolean
+        required: false
+        default: false
+      max-commits:
+        description: |
+          The maximum number of commits allowed in a pull request (inclusive).
+          Only used when max-commits-check is true.
+        type: number
+        required: false
+        default: 5
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -87,8 +101,8 @@ on:
         required: false
       commitUserName:
         description: |
-          User name to be used as Git committer by the workflow, when the workflow issues new 
-          Git commits (for example when updating deployment files). It is unrelated to the person 
+          User name to be used as Git committer by the workflow, when the workflow issues new
+          Git commits (for example when updating deployment files). It is unrelated to the person
           who ran the workflow. It is recommended to use a technical user dedicated to the CI system.
           For example, if John did run the workflow, and commit user name provided is 'MyCIUser',
           the commit will look like:
@@ -96,6 +110,11 @@ on:
             Committer: MyCIUser
             Signed-off-by: MyCIUser <MyCIUser@...com>
         required: true
+      ciToken:
+        description: |
+          GitHub token (PAT) used by the max commit count check to query PR commit count via GitHub API.
+          Only required when max-commits-check input is true.
+        required: false
 env:
   SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
   AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
@@ -111,6 +130,8 @@ jobs:
       # Actions read is required by technote-space/workflow-conclusion-action for accessing
       # actions API for getting actions results
       actions: read
+      # Pull-requests read is required by max commit count check to query PR commit count
+      pull-requests: read
 
     # Use runner which has requested labels
     # Note: GitHub does not allow to pass an object as job input (such as an array)
@@ -160,6 +181,13 @@ jobs:
           ref: '${{ inputs.symphony-devops-workflows_ref }}'
           # Indicate where to check out project to
           path: ./.github/symphony-devops-workflows
+
+      - name: Max commit count check
+        if: ${{ inputs.max-commits-check && github.event_name == 'pull_request' && steps.check.outputs.continue == 'true' }}
+        uses: ./.github/symphony-devops-workflows/actions/max_commit_count
+        with:
+          max-commits: ${{ inputs.max-commits }}
+          token: ${{ secrets.ciToken }}
 
       - name: Setup JDK
         if: ${{ steps.check.outputs.continue == 'true' }}
