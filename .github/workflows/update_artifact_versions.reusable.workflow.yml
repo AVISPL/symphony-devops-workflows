@@ -236,7 +236,7 @@ jobs:
           cat modules.txt
 
       - name: Commit updates to AVISPL/${{ env.BASE_REPOSITORY }}'s modules.txt
-        uses: ./symphony-devops-workflows/actions/git_add_commit_push
+        uses: ./symphony-devops-workflows/actions/git_add_commit_push_force_push
         with:
           repository-dir: ./${{ env.BASE_REPOSITORY }}/release_modules/
           file-pattern: 'modules.txt'
