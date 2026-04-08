@@ -5,9 +5,6 @@
 # Prerequisites :
 # - Git repository must already be checked out locally with a user which was write permission
 # - GitHub actions from AVI-SPL private repository must be available in local workspace directory
-# WARNING: this action is only used by the Symphony's release workflow, as the release workflows are now
-# able to run in parallel, we need to force push updating of modules.txt file in symphony-devops-workflow-private. 
-# The force push allows multiple workflows to run in parallel, and update modules.txt file at the same time without workflow failing on us.
 
 name: 'Git add commit push'
 description: 'Git add, commit and push changes'
@@ -43,65 +40,80 @@ inputs:
       Necessary for checking out private repositories
       Use a PAT (Personal Access Token) from a user who has write permission on specified repository
     required: true
-
 runs:
   using: 'composite'
   steps:
-      # Git commit and push
-      # Note: many options are possible, see action documentation
-      #   https://github.com/marketplace/actions/git-auto-commit
-      #   https://github.com/stefanzweifel/git-auto-commit-action
-      - uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          # Local file path to the repository
-          repository: '${{ inputs.repository-dir }}'
-          # Git commit message
-          commit_message: ${{ inputs.commit-message }}
-          # Git commit user and author
-          commit_user_name: ${{ inputs.commit-user-name }}
-          commit_user_email: ${{ inputs.commit-user-email }}
-          # commit_author - Do NOT specify value and use default action behaviour
-          #   "commit author defaults to author of the commit that triggered the run"
-          #   Author in GitHub will look like:
-          #   SebastienB-AVISPL authored and AVISymphonyDev committed
+    - name: Commit and push with pull-reapply retry
+      run: |
+        cd "$GITHUB_WORKSPACE/${{ inputs.repository-dir }}"
 
-          # Optional. Options used by `git-commit`.
-          # See https://git-scm.com/docs/git-commit#_options
-          # Git Sign-off contents is created using the "commit_*" options from this action call
-          commit_options: '--no-verify --signoff'
+        # Configure git committer
+        git config user.name "${{ inputs.commit-user-name }}"
+        git config user.email "${{ inputs.commit-user-email }}"
 
-          # Optional glob pattern of files which should be added to the commit
-          # Defaults to all (.)
-          # See the `pathspec`-documentation for git
-          # - https://git-scm.com/docs/git-add#Documentation/git-add.txt-ltpathspecgt82308203
-          # - https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
-          # Specify file path to ensure no unwanted files are committed/pushed by mistake
-          # WARNING: file path is relative to repository (see repository parameter)
-          file_pattern: ${{ inputs.file-pattern }}
+        # Capture the diff of our intended change BEFORE any retries.
+        # We re-apply this same patch on every attempt so we always apply
+        # our change on top of whatever is currently on the remote branch —
+        # even if another job has modified the same file in between.
+        git diff HEAD -- ${{ inputs.file-pattern }} > /tmp/my_changes.patch
 
-          # Optional. Tag name being created in the local repository and
-          # pushed to remote repository and defined branch.
-          tagging_message: ${{ inputs.git-tag }}
+        if [ ! -s /tmp/my_changes.patch ]; then
+          echo "ERROR: No changes detected in file pattern: ${{ inputs.file-pattern }}"
+          exit 1
+        fi
 
-          # Optional. Option used by `git-status` to determine if the repository is
-          # dirty. See https://git-scm.com/docs/git-status#_options
-          status_options: '--untracked-files=no'
+        MAX_ATTEMPTS=5
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          echo "Attempt ${i} of ${MAX_ATTEMPTS}..."
 
-          # When "true", makes the action fail when replacement causes no file change
-          # (which would make an empty commit)
-          skip_dirty_check: true
+          # Reset any leftover state from previous attempt
+          git reset HEAD -- ${{ inputs.file-pattern }}
+          git checkout -- ${{ inputs.file-pattern }}
 
-          # Optional. Skip internal call to `git fetch`
-          # (repository has just been checked out)
-          skip_fetch: true
-          # Skip internal call to `git checkout`
-          # (repository has just been checked out)
-          skip_checkout: true
+          # Pull latest from remote so we're working on the current branch tip
+          git fetch origin develop
+          git reset --hard origin/develop
 
-          # Optional. Prevents the shell from expanding filenames
-          # Details: https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html
-          disable_globbing: true
+          # Re-apply our intended change on top of the latest remote state
+          git apply /tmp/my_changes.patch
+          if [ $? -ne 0 ]; then
+            echo "ERROR: Patch apply failed — changes may conflict with latest remote state"
+            exit 1
+          fi
 
-          # Optional. Options used by `git-push`.
-          # See https://git-scm.com/docs/git-push#_options
-          push_options: '--force'
+          # Stage only the intended files
+          git add -- ${{ inputs.file-pattern }}
+
+          # Commit
+          git commit \
+            --no-verify \
+            --signoff \
+            -m "${{ inputs.commit-message }}" || {
+            echo "Nothing to commit, exiting"
+            exit 0
+          }
+
+          # Optionally create a tag
+          if [ -n "${{ inputs.git-tag }}" ]; then
+            git tag "${{ inputs.git-tag }}"
+          fi
+
+          # Attempt push — no force needed since we're on top of latest remote
+          git push origin develop && {
+            # Push tag separately if set
+            if [ -n "${{ inputs.git-tag }}" ]; then
+              git push origin "${{ inputs.git-tag }}"
+            fi
+            echo "Push succeeded on attempt ${i}"
+            exit 0
+          }
+
+          # Random backoff to avoid thundering herd on next attempt
+          BACKOFF=$((RANDOM % 10 + 5))
+          echo "Push failed, retrying in ${BACKOFF}s..."
+          sleep $BACKOFF
+        done
+
+        echo "ERROR: All ${MAX_ATTEMPTS} push attempts failed"
+        exit 1
+      shell: bash
