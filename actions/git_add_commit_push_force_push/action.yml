@@ -55,7 +55,7 @@ runs:
         # We re-apply this same patch on every attempt so we always apply
         # our change on top of whatever is currently on the remote branch —
         # even if another job has modified the same file in between.
-        git diff HEAD -- ${{ inputs.file-pattern }} > /tmp/my_changes.patch
+        git diff -- ${{ inputs.file-pattern }} > /tmp/my_changes.patch
 
         if [ ! -s /tmp/my_changes.patch ]; then
           echo "ERROR: No changes detected in file pattern: ${{ inputs.file-pattern }}"

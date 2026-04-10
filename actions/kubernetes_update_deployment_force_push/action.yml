@@ -16,7 +16,6 @@ description: >
   by updating adequate Kubernetes file descriptor
 
 inputs:
-  # TODO rename symphony-microservice-name to project-name
   symphony-microservice-name:
     description: >
       Name of the microservice to be updated.
@@ -38,7 +37,7 @@ inputs:
     required: false
   workspace-checkout-dir:
     description: >
-     Path where to checkout the deployment repository. Relative path to current project''s workspace root directory,
+     Path where to checkout the deployment repository. Relative path to current project's workspace root directory,
      without leading "./" (for some reason this breaks replacement). E.g. "localcheckout"
     required: true
   symphony-kubernetes-deployer-ref:
@@ -94,14 +93,10 @@ runs:
     - name: Checkout Kubernetes deployer repository
       uses: actions/checkout@v4.1.1
       with:
-        # Repository to be checked out
         repository: 'AVISPL/symphony-kubernetes-deployer'
-        # Select revision
         ref: '${{ inputs.symphony-kubernetes-deployer-ref }}'
         token: '${{ inputs.github-token }}'
-        # Indicate where to check out project to. Relative path under $GITHUB_WORKSPACE
         path: "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
-        # Force clean to avoid leftover changes from previous runs in current workspace
         clean: 'true'
 
     - name: Show docker image value before change
@@ -116,7 +111,6 @@ runs:
       with:
         find: "tag: .*"
         replace: "tag: ${{ inputs.docker-image }}"
-        # File to replace into
         include: "${{ steps.compute_paths.outputs.FILENAME_RELATIVE_PATH }}"
         regex: true
 
@@ -126,60 +120,68 @@ runs:
         grep 'tag: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
       shell: bash
 
-    # TODO git commit and push - move to separate action ?
-    #   (ensures same options are used in all projects)
-    # Git commit and push
-    # Note: many options are possible, see action documentation
-    #   https://github.com/marketplace/actions/git-auto-commit
-    #   https://github.com/stefanzweifel/git-auto-commit-action
-    - uses: stefanzweifel/git-auto-commit-action@v4
-      with:
-        # Local file path to the repository
-        repository: "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
+    # Commit and push with rebase retry to handle parallel job conflicts.
+    # Since parallel jobs write to different files in the same repo/branch,
+    # a rebase will always succeed cleanly — no merge conflicts possible.
+    - name: Commit and push with rebase retry
+      run: |
+        cd "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
 
-        # Git commit message
-        commit_message: '${{ inputs.commit-message }}'
-        commit_user_name: ${{ inputs.commit-user-name }}
-        commit_user_email: ${{ inputs.commit-user-email }}
-        branch: '${{ inputs.symphony-kubernetes-deployer-ref }}'
-        # commit_author - Do NOT specify value and use default action behaviour
-        #   "commit author defaults to author of the commit that triggered the run"
-        #   Author in GitHub will look like:
-        #   SebastienB-AVISPL authored and AVISymphonyDev committed
+        # Configure git committer
+        git config user.name "${{ inputs.commit-user-name }}"
+        git config user.email "${{ inputs.commit-user-email }}"
 
-        # Optional. Options used by `git-commit`.
-        # See https://git-scm.com/docs/git-commit#_options
-        # Git Sign-off contents is created using the "commit_*" options from this action call
-        commit_options: '--no-verify --signoff'
+        # Check if there are actual changes to commit
+        git diff --quiet "${{ steps.compute_paths.outputs.DESCRIPTOR_FILE_NAME }}" && {
+          if [ "${{ inputs.fail-if-no-file-change }}" = "true" ]; then
+            echo "ERROR: No file changes detected and fail-if-no-file-change is true"
+            exit 1
+          else
+            echo "No file changes detected, skipping commit"
+            exit 0
+          fi
+        }
 
-        # Optional glob pattern of files which should be added to the commit
-        # Defaults to all (.)
-        # See the `pathspec`-documentation for git
-        # - https://git-scm.com/docs/git-add#Documentation/git-add.txt-ltpathspecgt82308203
-        # - https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
-        # Specify file path to ensure no unwanted files are committed/pushed by mistake
-        # WARNING: file path is relative to repository (see repository parameter)
-        file_pattern: ${{ steps.compute_paths.outputs.DESCRIPTOR_FILE_NAME }}
+        # Stage only the specific descriptor file (never commit unintended files)
+        git add "${{ steps.compute_paths.outputs.DESCRIPTOR_FILE_NAME }}"
 
-        # Optional. Option used by `git-status` to determine if the repository is
-        # dirty. See https://git-scm.com/docs/git-status#_options
-        status_options: '--untracked-files=no'
+        # Commit locally
+        git commit \
+          --no-verify \
+          --signoff \
+          -m '${{ inputs.commit-message }}'
 
-        # When "true", makes the action fail when replacement causes no file change
-        # (which would make an empty commit)
-        skip_dirty_check: ${{ inputs.fail-if-no-file-change }}
+        # Normalize branch ref — strip 'refs/heads/' prefix if present
+        # e.g. 'refs/heads/release/6.25' -> 'release/6.25'
+        BRANCH="${{ inputs.symphony-kubernetes-deployer-ref }}"
+        BRANCH="${BRANCH#refs/heads/}"
+        echo "Normalized branch: [${BRANCH}]"
 
-        # Optional. Skip internal call to `git fetch`
-        # (repository has just been checked out)
-        skip_fetch: true
-        # Skip internal call to `git checkout`
-        # (repository has just been checked out)
-        skip_checkout: true
+        # Push with rebase retry loop.
+        # Random backoff prevents multiple parallel jobs from retrying simultaneously
+        # (thundering herd problem).
+        MAX_ATTEMPTS=5
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          echo "Push attempt ${i} of ${MAX_ATTEMPTS}..."
 
-        # Optional. Prevents the shell from expanding filenames
-        # Details: https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html
-        disable_globbing: true
+          # Fetch latest remote state and rebase our commit on top.
+          # Safe to do because parallel jobs always write to different files,
+          # so rebase will never produce a conflict.
+          git fetch origin "${BRANCH}"
+          git rebase origin/"${BRANCH}"
 
-        # Optional. Options used by `git-push`.
-        # See https://git-scm.com/docs/git-push#_options
-        push_options: '--force'
+          # Attempt push (no force — rebase makes it a clean fast-forward)
+          git push origin "${BRANCH}" && {
+            echo "Push succeeded on attempt ${i}"
+            exit 0
+          }
+
+          # Random backoff between 5-15s to spread out retries across parallel jobs
+          BACKOFF=$((RANDOM % 10 + 5))
+          echo "Push failed, retrying in ${BACKOFF}s..."
+          sleep $BACKOFF
+        done
+
+        echo "ERROR: All ${MAX_ATTEMPTS} push attempts failed"
+        exit 1
+      shell: bash
