@@ -1,0 +1,187 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+# Set docker image to be used for given microservice with provided one
+# by updating adequate Kubernetes file descriptor
+# This action checks-out the deployment repository, updates descriptor (yaml) file
+# and pushes the change to GitHub
+# WARNING: only updates descriptor for environment that is passed in
+# WARNING: this action is only used by the Symphony's release workflow, as the release workflows are now
+# able to run in parallel, we need to force push updating of docker image tag in symphony-kubernetes-deployer's values files. 
+# The force push allows multiple workflows to run in parallel, and update values files at the same time without workflow failing on us.
+# Prerequisites :
+# - GitHub actions from AVI-SPL private repository must be available in local workspace directory
+name: 'Kubernetes update microservice Docker image force push'
+description: >
+  Set docker image to be used for given microservice with provided one
+  by updating adequate Kubernetes file descriptor
+
+inputs:
+  symphony-microservice-name:
+    description: >
+      Name of the microservice to be updated.
+      Used to find adequate file descriptor to be updated.
+      E.g. 'symphony-audit'
+    required: true
+  docker-image:
+    description: >
+      New docker image value to be replaced in descriptor file
+      E.g. "registry.vnocsymphony.com/symphony-microservices/symphony-notifications-email:1.1.0-SNAPSHOT.2205041703"
+    required: true
+  fail-if-no-file-change:
+    description: >
+      When "true", makes the action fail when replacement causes no file change
+      (which would make an empty commit)
+      Otherwise, action detects that there is nothing to commit and continues without
+      an error
+    default: 'true'
+    required: false
+  workspace-checkout-dir:
+    description: >
+     Path where to checkout the deployment repository. Relative path to current project's workspace root directory,
+     without leading "./" (for some reason this breaks replacement). E.g. "localcheckout"
+    required: true
+  symphony-kubernetes-deployer-ref:
+    description: 'Reference (revision) to Kubernetes deployment repository (branch or tag) to be updated. E.g. ''develop'''
+    required: false
+    default: 'develop'
+  commit-message:
+    description: 'Git commit message'
+    required: true
+  github-token:
+    description: >
+      GitHub secret token to be provided by caller
+      Necessary for pushing to Git updated deployment files since it is a private repository
+      Use a PAT (Personal Access Token) from a user who has write permission on deployment repository
+    required: true
+  commit-user-name:
+    description: User to be used as Git committer
+    required: true
+  commit-user-email:
+    description: User email to be used as Git committer
+    required: true
+  environment:
+    description: Symphony environment values file is being updated for
+    required: false
+    default: 'dev'
+runs:
+  using: "composite"
+  steps:
+    # Compute paths to file to be reused as "global variables"
+    - name: Compute paths
+      id: compute_paths
+      run: |
+        echo "Compute paths"
+        CHECKOUT_DIR="${{ inputs.workspace-checkout-dir }}"
+        # Path is relative to the Kubernetes deployer repository's root directory
+        DESCRIPTOR_FILE_NAME="symphony/charts/${{ inputs.symphony-microservice-name }}/values-${{ inputs.environment }}.yaml"
+        FILENAME_RELATIVE_PATH="${CHECKOUT_DIR}/${DESCRIPTOR_FILE_NAME}"
+        FILENAME_ABSOLUTE_PATH="${GITHUB_WORKSPACE}/${FILENAME_RELATIVE_PATH}"
+        #
+        echo "CHECKOUT_DIR: [${CHECKOUT_DIR}]"
+        echo "DESCRIPTOR_FILE_NAME: [${DESCRIPTOR_FILE_NAME}]"
+        echo "FILENAME_RELATIVE_PATH: [${FILENAME_RELATIVE_PATH}]"
+        echo "FILENAME_ABSOLUTE_PATH: [${FILENAME_ABSOLUTE_PATH}]"
+        #
+        echo "CHECKOUT_DIR=${CHECKOUT_DIR}" >> $GITHUB_OUTPUT
+        echo "DESCRIPTOR_FILE_NAME=${DESCRIPTOR_FILE_NAME}" >> $GITHUB_OUTPUT
+        echo "FILENAME_RELATIVE_PATH=${FILENAME_RELATIVE_PATH}" >> $GITHUB_OUTPUT
+        echo "FILENAME_ABSOLUTE_PATH=${FILENAME_ABSOLUTE_PATH}" >> $GITHUB_OUTPUT
+      shell: bash
+
+    # Checkout the Git repository with Kubernetes deployment descriptors
+    # into local workspace directory
+    - name: Checkout Kubernetes deployer repository
+      uses: actions/checkout@v4.1.1
+      with:
+        repository: 'AVISPL/symphony-kubernetes-deployer'
+        ref: '${{ inputs.symphony-kubernetes-deployer-ref }}'
+        token: '${{ inputs.github-token }}'
+        path: "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
+        clean: 'true'
+
+    - name: Show docker image value before change
+      run: |
+        echo "Value BEFORE in ${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}:"
+        grep 'tag: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
+      shell: bash
+
+    # Replace in file
+    - name: Replace docker image in file
+      uses: jacobtomlinson/gha-find-replace@v2
+      with:
+        find: "tag: .*"
+        replace: "tag: ${{ inputs.docker-image }}"
+        include: "${{ steps.compute_paths.outputs.FILENAME_RELATIVE_PATH }}"
+        regex: true
+
+    - name: Show docker image value after change
+      run: |
+        echo "Value AFTER in ${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}:"
+        grep 'tag: ' "${{ steps.compute_paths.outputs.FILENAME_ABSOLUTE_PATH }}"
+      shell: bash
+
+    # Commit and push with rebase retry to handle parallel job conflicts.
+    # Since parallel jobs write to different files in the same repo/branch,
+    # a rebase will always succeed cleanly — no merge conflicts possible.
+    - name: Commit and push with rebase retry
+      run: |
+        cd "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
+
+        # Configure git committer
+        git config user.name "${{ inputs.commit-user-name }}"
+        git config user.email "${{ inputs.commit-user-email }}"
+
+        # Check if there are actual changes to commit
+        git diff --quiet "${{ steps.compute_paths.outputs.DESCRIPTOR_FILE_NAME }}" && {
+          if [ "${{ inputs.fail-if-no-file-change }}" = "true" ]; then
+            echo "ERROR: No file changes detected and fail-if-no-file-change is true"
+            exit 1
+          else
+            echo "No file changes detected, skipping commit"
+            exit 0
+          fi
+        }
+
+        # Stage only the specific descriptor file (never commit unintended files)
+        git add "${{ steps.compute_paths.outputs.DESCRIPTOR_FILE_NAME }}"
+
+        # Commit locally
+        git commit \
+          --no-verify \
+          --signoff \
+          -m '${{ inputs.commit-message }}'
+
+        # Normalize branch ref — strip 'refs/heads/' prefix if present
+        # e.g. 'refs/heads/release/6.25' -> 'release/6.25'
+        BRANCH="${{ inputs.symphony-kubernetes-deployer-ref }}"
+        BRANCH="${BRANCH#refs/heads/}"
+        echo "Normalized branch: [${BRANCH}]"
+
+        # Push with rebase retry loop.
+        # Random backoff prevents multiple parallel jobs from retrying simultaneously
+        # (thundering herd problem).
+        MAX_ATTEMPTS=10
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          echo "Push attempt ${i} of ${MAX_ATTEMPTS}..."
+
+          # Fetch latest remote state and rebase our commit on top.
+          # Safe to do because parallel jobs always write to different files,
+          # so rebase will never produce a conflict.
+          git fetch origin "${BRANCH}"
+          git rebase origin/"${BRANCH}"
+
+          # Attempt push (no force — rebase makes it a clean fast-forward)
+          git push origin "${BRANCH}" && {
+            echo "Push succeeded on attempt ${i}"
+            exit 0
+          }
+
+          # Random backoff between 5-15s to spread out retries across parallel jobs
+          BACKOFF=$((RANDOM % 10 + 5))
+          echo "Push failed, retrying in ${BACKOFF}s..."
+          sleep $BACKOFF
+        done
+
+        echo "ERROR: All ${MAX_ATTEMPTS} push attempts failed"
+        exit 1
+      shell: bash

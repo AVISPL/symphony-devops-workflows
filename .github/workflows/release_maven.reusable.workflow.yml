@@ -344,7 +344,7 @@ jobs:
       # Following steps will only be executed if the inputs.environments contains the environment's name (i.e. devops, dev, qa, sim, int, prod, pwc, or emea)
       - name: Kubernetes update deployment of DEV environment within ${{ inputs.git-ref }} branch
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'dev') && steps.check.outputs.continue == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment_force_push
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
           # in symphony-kubernetes-deployer repository
@@ -369,7 +369,7 @@ jobs:
 
       - name: Kubernetes update deployment of QA environment within ${{ inputs.git-ref }} branch
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'qa') && steps.check.outputs.continue == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment_force_push
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
           # in symphony-kubernetes-deployer repository
@@ -394,7 +394,7 @@ jobs:
 
       - name: Kubernetes update deployment of DEVOPS environment within ${{ inputs.git-ref }} branch
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'devops') && steps.check.outputs.continue == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment_force_push
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
           # in symphony-kubernetes-deployer repository
@@ -419,7 +419,7 @@ jobs:
 
       - name: Kubernetes update deployment of SIM environment within ${{ inputs.git-ref }} branch
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'sim') && steps.check.outputs.continue == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment_force_push
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
           # in symphony-kubernetes-deployer repository
@@ -444,7 +444,7 @@ jobs:
 
       - name: Kubernetes update deployment of INT environment within ${{ inputs.git-ref }} branch
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'int') && steps.check.outputs.continue == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment_force_push
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
           # in symphony-kubernetes-deployer repository
@@ -469,7 +469,7 @@ jobs:
 
       - name: Kubernetes update deployment of PROD environment within ${{ inputs.git-ref }} branch
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'prod') && steps.check.outputs.continue == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment_force_push
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
           # in symphony-kubernetes-deployer repository
@@ -494,7 +494,7 @@ jobs:
 
       - name: Kubernetes update deployment of EMEA environment within ${{ inputs.git-ref }} branch
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'emea') && steps.check.outputs.continue == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment_force_push
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
           # in symphony-kubernetes-deployer repository
@@ -519,7 +519,7 @@ jobs:
 
       - name: Kubernetes update deployment of PWC environment within ${{ inputs.git-ref }} branch
         if: ${{ !cancelled() && !failure() && inputs.kubernetes-update-deployment-descriptor && inputs.docker-file != '' && steps.docker_build_tag_push.outputs.docker-pushed == 'true' && contains(inputs.environments, 'pwc') && steps.check.outputs.continue == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment
+        uses: ./.github/symphony-devops-workflows/actions/kubernetes_update_deployment_force_push
         with:
           # Name of Helm subchart (name of directory under "/symphony/charts")
           # in symphony-kubernetes-deployer repository

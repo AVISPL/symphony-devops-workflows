@@ -1,0 +1,119 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Git add, commit and push changes
+# Prerequisites :
+# - Git repository must already be checked out locally with a user which was write permission
+# - GitHub actions from AVI-SPL private repository must be available in local workspace directory
+
+name: 'Git add commit push'
+description: 'Git add, commit and push changes'
+inputs:
+  repository-dir:
+    description: >
+      Path to the Git repository, relative to workspace root directory ($GITHUB_WORKSPACE)
+    required: true
+  file-pattern:
+    description: >
+      Pattern of file(s) to be added, in Git Pathspecs format. Git "Magic signatures" can
+      also be used.
+      Shell filename expansion is disabled
+      E.g. 'pom.xml', '*.xml', ':(glob)**/pom.xml'
+    required: true
+  commit-message:
+    description: 'Git commit message'
+    required: true
+  git-tag:
+    description: |
+      Git tag to be created in the local repository and pushed to remote repository,
+      e.g. '5.6.1.2208051600'
+    required: false
+  commit-user-name:
+    description: User to be used as Git committer
+    required: true
+  commit-user-email:
+    description: User email to be used as Git committer
+    required: true
+  github-token:
+    description: >
+      GitHub secret token to be provided by caller
+      Necessary for checking out private repositories
+      Use a PAT (Personal Access Token) from a user who has write permission on specified repository
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Commit and push with pull-reapply retry
+      run: |
+        cd "$GITHUB_WORKSPACE/${{ inputs.repository-dir }}"
+
+        # Configure git committer
+        git config user.name "${{ inputs.commit-user-name }}"
+        git config user.email "${{ inputs.commit-user-email }}"
+
+        # Capture the diff of our intended change BEFORE any retries.
+        # We re-apply this same patch on every attempt so we always apply
+        # our change on top of whatever is currently on the remote branch —
+        # even if another job has modified the same file in between.
+        git diff -- ${{ inputs.file-pattern }} > /tmp/my_changes.patch
+
+        if [ ! -s /tmp/my_changes.patch ]; then
+          echo "ERROR: No changes detected in file pattern: ${{ inputs.file-pattern }}"
+          exit 1
+        fi
+
+        MAX_ATTEMPTS=5
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          echo "Attempt ${i} of ${MAX_ATTEMPTS}..."
+
+          # Reset any leftover state from previous attempt
+          git reset HEAD -- ${{ inputs.file-pattern }}
+          git checkout -- ${{ inputs.file-pattern }}
+
+          # Pull latest from remote so we're working on the current branch tip
+          git fetch origin develop
+          git reset --hard origin/develop
+
+          # Re-apply our intended change on top of the latest remote state
+          git apply /tmp/my_changes.patch
+          if [ $? -ne 0 ]; then
+            echo "ERROR: Patch apply failed — changes may conflict with latest remote state"
+            exit 1
+          fi
+
+          # Stage only the intended files
+          git add -- ${{ inputs.file-pattern }}
+
+          # Commit
+          git commit \
+            --no-verify \
+            --signoff \
+            -m "${{ inputs.commit-message }}" || {
+            echo "Nothing to commit, exiting"
+            exit 0
+          }
+
+          # Optionally create a tag
+          if [ -n "${{ inputs.git-tag }}" ]; then
+            git tag "${{ inputs.git-tag }}"
+          fi
+
+          # Attempt push — no force needed since we're on top of latest remote
+          git push origin develop && {
+            # Push tag separately if set
+            if [ -n "${{ inputs.git-tag }}" ]; then
+              git push origin "${{ inputs.git-tag }}"
+            fi
+            echo "Push succeeded on attempt ${i}"
+            exit 0
+          }
+
+          # Random backoff to avoid thundering herd on next attempt
+          BACKOFF=$((RANDOM % 10 + 5))
+          echo "Push failed, retrying in ${BACKOFF}s..."
+          sleep $BACKOFF
+        done
+
+        echo "ERROR: All ${MAX_ATTEMPTS} push attempts failed"
+        exit 1
+      shell: bash
