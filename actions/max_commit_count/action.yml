@@ -1,0 +1,25 @@
+# Copyright (c) 2026 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Enforce maximum commit count on a pull request before merge.
+# Wraps nikwotton/Max-Commit-Count action.
+#
+name: 'Max Commit Count'
+description: 'Fails the workflow if the number of commits in a pull request exceeds the configured maximum'
+
+inputs:
+  max-commits:
+    description: 'The maximum number of commits allowed in a PR (inclusive)'
+    required: true
+  token:
+    description: 'GitHub token used to query the number of commits in the PR'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check max commit count
+      uses: nikwotton/Max-Commit-Count@v1.0.0
+      with:
+        maxCommits: ${{ inputs.max-commits }}
+        token: ${{ inputs.token }}
