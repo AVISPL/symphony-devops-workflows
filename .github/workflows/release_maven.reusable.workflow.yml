@@ -273,22 +273,6 @@ jobs:
       # Compute docker tags to be reused as "global variables"
       # Release docker tag must be exact same as the Maven project version
       #   e.g. 5.6.1.2208051600
-#      - name: Compute docker tags
-#        if: ${{ steps.check.outputs.continue == 'true' }}
-#        id: compute_docker_tags
-#        run: |
-#          echo "Compute docker tags"
-#          DOCKER_TAG_WITH_VERSION="${{ steps.compute_release_version.outputs.release-version }}"
-#          DOCKER_IMAGE_TAG_PREFIX="registry.vnocsymphony.com/${{ inputs.docker-registry-project-name }}/${{ inputs.symphony-microservice-name }}"
-          
-#          echo "DOCKER_TAG_WITH_VERSION: [${DOCKER_TAG_WITH_VERSION}]"
-#          echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
-          
-#          echo "DOCKER_TAG_WITH_VERSION=${DOCKER_TAG_WITH_VERSION}" >> $GITHUB_OUTPUT
-#          echo "DOCKER_IMAGE_TAG_PREFIX=${DOCKER_IMAGE_TAG_PREFIX}" >> $GITHUB_OUTPUT
-#
-#        shell: bash
-
       - name: Compute docker tags
         if: ${{ steps.check.outputs.continue == 'true' }}
         id: compute_docker_tags
@@ -296,35 +280,13 @@ jobs:
           echo "Compute docker tags"
           DOCKER_TAG_WITH_VERSION="${{ steps.compute_release_version.outputs.release-version }}"
           DOCKER_IMAGE_TAG_PREFIX="registry.vnocsymphony.com/${{ inputs.docker-registry-project-name }}/${{ inputs.symphony-microservice-name }}"
-          ENVIRONMENTS="${{ inputs.environments }}"
-          #
-          # Append alias tags based on environments
-          for ENV in ${ENVIRONMENTS}; do
-            case "${ENV}" in
-              dev)
-                DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},snapshot"
-                ;;
-              sim|devops|qa)
-                DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},test"
-                ;;
-              int)
-                DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},staging"
-                ;;
-              prod|pwc|emea)
-                DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},latest"
-                ;;
-            esac
-          done
-          #
-          # Deduplicate tags while preserving order
-          DOCKER_TAG_WITH_VERSION=$(echo "${DOCKER_TAG_WITH_VERSION}" | tr ',' '\n' | awk '!seen[$0]++' | tr '\n' ',' | sed 's/,$//')
-          #
+
           echo "DOCKER_TAG_WITH_VERSION: [${DOCKER_TAG_WITH_VERSION}]"
           echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
-          #
+
           echo "DOCKER_TAG_WITH_VERSION=${DOCKER_TAG_WITH_VERSION}" >> $GITHUB_OUTPUT
           echo "DOCKER_IMAGE_TAG_PREFIX=${DOCKER_IMAGE_TAG_PREFIX}" >> $GITHUB_OUTPUT
-      
+
         shell: bash
 
       # Validate Docker tags
