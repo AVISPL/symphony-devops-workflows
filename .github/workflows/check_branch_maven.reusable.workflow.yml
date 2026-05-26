@@ -120,10 +120,10 @@ jobs:
     steps:
       - name: Should workflow be executed
         id: check
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          commit_message="${{ github.event.head_commit.message }}"
-          commit_message=$(echo "$commit_message" | sed 's/\([^\\]\)"/\1\\"/g')
-          if [[ "$AUTO_RELEASE_COMMIT_ACTOR" = "${{ github.actor }}" ]] && [[ $commit_message == "[AUTO]"* ]]; then
+          if [[ "${{ github.actor }}" == "$AUTO_RELEASE_COMMIT_ACTOR" && "$COMMIT_MESSAGE" == \[AUTO\]* ]]; then
             echo "Aborting workflow. Commit was performed by automated actor with [AUTO] in commit message."
             echo "continue=false" >> $GITHUB_OUTPUT
           else
