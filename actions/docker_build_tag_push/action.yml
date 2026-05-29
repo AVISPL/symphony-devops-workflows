@@ -24,7 +24,7 @@ inputs:
     required: true
   docker-tags:
     description: >
-      Coma separated list of tags to set on built docker image, e.g. "1.1.0.202204051407", "qa".
+      Comma separated list of tags to set on built docker image, e.g. "1.1.0.202204051407", "qa".
       Mandatory when docker-file is "docker-tag-push" is "true"
     required: true
   docker-image-prefix:

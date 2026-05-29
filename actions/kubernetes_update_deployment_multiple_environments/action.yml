@@ -1,0 +1,210 @@
+# Copyright (c) 2022 AVI-SPL Inc.
+# All Rights Reserved.
+# Set docker image to be used for given microservice with provided one
+# by updating adequate Kubernetes file descriptors for multiple environments.
+# This action checks-out the deployment repository, updates all descriptor (yaml) files
+# for the specified environments in a single commit and pushes the change to GitHub.
+# Prerequisites :
+# - GitHub actions from AVI-SPL private repository must be available in local workspace directory
+name: 'Kubernetes update microservice Docker image multi-environment'
+description: >
+  Set docker image to be used for given microservice with provided one
+  by updating adequate Kubernetes file descriptors for multiple environments in a single commit.
+
+inputs:
+  symphony-microservice-name:
+    description: >
+      Name of the microservice to be updated.
+      Used to find adequate file descriptor to be updated.
+      E.g. 'symphony-audit'
+    required: true
+  docker-image:
+    description: >
+      New docker image value to be replaced in descriptor files.
+      Only docker tag name (e.g. 6.4.0.2308281259), not full path to repository.
+    required: true
+  fail-if-no-file-change:
+    description: >
+      When "true", makes the action fail when replacement causes no file change
+      (which would make an empty commit).
+      Otherwise, action detects that there is nothing to commit and continues without
+      an error.
+    default: 'true'
+    required: false
+  workspace-checkout-dir:
+    description: >
+      Path where to checkout the deployment repository. Relative path to current project's workspace root directory,
+      without leading "./" (for some reason this breaks replacement). E.g. "localcheckout"
+    required: true
+  symphony-kubernetes-deployer-ref:
+    description: 'Reference (revision) to Kubernetes deployment repository (branch or tag) to be updated. E.g. ''develop'''
+    required: false
+    default: 'develop'
+  commit-message:
+    description: 'Git commit message'
+    required: true
+  github-token:
+    description: >
+      GitHub secret token to be provided by caller.
+      Necessary for pushing to Git updated deployment files since it is a private repository.
+      Use a PAT (Personal Access Token) from a user who has write permission on deployment repository.
+    required: true
+  commit-user-name:
+    description: User to be used as Git committer
+    required: true
+  commit-user-email:
+    description: User email to be used as Git committer
+    required: true
+  environments:
+    description: >
+      Comma-separated list of Symphony environments to update.
+      E.g. 'dev,qa,prod' or 'dev' or 'dev,qa,devops,sim,int,prod,emea,pwc'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Compute paths
+      id: compute_paths
+      run: |
+        echo "Compute paths"
+        CHECKOUT_DIR="${{ inputs.workspace-checkout-dir }}"
+        CHARTS_BASE_DIR="symphony/charts/${{ inputs.symphony-microservice-name }}"
+        echo "CHECKOUT_DIR: [${CHECKOUT_DIR}]"
+        echo "CHARTS_BASE_DIR: [${CHARTS_BASE_DIR}]"
+        echo "CHECKOUT_DIR=${CHECKOUT_DIR}" >> $GITHUB_OUTPUT
+        echo "CHARTS_BASE_DIR=${CHARTS_BASE_DIR}" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Checkout Kubernetes deployer repository
+      uses: actions/checkout@v4.1.1
+      with:
+        repository: 'AVISPL/symphony-kubernetes-deployer'
+        ref: '${{ inputs.symphony-kubernetes-deployer-ref }}'
+        token: '${{ inputs.github-token }}'
+        path: "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
+        clean: 'true'
+
+    - name: Update docker image tag in all environment descriptor files
+      run: |
+        CHECKOUT_DIR="${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
+        CHARTS_BASE_DIR="${{ steps.compute_paths.outputs.CHARTS_BASE_DIR }}"
+        ENVIRONMENTS="${{ inputs.environments }}"
+        DOCKER_IMAGE="${{ inputs.docker-image }}"
+        CHANGED=0
+
+        # Iterate over each environment in the comma-separated list
+        IFS=',' read -ra ENV_LIST <<< "${ENVIRONMENTS}"
+        for ENV in "${ENV_LIST[@]}"; do
+          # Trim whitespace
+          ENV="${ENV// /}"
+          FILE="${GITHUB_WORKSPACE}/${CHECKOUT_DIR}/${CHARTS_BASE_DIR}/values-${ENV}.yaml"
+
+          if [ ! -f "${FILE}" ]; then
+            echo "WARNING: Descriptor file not found, skipping: [${FILE}]"
+            continue
+          fi
+
+          echo "Value BEFORE in ${FILE}:"
+          grep 'tag: ' "${FILE}"
+
+          # Replace tag value in file
+          sed -i "s|tag: .*|tag: ${DOCKER_IMAGE}|g" "${FILE}"
+
+          echo "Value AFTER in ${FILE}:"
+          grep 'tag: ' "${FILE}"
+
+          CHANGED=1
+        done
+
+        if [ "${CHANGED}" -eq 0 ]; then
+          if [ "${{ inputs.fail-if-no-file-change }}" = "true" ]; then
+            echo "ERROR: No descriptor files were found/changed and fail-if-no-file-change is true"
+            exit 1
+          else
+            echo "No descriptor files found/changed, skipping commit"
+            exit 0
+          fi
+        fi
+      shell: bash
+
+    - name: Commit and push with rebase retry
+      run: |
+        cd "${{ steps.compute_paths.outputs.CHECKOUT_DIR }}"
+
+        # Configure git committer
+        git config user.name "${{ inputs.commit-user-name }}"
+        git config user.email "${{ inputs.commit-user-email }}"
+
+        CHARTS_BASE_DIR="${{ steps.compute_paths.outputs.CHARTS_BASE_DIR }}"
+        ENVIRONMENTS="${{ inputs.environments }}"
+        FILE_PATTERN=""
+
+        # Build list of changed files to stage
+        IFS=',' read -ra ENV_LIST <<< "${ENVIRONMENTS}"
+        for ENV in "${ENV_LIST[@]}"; do
+          ENV="${ENV// /}"
+          FILE="${CHARTS_BASE_DIR}/values-${ENV}.yaml"
+          if [ -f "${FILE}" ]; then
+            # Check if file actually changed before staging
+            if ! git diff --quiet "${FILE}"; then
+              git add "${FILE}"
+              FILE_PATTERN="${FILE_PATTERN} ${FILE}"
+              echo "Staged: [${FILE}]"
+            else
+              echo "No change detected, skipping stage: [${FILE}]"
+            fi
+          fi
+        done
+
+        # Verify there is something staged to commit
+        if git diff --cached --quiet; then
+          if [ "${{ inputs.fail-if-no-file-change }}" = "true" ]; then
+            echo "ERROR: No file changes staged and fail-if-no-file-change is true"
+            exit 1
+          else
+            echo "No file changes staged, skipping commit"
+            exit 0
+          fi
+        fi
+
+        # Commit locally
+        git commit \
+          --no-verify \
+          --signoff \
+          -m '${{ inputs.commit-message }}'
+
+        # Normalize branch ref — strip 'refs/heads/' prefix if present
+        # e.g. 'refs/heads/release/6.25' -> 'release/6.25'
+        BRANCH="${{ inputs.symphony-kubernetes-deployer-ref }}"
+        BRANCH="${BRANCH#refs/heads/}"
+        echo "Normalized branch: [${BRANCH}]"
+
+        # Push with rebase retry loop.
+        # Random backoff prevents multiple parallel jobs from retrying simultaneously
+        # (thundering herd problem).
+        MAX_ATTEMPTS=10
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          echo "Push attempt ${i} of ${MAX_ATTEMPTS}..."
+
+          # Fetch latest remote state and rebase our commit on top.
+          # Safe to do because parallel jobs always write to different files,
+          # so rebase will never produce a conflict.
+          git fetch origin "${BRANCH}"
+          git rebase origin/"${BRANCH}"
+
+          # Attempt push (no force — rebase makes it a clean fast-forward)
+          git push origin "${BRANCH}" && {
+            echo "Push succeeded on attempt ${i}"
+            exit 0
+          }
+
+          # Random backoff between 5-15s to spread out retries across parallel jobs
+          BACKOFF=$((RANDOM % 10 + 5))
+          echo "Push failed, retrying in ${BACKOFF}s..."
+          sleep $BACKOFF
+        done
+
+        echo "ERROR: All ${MAX_ATTEMPTS} push attempts failed"
+        exit 1
+      shell: bash

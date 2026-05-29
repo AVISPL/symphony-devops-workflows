@@ -164,7 +164,7 @@ jobs:
       - name: Release AVISPL/${{ inputs.symphony-module-name }}
         if: ${{ startsWith(inputs.branch, 'release/') }}
         id: release-step
-        uses: the-actions-org/workflow-dispatch@v4
+        uses: the-actions-org/workflow-dispatch@v4.0.0
         with:
           workflow: workflow_release_branch_maven
           token: ${{ secrets.ciToken }}

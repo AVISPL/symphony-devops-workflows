@@ -8,7 +8,7 @@ description: 'Validate that a list of tags does not contain invalid characters'
 inputs:
   tags:
     description: >
-      Coma separated list of tags to be validated, e.g. 'snapshot,1.1.0.202204051407' or 'qa'.
+      Comma separated list of tags to be validated, e.g. 'snapshot,1.1.0.202204051407' or 'qa'.
       Only alphanumeric, dot, hyphen and underscore characters are authorized
     required: true
   allowEmpty:
