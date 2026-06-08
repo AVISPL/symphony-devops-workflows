@@ -285,9 +285,6 @@ jobs:
           # Append alias tags based on environments
           for ENV in ${ENVIRONMENTS}; do
             case "${ENV}" in
-              dev)
-                DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},snapshot"
-                ;;
               sim|devops|qa)
                 DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},test"
                 ;;
