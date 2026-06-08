@@ -281,9 +281,10 @@ jobs:
           DOCKER_TAG_WITH_VERSION="${{ steps.compute_release_version.outputs.release-version }}"
           DOCKER_IMAGE_TAG_PREFIX="registry.vnocsymphony.com/${{ inputs.docker-registry-project-name }}/${{ inputs.symphony-microservice-name }}"
           ENVIRONMENTS="${{ inputs.environments }}"
+          IFS=',' read -ra ENVS <<< "$ENVIRONMENTS"
           #
           # Append alias tags based on environments
-          for ENV in ${ENVIRONMENTS}; do
+          for ENV in "${ENVS[@]}"; do
             case "${ENV}" in
               sim|devops|qa)
                 DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},test"
