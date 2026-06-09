@@ -297,6 +297,7 @@ jobs:
           fi
          
           for ENV in "${ENVS[@]}"; do
+            # stripping white spaces in case someone accidentally added them to respective Environments workflow input variable
             ENV="${ENV//[[:space:]]/}"
             case "${ENV}" in
               sim|devops|qa)
