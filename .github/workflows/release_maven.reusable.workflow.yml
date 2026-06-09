@@ -297,6 +297,7 @@ jobs:
           fi
          
           for ENV in "${ENVS[@]}"; do
+            ENV="${ENV//[[:space:]]/}"
             case "${ENV}" in
               sim|devops|qa)
                 DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},test"
