@@ -288,16 +288,28 @@ jobs:
           # Append alias tags based on environments
           IFS=',' read -ra ENVS <<< "$ENVIRONMENTS"
 
+          DOCKER_REGISTRY_PROJECT_NAME="${{ inputs.docker-registry-project-name }}"
+
+          ALLOW_STAGING_AND_LATEST=true
+
+          if [[ "$DOCKER_REGISTRY_PROJECT_NAME" == "commproxy" ]]; then
+            ALLOW_STAGING_AND_LATEST=false
+          fi
+         
           for ENV in "${ENVS[@]}"; do
             case "${ENV}" in
               sim|devops|qa)
                 DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},test"
                 ;;
               int)
-                DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},staging"
+                if [[ "$ALLOW_STAGING_AND_LATEST" == true ]]; then
+                  DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},staging"
+                fi
                 ;;
               prod|pwc|emea)
-                DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},latest"
+                if [[ "$ALLOW_STAGING_AND_LATEST" == true ]]; then
+                  DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},latest"
+                fi
                 ;;
             esac
           done
@@ -308,6 +320,9 @@ jobs:
           echo "DOCKER_VERSION: [${DOCKER_VERSION}]"
           echo "DOCKER_TAG_WITH_VERSION: [${DOCKER_TAG_WITH_VERSION}]"
           echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
+          echo "DOCKER_REGISTRY_PROJECT_NAME: [$DOCKER_REGISTRY_PROJECT_NAME]"
+          echo "ALLOW_STAGING_AND_LATEST: [$ALLOW_STAGING_AND_LATEST]"
+          echo "ENVIRONMENTS: [$ENVIRONMENTS]"
 
           echo "DOCKER_VERSION=${DOCKER_VERSION}" >> "$GITHUB_OUTPUT"
           echo "DOCKER_TAG_WITH_VERSION=${DOCKER_TAG_WITH_VERSION}" >> "$GITHUB_OUTPUT"
