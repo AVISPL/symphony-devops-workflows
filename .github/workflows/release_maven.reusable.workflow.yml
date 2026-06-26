@@ -278,16 +278,57 @@ jobs:
         id: compute_docker_tags
         run: |
           echo "Compute docker tags"
-          DOCKER_TAG_WITH_VERSION="${{ steps.compute_release_version.outputs.release-version }}"
-          DOCKER_IMAGE_TAG_PREFIX="registry.vnocsymphony.com/${{ inputs.docker-registry-project-name }}/${{ inputs.symphony-microservice-name }}"
 
+          DOCKER_VERSION="${{ steps.compute_release_version.outputs.release-version }}"
+          DOCKER_TAG_WITH_VERSION="${DOCKER_VERSION}"
+
+          DOCKER_IMAGE_TAG_PREFIX="registry.vnocsymphony.com/${{ inputs.docker-registry-project-name }}/${{ inputs.symphony-microservice-name }}"
+          ENVIRONMENTS="${{ inputs.environments }}"
+
+          # Append alias tags based on environments
+          IFS=',' read -ra ENVS <<< "$ENVIRONMENTS"
+
+          DOCKER_REGISTRY_PROJECT_NAME="${{ inputs.docker-registry-project-name }}"
+
+          ALLOW_STAGING_AND_LATEST=true
+
+          if [[ "$DOCKER_REGISTRY_PROJECT_NAME" == "commproxy" ]]; then
+            ALLOW_STAGING_AND_LATEST=false
+          fi
+         
+          for ENV in "${ENVS[@]}"; do
+            # stripping white spaces in case someone accidentally added them to respective Environments workflow input variable
+            ENV="${ENV//[[:space:]]/}"
+            case "${ENV}" in
+              sim|devops|qa)
+                DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},test"
+                ;;
+              int)
+                if [[ "$ALLOW_STAGING_AND_LATEST" == true ]]; then
+                  DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},staging"
+                fi
+                ;;
+              prod|pwc|emea)
+                if [[ "$ALLOW_STAGING_AND_LATEST" == true ]]; then
+                  DOCKER_TAG_WITH_VERSION="${DOCKER_TAG_WITH_VERSION},latest"
+                fi
+                ;;
+            esac
+          done
+
+          # Deduplicate tags while preserving order
+          DOCKER_TAG_WITH_VERSION=$(echo "${DOCKER_TAG_WITH_VERSION}" | tr ',' '\n' | awk '!seen[$0]++' | tr '\n' ',' | sed 's/,$//')
+
+          echo "DOCKER_VERSION: [${DOCKER_VERSION}]"
           echo "DOCKER_TAG_WITH_VERSION: [${DOCKER_TAG_WITH_VERSION}]"
           echo "DOCKER_IMAGE_TAG_PREFIX: [${DOCKER_IMAGE_TAG_PREFIX}]"
+          echo "DOCKER_REGISTRY_PROJECT_NAME: [$DOCKER_REGISTRY_PROJECT_NAME]"
+          echo "ALLOW_STAGING_AND_LATEST: [$ALLOW_STAGING_AND_LATEST]"
+          echo "ENVIRONMENTS: [$ENVIRONMENTS]"
 
-          echo "DOCKER_TAG_WITH_VERSION=${DOCKER_TAG_WITH_VERSION}" >> $GITHUB_OUTPUT
-          echo "DOCKER_IMAGE_TAG_PREFIX=${DOCKER_IMAGE_TAG_PREFIX}" >> $GITHUB_OUTPUT
-
-        shell: bash
+          echo "DOCKER_VERSION=${DOCKER_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "DOCKER_TAG_WITH_VERSION=${DOCKER_TAG_WITH_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "DOCKER_IMAGE_TAG_PREFIX=${DOCKER_IMAGE_TAG_PREFIX}" >> "$GITHUB_OUTPUT"
 
       # Validate Docker tags
       # Always use the common action for Docker tags validation. Docker image tags
@@ -351,7 +392,7 @@ jobs:
           symphony-microservice-name: '${{ inputs.symphony-microservice-name }}'
           # New value for docker image in deployment file
           # Only docker tag name (e.g. 6.4.0.2308281259), not full path to repository
-          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_TAG_WITH_VERSION }}'
+          docker-image: '${{ steps.compute_docker_tags.outputs.DOCKER_VERSION }}'
           fail-if-no-file-change: 'true'
           # WARNING : relative path to current workspace, without leading "./" (for some reason this breaks replacement)
           workspace-checkout-dir: 'symphony-kubernetes-deployer'
