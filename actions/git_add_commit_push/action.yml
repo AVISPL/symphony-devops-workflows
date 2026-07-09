@@ -50,6 +50,7 @@ runs:
       #   https://github.com/stefanzweifel/git-auto-commit-action
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
+          token: ${{ inputs.github-token }}
           # Local file path to the repository
           repository: '${{ inputs.repository-dir }}'
           # Git commit message
