@@ -147,6 +147,38 @@ jobs:
           if [[ $changes == *"pom.xml"* ]]; then
              commit_pom=true
           fi
+          
+          # On develop, force a harmless pom.xml change only when Maven made none.
+          if [[ "${commit_pom}" == "false" && "${{ inputs.branch }}" == "develop" ]]; then
+            echo "No dependency update found; adding dummy pom.xml change for develop."
+
+            TS="$(date -u +%y%m%d%H%M | cut -c 1-11)"
+            SOURCE_FILE="./pom.xml"
+            TMP_FILE="${SOURCE_FILE}.tmp"
+            DUMMY_LINE_PREFIX="<!-- AUTO DUMMY CHANGE "
+
+            # Remove the previous dummy comment, avoiding comment buildup.
+            grep -F -v "${DUMMY_LINE_PREFIX}" "${SOURCE_FILE}" > "${TMP_FILE}" || true
+            mv "${TMP_FILE}" "${SOURCE_FILE}"
+
+            # Insert the new comment immediately before </project>.
+            awk -v dummy="${DUMMY_LINE_PREFIX}${TS} -->" '
+              /<\/project>/ && !added {
+                print "  " dummy
+                added = 1
+              }
+              { print }
+              END {
+                if (!added) {
+                  print "ERROR: Closing </project> tag was not found." > "/dev/stderr"
+                  exit 1
+                }
+              }
+            ' "${SOURCE_FILE}" > "${TMP_FILE}"
+
+            mv "${TMP_FILE}" "${SOURCE_FILE}"
+            commit_pom=true
+          fi
           # output commit_pom to indicate to next step that it needs to be committed
           echo "COMMIT_POM=$commit_pom" >> $GITHUB_OUTPUT
 
