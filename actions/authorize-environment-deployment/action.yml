@@ -27,7 +27,7 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
         DEV_TEAM: workflow-runners-dev
         QA_TEAM: workflow-runners-qa
-        DEVOPS_TEAM: workflow-runners-prod
+        DEVOPS_TEAM: workflow-runners-devops
         ACTOR: ${{ github.actor }}
         API_URL: ${{ github.api_url }}
       run: |
