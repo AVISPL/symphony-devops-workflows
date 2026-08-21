@@ -1,0 +1,71 @@
+# Copyright (c) 2026 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Verifies that actor whom triggered a dispatch workflow is allowed to run the workflow against specified environment (DEVOPS, DEV, QA, INT, PROD, PWC, or EMEA).
+# This action will query to see if the actor is a memnber of a GH team that is allowed to dispatch the workflow against provided environment, and if not, it will 
+# fail the workflow. 
+
+name: 'Authorize environment deployment'
+description: Allow a workflow dispatch only when its initiator belongs to the environment's GitHub team.
+
+inputs:
+  environment:
+    description: Symphony environment workflow is running against
+    required: true
+  github-token:
+    description: >
+      GitHub secret token to be provided by caller
+      Necessary for pushing to Git updated deployment files since it is a private repository
+      Use a PAT (Personal Access Token) from a user who has write permission on deployment repository
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Verify initiator is authorized
+      shell: bash
+      env:
+        TARGET_ENV: ${{ inputs.environment }}
+        ORG: 'AVISPL'
+        GH_TOKEN: ${{ inputs.github-token }}
+        DEV_TEAM: 'workflow-runners-dev'
+        QA_TEAM: 'workflow-runners-qa'
+        DEVOPS_TEAM: 'workflow-runners-prod'
+        ACTOR: ${{ github.actor }}
+        API_URL: ${{ github.api_url }}
+      run: |
+        set -euo pipefail
+
+        case "$TARGET_ENV" in
+          DEV|SIM)
+            TEAM="$DEV_TEAM"
+            ;;
+          QA)
+            TEAM="$QA_TEAM"
+            ;;
+          INT|PROD|EMEA|PWC|DEVOPS)
+            TEAM="$DEVOPS_TEAM"
+            ;;
+          *)
+            echo "::error::Unsupported environment: $TARGET_ENV"
+            exit 1
+            ;;
+        esac
+
+        response_file="$(mktemp)"
+        status="$(
+          curl --silent --show-error \
+            --output "$response_file" \
+            --write-out "%{http_code}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "X-GitHub-Api-Version: 2026-03-10" \
+            "$API_URL/orgs/$ORG/teams/$TEAM/memberships/$ACTOR"
+        )"
+
+        if [[ "$status" != "200" ]] || [[ "$(jq -r '.state // empty' "$response_file")" != "active" ]]; then
+          echo "::error::$ACTOR is not authorized to run against $TARGET_ENV."
+          exit 1
+        fi
+
+        echo "$ACTOR is authorized for $TARGET_ENV via team $TEAM."
