@@ -5,7 +5,7 @@
 # This action will query to see if the actor is a memnber of a GH team that is allowed to dispatch the workflow against provided environment, and if not, it will 
 # fail the workflow. 
 
-name: 'Authorize environment deployment'
+name: Authorize environment deployment
 description: Allow a workflow dispatch only when its initiator belongs to the environment's GitHub team.
 
 inputs:
@@ -13,10 +13,7 @@ inputs:
     description: Symphony environment workflow is running against
     required: true
   github-token:
-    description: >
-      GitHub secret token to be provided by caller
-      Necessary for pushing to Git updated deployment files since it is a private repository
-      Use a PAT (Personal Access Token) from a user who has write permission on deployment repository
+    description: Token with organization Members read access
     required: true
 
 runs:
@@ -26,11 +23,11 @@ runs:
       shell: bash
       env:
         TARGET_ENV: ${{ inputs.environment }}
-        ORG: 'AVISPL'
+        ORG: AVISPL
         GH_TOKEN: ${{ inputs.github-token }}
-        DEV_TEAM: 'workflow-runners-dev'
-        QA_TEAM: 'workflow-runners-qa'
-        DEVOPS_TEAM: 'workflow-runners-prod'
+        DEV_TEAM: workflow-runners-dev
+        QA_TEAM: workflow-runners-qa
+        DEVOPS_TEAM: workflow-runners-prod
         ACTOR: ${{ github.actor }}
         API_URL: ${{ github.api_url }}
       run: |
@@ -53,13 +50,15 @@ runs:
         esac
 
         response_file="$(mktemp)"
+        trap 'rm -f "$response_file"' EXIT
+
         status="$(
           curl --silent --show-error \
             --output "$response_file" \
             --write-out "%{http_code}" \
             --header "Accept: application/vnd.github+json" \
             --header "Authorization: Bearer $GH_TOKEN" \
-            --header "X-GitHub-Api-Version: 2026-03-10" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
             "$API_URL/orgs/$ORG/teams/$TEAM/memberships/$ACTOR"
         )"
 
