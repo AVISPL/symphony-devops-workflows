@@ -34,7 +34,7 @@ runs:
         set -euo pipefail
 
         case "$TARGET_ENV" in
-          DEV|SIM)
+          DEV|SIM|UNIT)
             TEAM="$DEV_TEAM"
             ;;
           QA)
