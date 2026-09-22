@@ -112,6 +112,15 @@ on:
         type: number
         required: false
         default: 5
+      sendEmailOnlyOnFailure:
+        description: |
+          Send the workflow status email only when the workflow did not succeed.
+          Set to 'true' for manually dispatched runs: the email action only supports the
+          'push' and 'pull_request' events and fails on any other, so a successful
+          workflow_dispatch run would otherwise always fail.
+        type: string
+        required: false
+        default: 'false'
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -402,6 +411,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: ./.github/symphony-devops-workflows/actions/send_email_workflow_status
         with:
+          sendEmailOnlyOnFailure: ${{ inputs.sendEmailOnlyOnFailure }}
           builderSmtpHost: ${{ secrets.builderSmtpHost }}
           mvn-output-file: ${{ inputs.mvn-output-file }}
           sonarqube-output-file: ./sonarqube_results.txt
