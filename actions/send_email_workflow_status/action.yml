@@ -51,6 +51,7 @@ runs:
       uses: ./.github/symphony-devops-workflows/actions/install_jq
 
     - name: Prepare email
+      id: prepare
       shell: bash
       run: |
         # Prepare email
@@ -66,6 +67,9 @@ runs:
         sendEmailOnlyOnFailure="${{inputs.sendEmailOnlyOnFailure}}"
         if [[ "true" == "${sendEmailOnlyOnFailure}" && "SUCCESS" == "${status}" ]]; then
           echo "Status is [${status}] and sendEmailOnlyOnFailure is [${sendEmailOnlyOnFailure}] => nothing to do, exiting"
+          # Tell the following steps to stand down. Exiting here only ends this step, so without
+          # this flag the send step would still run and fail on an unset subject
+          echo "skip=true" >> $GITHUB_OUTPUT
           # Exit with success
           exit 0
         fi
@@ -259,7 +263,7 @@ runs:
         echo ""
 
     - name: Append SonarQube logs to email body
-      if: ${{ inputs.include-sonar-qube-results == 'true' }}
+      if: ${{ steps.prepare.outputs.skip != 'true' && inputs.include-sonar-qube-results == 'true' }}
       shell: bash
       run: |
         echo "<br>" >> body.txt
@@ -272,6 +276,7 @@ runs:
         cat ${{ inputs.sonarqube-output-file }} >> body.txt
 
     - name: Append workflow logs to email body
+      if: ${{ steps.prepare.outputs.skip != 'true' }}
       shell: bash
       run: |
         # get list of jobs that ran within this workflow 
@@ -314,6 +319,7 @@ runs:
         #cat workflow_logs.txt >> body.txt
 
     - name: Send mail
+      if: ${{ steps.prepare.outputs.skip != 'true' }}
       uses: dawidd6/action-send-mail@v3.12.0
       with:
        server_address: ${{ inputs.builderSmtpHost }}
