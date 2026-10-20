@@ -123,14 +123,17 @@ on:
         default: 'false'
       smtpSecure:
         description: 'SMTP secure'
+        type: boolean
         required: false
         default: false
       smtpIgnoreCert:
         description: 'SMTP ignore certificate'
+        type: boolean
         required: false
         default: true
       smtpPort:
         description: 'SMTP port'
+        type: number
         required: false
         default: 25
     #
