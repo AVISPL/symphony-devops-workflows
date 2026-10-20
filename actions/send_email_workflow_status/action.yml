@@ -43,6 +43,26 @@ inputs:
   ciToken:
     description: 'CI bearer token to allow for making Github API calls to obtain workflow logs'
     required: true
+  username:
+    description: 'SMTP username'
+    required: false
+    default: ''
+  password:
+    description: 'SMTP password'
+    required: false
+    default: ''
+  port:
+    description: 'SMTP port'
+    required: false
+    default: 25
+  secure:
+    description: 'SMTP secure'
+    required: false
+    default: false
+  ignoreCert:
+    description: 'SMTP ignore certificate'
+    required: false
+    default: true
 
 runs:
   using: "composite"
@@ -320,11 +340,14 @@ runs:
 
     - name: Send mail
       if: ${{ steps.prepare.outputs.skip != 'true' }}
-      uses: dawidd6/action-send-mail@v3.12.0
+      uses: dawidd6/action-send-mail@v22
       with:
+       server_port: ${{ inputs.port }}
+       username: ${{ inputs.username }}
+       password:  ${{ inputs.password }}
        server_address: ${{ inputs.builderSmtpHost }}
-       ignore_cert: true
-       secure: false
+       ignore_cert: ${{ inputs.ignoreCert }}
+       secure: ${{ inputs.secure }}
        subject: ${{ env.SUBJECT }}
        to: ${{ inputs.emailTo }}
        from: ${{ inputs.emailFrom }}

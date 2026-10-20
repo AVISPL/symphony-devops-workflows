@@ -121,6 +121,18 @@ on:
         type: string
         required: false
         default: 'false'
+      smtpSecure:
+        description: 'SMTP secure'
+        required: false
+        default: false
+      smtpIgnoreCert:
+        description: 'SMTP ignore certificate'
+        required: false
+        default: true
+      smtpPort:
+        description: 'SMTP port'
+        required: false
+        default: 25
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -171,10 +183,16 @@ on:
           of the person who ran the workflow, see commit user name.
         required: true
       dockerUser:
-        description: Username of user with access to harbor registry to manage respective images
+        description: 'Username of user with access to harbor registry to manage respective images'
         required: true
       dockerPassword: 
-        description: Password of user with access to harbor registry to manage respective images
+        description: 'Password of user with access to harbor registry to manage respective images'
+        required: true
+      smtpUsername: 
+        description: 'SMTP username'
+        required: true
+      smtpPassword: 
+        description: 'SMTP password'
         required: true
 env:
   SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
@@ -435,3 +453,8 @@ jobs:
           emailTo: ${{ secrets.emailTo }}
           emailFrom: ${{ secrets.emailFrom }}
           ciToken: ${{ secrets.ciToken }}
+          secure: ${{ inputs.smtpSecure }}
+          ignoreCert: ${{ inputs.smtpIgnoreCert }}
+          password: ${{ secrets.smtpPassword }}
+          username: ${{ secrets.smtpUsername }}
+          port: ${{ inputs.smtpPort }}
