@@ -170,6 +170,12 @@ on:
           User email to be used as Git committer. This is NOT the user email
           of the person who ran the workflow, see commit user name.
         required: true
+      dockerUser:
+        description: Username of user with access to harbor registry to manage respective images
+        required: true
+      dockerPassword: 
+        description: Password of user with access to harbor registry to manage respective images
+        required: true
 env:
   SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
 jobs:
@@ -359,6 +365,15 @@ jobs:
             echo "version.txt exists, appending build-number to end of version specified in this file"
             sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' ./${{ inputs.module-name }}/WEB-INF/classes/version.txt
           fi
+
+      - name: Login to Symphony Harbor Docker Registry
+        # Run docker build only when a docker file has been specified (not empty value)
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
+        uses: docker/login-action@v4
+        with:
+          registry: registry.vnocsymphony.com
+          username: ${{ secrets.dockerUser }}
+          password: ${{ secrets.dockerPassword }}
 
       # Docker
       - name: Docker build
