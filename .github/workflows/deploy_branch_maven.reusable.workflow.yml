@@ -368,7 +368,7 @@ jobs:
 
       - name: Login to Symphony Harbor Docker Registry
         # Run docker build only when a docker file has been specified (not empty value)
-        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
         uses: docker/login-action@v4
         with:
           registry: registry.vnocsymphony.com
