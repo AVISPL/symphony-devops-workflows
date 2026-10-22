@@ -96,6 +96,12 @@ on:
             Committer: MyCIUser
             Signed-off-by: MyCIUser <MyCIUser@...com>
         required: true
+      dockerUser:
+        description: 'Username of user with access to harbor registry to manage respective images'
+        required: true
+      dockerPassword: 
+        description: 'Password of user with access to harbor registry to manage respective images'
+        required: true
 env:
   SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
   AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
@@ -236,6 +242,15 @@ jobs:
       - name: Unzip war file if module-name is specified
         if: ${{ inputs.module-name != '' && steps.check.outputs.continue == 'true' }}
         run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
+
+      - name: Login to Symphony Harbor Docker Registry
+        # Run docker build only when a docker file has been specified (not empty value)
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
+        uses: docker/login-action@v4
+        with:
+          registry: registry.vnocsymphony.com
+          username: ${{ secrets.dockerUser }}
+          password: ${{ secrets.dockerPassword }}
 
       # Docker
       - name: Docker build tag push
