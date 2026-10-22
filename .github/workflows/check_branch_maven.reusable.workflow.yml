@@ -145,7 +145,7 @@ jobs:
       # (so other files written into it will be removed)
       - name: Git checkout current repository/branch
         if: ${{ steps.check.outputs.continue == 'true' }}
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v7.0.1
         with:
           # TODO HOUSEKEEPING check if fetch-depth 0 is really needed (should not
           #      as no Git tags are manipulated by this workflow)
@@ -159,7 +159,7 @@ jobs:
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
         if: ${{ steps.check.outputs.continue == 'true' }}
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v7.0.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
@@ -221,7 +221,7 @@ jobs:
       - name: SonarQube quality gate check
         if: ${{ inputs.run-sonar-qube-scan && steps.check.outputs.continue == 'true' }}
         id: sonarqube-quality-gate-check
-        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        uses: sonarsource/sonarqube-quality-gate-action@v1.2.1
         with:
           scanMetadataReportFile: target/sonar/report-task.txt
         # Force to fail step after specific time.
@@ -246,7 +246,7 @@ jobs:
       - name: Login to Symphony Harbor Docker Registry
         # Run docker build only when a docker file has been specified (not empty value)
         if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
-        uses: docker/login-action@v4
+        uses: docker/login-action@v4.6.0
         with:
           registry: registry.vnocsymphony.com
           username: ${{ secrets.dockerUser }}
