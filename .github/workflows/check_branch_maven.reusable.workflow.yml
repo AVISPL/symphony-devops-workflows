@@ -96,6 +96,12 @@ on:
             Committer: MyCIUser
             Signed-off-by: MyCIUser <MyCIUser@...com>
         required: true
+      dockerUser:
+        description: 'Username of user with access to harbor registry to manage respective images'
+        required: true
+      dockerPassword: 
+        description: 'Password of user with access to harbor registry to manage respective images'
+        required: true
 env:
   SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
   AUTO_RELEASE_COMMIT_ACTOR: ${{ secrets.commitUserName}}
@@ -130,16 +136,12 @@ jobs:
             echo "Executing workflow"
             echo "continue=true" >> $GITHUB_OUTPUT
           fi
-      # we have to remove content of all com.symphony packages to prevent of using
-      # leftover jars of builds that aren't merged yet
-      - name: Clean local .m2 cache
-        if: ${{ steps.check.outputs.continue == 'true' }}
-        run:  rm -rfv "$HOME/.m2/repository/com/avispl" || true
+
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
       - name: Git checkout current repository/branch
         if: ${{ steps.check.outputs.continue == 'true' }}
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v7.0.1
         with:
           # TODO HOUSEKEEPING check if fetch-depth 0 is really needed (should not
           #      as no Git tags are manipulated by this workflow)
@@ -153,7 +155,7 @@ jobs:
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
         if: ${{ steps.check.outputs.continue == 'true' }}
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v7.0.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
@@ -215,7 +217,7 @@ jobs:
       - name: SonarQube quality gate check
         if: ${{ inputs.run-sonar-qube-scan && steps.check.outputs.continue == 'true' }}
         id: sonarqube-quality-gate-check
-        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        uses: sonarsource/sonarqube-quality-gate-action@v1.2.1
         with:
           scanMetadataReportFile: target/sonar/report-task.txt
         # Force to fail step after specific time.
@@ -237,11 +239,20 @@ jobs:
         if: ${{ inputs.module-name != '' && steps.check.outputs.continue == 'true' }}
         run: unzip -q -d ${{ inputs.module-name }} ./target/${{ inputs.module-name }}.war
 
+      - name: Login to Symphony Harbor Docker Registry
+        # Run docker build only when a docker file has been specified (not empty value)
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: registry.vnocsymphony.com
+          username: ${{ secrets.dockerUser }}
+          password: ${{ secrets.dockerPassword }}
+
       # Docker
       - name: Docker build tag push
         # Run docker build only when a docker file has been specified (not empty value)
         if: ${{ !cancelled() && !failure() && inputs.docker-file != '' && steps.check.outputs.continue == 'true' }}
-        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
+        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push_no_sudo
         with:
           docker-file: ${{ inputs.docker-file }}
           docker-tag-push: false

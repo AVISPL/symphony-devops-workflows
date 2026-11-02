@@ -121,6 +121,21 @@ on:
         type: string
         required: false
         default: 'false'
+      smtpSecure:
+        description: 'SMTP secure'
+        type: boolean
+        required: false
+        default: false
+      smtpIgnoreCert:
+        description: 'SMTP ignore certificate'
+        type: boolean
+        required: false
+        default: true
+      smtpPort:
+        description: 'SMTP port'
+        type: number
+        required: false
+        default: 25
     #
     secrets:
       # WARNING: secret names do not seem to accept "-" or "_" characters (not documented)
@@ -170,6 +185,18 @@ on:
           User email to be used as Git committer. This is NOT the user email
           of the person who ran the workflow, see commit user name.
         required: true
+      dockerUser:
+        description: 'Username of user with access to harbor registry to manage respective images'
+        required: true
+      dockerPassword: 
+        description: 'Password of user with access to harbor registry to manage respective images'
+        required: true
+      smtpUsername: 
+        description: 'SMTP username'
+        required: true
+      smtpPassword: 
+        description: 'SMTP password'
+        required: true
 env:
   SONAR_HOST_URL: "https://sonarqube-dev.devvnocsymphony.com/"
 jobs:
@@ -190,14 +217,10 @@ jobs:
     # so need this trick with multiple variables
     runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
     steps:
-      # we have to remove content of all com.symphony packages to prevent of using
-      # leftover jars of builds that aren't merged yet
-      - name: Clean local .m2 cache
-        run:  rm -rfv "$HOME/.m2/repository/com/avispl" || true
       # WARNING checkout repository first because this action resets the checkout directory
       # (so other files written into it will be removed)
       - name: Git checkout current repository/branch
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v7.0.1
         with:
           # Checkout all branches and tags (required to work with tags in git_delete_tag action)
           fetch-depth: '0' # 0 indicates all history for all branches and tags
@@ -208,7 +231,7 @@ jobs:
       # (feature not available yet)
       # So checkout the actions into local workspace directory and run them from there
       - name: Checkout actions from private repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v7.0.1
         with:
           repository: AVISPL/symphony-devops-workflows
           # Select revision
@@ -302,7 +325,7 @@ jobs:
       - name: SonarQube quality gate check
         if: ${{ inputs.run-sonar-qube-scan }}
         id: sonarqube-quality-gate-check
-        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        uses: sonarsource/sonarqube-quality-gate-action@v1.2.1
         with:
           scanMetadataReportFile: target/sonar/report-task.txt
         # Force to fail step after specific time.
@@ -360,12 +383,21 @@ jobs:
             sed -i ' 1 s/.*/&.${{ steps.compute_build_number.outputs.build-number }}/' ./${{ inputs.module-name }}/WEB-INF/classes/version.txt
           fi
 
+      - name: Login to Symphony Harbor Docker Registry
+        # Run docker build only when a docker file has been specified (not empty value)
+        if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: registry.vnocsymphony.com
+          username: ${{ secrets.dockerUser }}
+          password: ${{ secrets.dockerPassword }}
+
       # Docker
       - name: Docker build
         id: docker_build_tag_push
         # Run docker build only when a docker file has been specified (not empty value)
         if: ${{ !cancelled() && !failure() && inputs.docker-file != '' }}
-        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push
+        uses: ./.github/symphony-devops-workflows/actions/docker_build_tag_push_no_sudo
         with:
           docker-file: ${{ inputs.docker-file }}
           docker-tag-push: ${{ inputs.docker-tag-push }}
@@ -420,3 +452,8 @@ jobs:
           emailTo: ${{ secrets.emailTo }}
           emailFrom: ${{ secrets.emailFrom }}
           ciToken: ${{ secrets.ciToken }}
+          secure: ${{ inputs.smtpSecure }}
+          ignoreCert: ${{ inputs.smtpIgnoreCert }}
+          password: ${{ secrets.smtpPassword }}
+          username: ${{ secrets.smtpUsername }}
+          port: ${{ inputs.smtpPort }}
