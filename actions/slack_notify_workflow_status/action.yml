@@ -1,0 +1,281 @@
+# Copyright (c) 2026 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Posts a workflow status message to a Slack channel through a Slack Incoming Webhook.
+#
+# The message automatically includes: status, who ran the workflow (and who re-ran it, if applicable),
+# timestamp, repository, branch/tag, commit, workflow run link, trigger event, job and runner.
+# Callers can add: environment, version, any number of extra "Label: value" fields and a free-form details block.
+#
+# Routing to a channel per environment:
+#   Slack Incoming Webhook URLs are bound to ONE channel, so "one channel per environment" means
+#   "one webhook URL per environment". Store the URL as a GitHub *Environment* secret with the same
+#   name in every environment (e.g. SLACK_WEBHOOK_URL in DEV, QA, PROD, ...). A job that declares
+#   `environment:` then resolves `secrets.SLACK_WEBHOOK_URL` to the right channel automatically.
+#   NEVER hard-code webhook URLs here: this repository is public and a webhook URL lets anyone post to the channel.
+#
+# Prerequisites:
+# - GitHub actions from AVI-SPL repository must be available under ./.github/symphony-devops-workflows/
+# - curl must be available on the runner (jq is installed by this action when missing)
+#
+# Example:
+#   - name: Notify Slack
+#     if: always()
+#     uses: ./.github/symphony-devops-workflows/actions/slack_notify_workflow_status
+#     with:
+#       webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+#       status: ${{ job.status }}
+#       environment: ${{ inputs.environment }}
+#       version: ${{ steps.version.outputs.version }}
+#       extra-fields: |
+#         Database: vnoc_symphony
+#         Migrations applied: 3
+#
+name: 'Slack notify workflow status'
+description: 'Send a workflow status message (who, when, where, what version) to a Slack channel via an Incoming Webhook'
+
+inputs:
+  webhook-url:
+    description: 'Slack Incoming Webhook URL (pass a secret, ideally a GitHub Environment secret so each environment posts to its own channel)'
+    required: true
+  status:
+    description: 'Status to report. Pass `job.status` (success / failure / cancelled) or any custom string'
+    required: false
+    default: 'unknown'
+  title:
+    description: 'Message headline. Defaults to the workflow name'
+    required: false
+    default: ''
+  environment:
+    description: 'Environment the workflow ran against (shown in the headline and as a field)'
+    required: false
+    default: ''
+  version:
+    description: 'Version being deployed / applied'
+    required: false
+    default: ''
+  extra-fields:
+    description: >
+      Additional fields, one per line, in the form "Label: value".
+      Blank lines are ignored; a line without ":" is shown as a label with no value
+    required: false
+    default: ''
+  details:
+    description: 'Free-form Slack mrkdwn text shown below the fields (e.g. release notes, error summary). Truncated to 2900 chars'
+    required: false
+    default: ''
+  notify-on:
+    description: 'When to send: always | failure (anything other than success) | success'
+    required: false
+    default: 'always'
+  mention-on-failure:
+    description: >
+      Slack mention prepended to the message when status is not success,
+      e.g. "<!here>", "<!channel>", "<@U0123ABCD>" (user) or "<!subteam^S0123ABCD>" (user group)
+    required: false
+    default: ''
+  fail-on-error:
+    description: 'Fail the step when the message cannot be delivered. Default false so a Slack outage never fails a deployment'
+    required: false
+    default: 'false'
+  dry-run:
+    description: 'Build and print the Slack payload without sending it'
+    required: false
+    default: 'false'
+
+outputs:
+  sent:
+    description: '"true" when Slack accepted the message, "false" otherwise'
+    value: ${{ steps.send.outputs.sent }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install jq
+      uses: ./.github/symphony-devops-workflows/actions/install_jq
+
+    - name: Send Slack message
+      id: send
+      shell: bash
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.webhook-url }}
+        IN_STATUS: ${{ inputs.status }}
+        IN_TITLE: ${{ inputs.title }}
+        IN_ENVIRONMENT: ${{ inputs.environment }}
+        IN_VERSION: ${{ inputs.version }}
+        IN_EXTRA_FIELDS: ${{ inputs.extra-fields }}
+        IN_DETAILS: ${{ inputs.details }}
+        IN_NOTIFY_ON: ${{ inputs.notify-on }}
+        IN_MENTION_ON_FAILURE: ${{ inputs.mention-on-failure }}
+        IN_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+        IN_DRY_RUN: ${{ inputs.dry-run }}
+      run: |
+        # Build and send Slack message
+        set -uo pipefail
+
+        lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+        upper() { printf '%s' "$1" | tr '[:lower:]' '[:upper:]'; }
+        trim()  { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
+        # Escape the 3 characters Slack mrkdwn treats as control characters
+        esc()   { printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
+
+        # Report a delivery problem: warning by default, error (and failed step) when fail-on-error is true
+        give_up() {
+          echo "sent=false" >> "$GITHUB_OUTPUT"
+          if [[ "$(lower "$IN_FAIL_ON_ERROR")" == "true" ]]; then
+            echo "::error::Slack notification not sent: $1"
+            exit 1
+          fi
+          echo "::warning::Slack notification not sent: $1"
+          exit 0
+        }
+
+        status="$(lower "$(trim "${IN_STATUS:-}")")"
+        [[ -z "$status" ]] && status="unknown"
+
+        # ---- Should we send? ------------------------------------------------------------------
+        notify_on="$(lower "$(trim "${IN_NOTIFY_ON:-always}")")"
+        case "$notify_on" in
+          always|"") ;;
+          failure) if [[ "$status" == "success" ]]; then echo "Status is [$status] and notify-on is [failure] => nothing to send"; echo "sent=false" >> "$GITHUB_OUTPUT"; exit 0; fi ;;
+          success) if [[ "$status" != "success" ]]; then echo "Status is [$status] and notify-on is [success] => nothing to send"; echo "sent=false" >> "$GITHUB_OUTPUT"; exit 0; fi ;;
+          *) echo "::warning::Unknown notify-on value [$notify_on], sending anyway" ;;
+        esac
+
+        # ---- Status look & feel ---------------------------------------------------------------
+        case "$status" in
+          success)   icon=":white_check_mark:"; color="#2EB67D"; label="SUCCEEDED" ;;
+          failure)   icon=":x:";                color="#E01E5A"; label="FAILED" ;;
+          cancelled) icon=":no_entry_sign:";    color="#9E9E9E"; label="CANCELLED" ;;
+          skipped)   icon=":fast_forward:";     color="#9E9E9E"; label="SKIPPED" ;;
+          *)         icon=":warning:";          color="#ECB22E"; label="$(upper "$status")" ;;
+        esac
+
+        # ---- Context gathered from the GitHub runtime -----------------------------------------
+        server="${GITHUB_SERVER_URL:-https://github.com}"
+        repo="${GITHUB_REPOSITORY:-unknown/unknown}"
+        repo_url="${server}/${repo}"
+        run_attempt="${GITHUB_RUN_ATTEMPT:-1}"
+        run_url="${repo_url}/actions/runs/${GITHUB_RUN_ID:-0}"
+        [[ "$run_attempt" != "1" ]] && run_url="${run_url}/attempts/${run_attempt}"
+        sha="${GITHUB_SHA:-}"
+        short_sha="${sha:0:7}"
+        ref_name="${GITHUB_REF_NAME:-}"
+        ref_type="${GITHUB_REF_TYPE:-branch}"
+        workflow="${GITHUB_WORKFLOW:-workflow}"
+
+        # On a re-run, github.actor stays the original initiator and triggering_actor is who re-ran it
+        actor="${GITHUB_ACTOR:-unknown}"
+        triggering_actor="${GITHUB_TRIGGERING_ACTOR:-$actor}"
+        run_by="<${server}/${triggering_actor}|${triggering_actor}>"
+        if [[ "$triggering_actor" != "$actor" ]]; then
+          run_by="${run_by} (re-run; originally started by <${server}/${actor}|${actor}>)"
+        fi
+
+        # Slack renders <!date^...> in each reader's own timezone; the text after "|" is the fallback
+        epoch="$(date -u +%s)"
+        iso="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+        timestamp="<!date^${epoch}^{date_short_pretty} at {time_secs}|${iso}>"
+
+        title="$(trim "${IN_TITLE:-}")"
+        [[ -z "$title" ]] && title="$workflow"
+        environment="$(trim "${IN_ENVIRONMENT:-}")"
+        version="$(trim "${IN_VERSION:-}")"
+
+        # ---- Headline (top-level text: shows in notifications and is where mentions work) -----
+        headline="${icon} *$(esc "$title")* ${label}"
+        [[ -n "$environment" ]] && headline="${headline} on *$(esc "$environment")*"
+        mention="$(trim "${IN_MENTION_ON_FAILURE:-}")"
+        if [[ -n "$mention" && "$status" != "success" ]]; then
+          headline="${mention} ${headline}"
+        fi
+
+        # ---- Fields -------------------------------------------------------------------------------
+        fields='[]'
+        add_field() {
+          # $1 = label (plain), $2 = value (already mrkdwn-safe)
+          fields="$(jq -c --arg l "$(esc "$1")" --arg v "$2" \
+            '. + [{type: "mrkdwn", text: ("*" + $l + "*\n" + (if $v == "" then "-" else $v end))[0:1900]}]' <<< "$fields")"
+        }
+
+        [[ -n "$environment" ]] && add_field "Environment" "$(esc "$environment")"
+        [[ -n "$version"     ]] && add_field "Version"     "\`$(esc "$version")\`"
+        add_field "Run by"    "$run_by"
+        add_field "Timestamp" "$timestamp"
+        add_field "Repository" "<${repo_url}|${repo}>"
+        if [[ -n "$ref_name" ]]; then
+          if [[ "$ref_type" == "tag" ]]; then ref_label="Tag"; else ref_label="Branch"; fi
+          add_field "$ref_label" "<${repo_url}/tree/${ref_name}|$(esc "$ref_name")>"
+        fi
+        [[ -n "$sha" ]] && add_field "Commit" "<${repo_url}/commit/${sha}|\`${short_sha}\`>"
+        add_field "Workflow run" "<${run_url}|#${GITHUB_RUN_NUMBER:-?}$([[ "$run_attempt" != "1" ]] && echo " (attempt ${run_attempt})")>"
+        add_field "Trigger" "$(esc "${GITHUB_EVENT_NAME:-unknown}")"
+        add_field "Job / Runner" "$(esc "${GITHUB_JOB:-?}") / $(esc "${RUNNER_NAME:-?}")"
+
+        # Caller supplied "Label: value" lines
+        while IFS= read -r line || [[ -n "$line" ]]; do
+          line="$(trim "$line")"
+          [[ -z "$line" ]] && continue
+          if [[ "$line" == *:* ]]; then
+            add_field "$(trim "${line%%:*}")" "$(esc "$(trim "${line#*:}")")"
+          else
+            add_field "$line" ""
+          fi
+        done <<< "${IN_EXTRA_FIELDS:-}"
+
+        # ---- Payload --------------------------------------------------------------------------
+        payload_file="$(mktemp "${RUNNER_TEMP:-/tmp}/slack_payload.XXXXXX.json")"
+        trap 'rm -f "$payload_file"' EXIT
+
+        jq -n \
+          --arg text "$headline" \
+          --arg color "$color" \
+          --argjson fields "$fields" \
+          --arg details "${IN_DETAILS:-}" \
+          --arg run_url "$run_url" \
+          --arg context "${repo} · ${workflow} · run #${GITHUB_RUN_NUMBER:-?}" \
+          '{
+            text: $text,
+            unfurl_links: false,
+            unfurl_media: false,
+            attachments: [{
+              color: $color,
+              blocks: (
+                # Slack allows at most 10 fields per section block
+                [ range(0; ($fields | length); 10) as $i | {type: "section", fields: $fields[$i:$i+10]} ]
+                + (if ($details | length) > 0
+                    then [ {type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $details[0:2900]}} ]
+                    else [] end)
+                + [ {type: "actions", elements: [ {type: "button", text: {type: "plain_text", text: "View workflow run"}, url: $run_url} ]},
+                    {type: "context", elements: [ {type: "mrkdwn", text: $context} ]} ]
+              )
+            }]
+          }' > "$payload_file" || give_up "could not build JSON payload"
+
+        echo "Slack payload:"
+        cat "$payload_file"
+        echo ""
+
+        if [[ "$(lower "$IN_DRY_RUN")" == "true" ]]; then
+          echo "dry-run is enabled => payload not sent"
+          echo "sent=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # ---- Send -----------------------------------------------------------------------------
+        [[ -z "${SLACK_WEBHOOK_URL:-}" ]] && give_up "webhook-url is empty (is the secret defined for this environment?)"
+
+        response_file="$(mktemp)"
+        http_code="$(curl --silent --show-error --max-time 30 --retry 2 \
+          --output "$response_file" --write-out '%{http_code}' \
+          --header 'Content-Type: application/json; charset=utf-8' \
+          --data @"$payload_file" \
+          "$SLACK_WEBHOOK_URL")" || http_code="000"
+        response="$(cat "$response_file" 2>/dev/null)"; rm -f "$response_file"
+
+        if [[ "$http_code" != "200" ]]; then
+          give_up "Slack answered HTTP [${http_code}] [${response}]"
+        fi
+
+        echo "Slack accepted the message"
+        echo "sent=true" >> "$GITHUB_OUTPUT"
