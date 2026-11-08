@@ -1,0 +1,132 @@
+# Copyright (c) 2026 AVI-SPL Inc.
+# All Rights Reserved.
+#
+# Builds a third-party (open-source) dependency inventory across the Symphony
+# microservices listed in .github/scripts/dependency_inventory/list-micro.json,
+# optionally cross-checks each library against the approved 3rd-Party Software
+# Confluence page, and publishes the result as an Allure report to GitHub Pages.
+#
+# Each (repository x dependency) is one Allure "test"; a dependency that is NOT on
+# the approved list is reported as a failed test (suite = repository).
+name: dependency_inventory
+
+run-name: >-
+  3rd-party dependency inventory by @${{ github.actor }}
+
+concurrency:
+  group: github-pages-deploy
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      prefer-ref:
+        description: 'Preferred git ref to read each pom from (falls back to latest release/x.y, then default branch)'
+        required: false
+        type: string
+        default: 'release/6.27'
+      enable-confluence-check:
+        description: 'Cross-check against the approved 3rd-Party Software Confluence page (needs CONFLUENCE_* secrets)'
+        required: false
+        type: boolean
+        default: true
+      confluence-page-id:
+        description: 'Confluence page id of the approved 3rd-party list'
+        required: false
+        type: string
+        default: '803569665'
+      runs-on_label_1:
+        description: 'The job runner first label (optional)'
+        required: false
+        type: string
+        default: 'self-hosted'
+      runs-on_label_2:
+        description: 'The job runner second label (optional)'
+        required: false
+        type: string
+        default: 'linux'
+
+# Grant permissions for GitHub Pages deployment
+permissions:
+  contents: write
+
+jobs:
+  dependency-inventory:
+    runs-on: [ "${{ inputs.runs-on_label_1 }}", "${{ inputs.runs-on_label_2 }}" ]
+    timeout-minutes: 30
+    env:
+      # PAT with read access to the AVISPL org repositories (reads each pom.xml).
+      GH_TOKEN: ${{ secrets.ciToken }}
+      # Optional approved-list cross-check. If any is empty the check is skipped gracefully.
+      CONFLUENCE_BASE_URL: ${{ secrets.confluenceBaseUrl }}
+      CONFLUENCE_EMAIL: ${{ secrets.confluenceEmail }}
+      CONFLUENCE_API_TOKEN: ${{ secrets.confluenceApiToken }}
+    steps:
+      - name: Checkout symphony-devops-workflows
+        uses: actions/checkout@v4.1.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build dependency inventory + Allure results
+        env:
+          PREFER_REF: ${{ inputs.prefer-ref }}
+          ENABLE_CONF: ${{ inputs.enable-confluence-check }}
+          PAGE_ID: ${{ inputs.confluence-page-id }}
+        run: |
+          set -euo pipefail
+          conf_arg=()
+          if [ "$ENABLE_CONF" = "true" ]; then
+            if [[ "$PAGE_ID" =~ ^[0-9]+$ ]]; then
+              conf_arg=(--confluence-page "$PAGE_ID")
+            else
+              echo "::warning::confluence-page-id is not numeric ('$PAGE_ID'); skipping approved-list check"
+            fi
+          fi
+          python3 .github/scripts/dependency_inventory/deps_inventory.py \
+            --list .github/scripts/dependency_inventory/list-micro.json \
+            --org AVISPL \
+            --prefer-ref "$PREFER_REF" \
+            --out-dir out \
+            --allure-results allure-results \
+            ${conf_arg[@]+"${conf_arg[@]}"}
+
+      - name: Upload raw reports (md / csv)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-inventory-reports
+          path: out/
+          if-no-files-found: warn
+
+      - name: Load report history
+        uses: actions/checkout@v4
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Generate Allure report
+        uses: simple-elf/allure-report-action@v1.13
+        if: always()
+        with:
+          allure_results: allure-results
+          gh_pages: gh-pages
+          allure_report: allure-report
+          allure_history: allure-history
+          subfolder: dependency-inventory
+          keep_reports: 10
+
+      - name: Deploy report to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: allure-history
+          force_orphan: false
+          keep_files: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
