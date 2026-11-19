@@ -62,13 +62,29 @@ runs:
 
       # If we would cache downloaded JDK, we can first verify if cached version has correct checksum, before downloading
 
+    - name: Normalize version for setup-java
+      # actions/setup-java requires SemVer; JDK versions can have 4+ components
+      # (e.g. 27.0.1.1). Map extra components to SemVer build metadata (27.0.1+1).
+      if: inputs.distribution == 'custom'  && !endsWith(env.INSTALLED_JAVA_VER, inputs.java-version)
+      shell: bash
+      run: |
+        IFS='.' read -r -a parts <<< "${{ inputs.java-version }}"
+        if (( ${#parts[@]} > 3 )); then
+          extra=$(IFS='.'; echo "${parts[*]:3}")
+          semver="${parts[0]}.${parts[1]}.${parts[2]}+${extra}"
+        else
+          semver="${{ inputs.java-version }}"
+        fi
+        echo "Using setup-java version: $semver"
+        echo "SETUP_JAVA_VERSION=$semver" >> $GITHUB_ENV
+
     - name: Set up JDK
       uses: actions/setup-java@v5.0.0
       if: inputs.distribution == 'custom'  && !endsWith(env.INSTALLED_JAVA_VER, inputs.java-version)
       with:
         distribution: 'jdkfile'
         jdkFile: ${{ runner.temp }}/java_package.tar.gz
-        java-version: ${{ inputs.java-version }}
+        java-version: ${{ env.SETUP_JAVA_VERSION }}
         architecture: x64
         # Do NOT overwrite Maven settings.xml with auto-generated one
         overwrite-settings: false
