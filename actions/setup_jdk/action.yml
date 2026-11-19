@@ -8,7 +8,7 @@ inputs:
   java-version:
     description: 'Java version'
     required: false
-    default: '26.0.1'
+    default: '27.0.1.1'
   distribution:
     description: 'Distribution (e.g. "adopt")'
     required: false
@@ -16,11 +16,11 @@ inputs:
   downloadUrl:
     description: 'URL to download JDK archive. Should be used if `distribution` is custom.'
     required: false
-    default: 'https://download.java.net/java/GA/jdk26.0.1/458fda22e4c54d5ba572ab8d2b22eb83/8/GPL/openjdk-26.0.1_linux-x64_bin.tar.gz'
+    default: 'https://download.java.net/java/GA/jdk27.0.1.1/c3a705caf5044be8aa0b09e62be69b20/4/GPL/openjdk-27.0.1.1_linux-x64_bin.tar.gz'
   checkSum:
     description: 'SHA256 sum of archive.'
     required: false
-    default: '2f2802d57b5fc414f1ddf6648ba12cc9a6454cf67b32ac95407c018f2e6ab0b0'
+    default: '82172b79a4e4a8546e2538c525b63e020f419922a5d30f9873bbb832ce95637b'
 
 runs:
   using: "composite"
